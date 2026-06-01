@@ -1,0 +1,47 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "distributivos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "periodo_id", "order": "ASCENDING" },
+        { "fieldPath": "estado", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "actividades",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "docente_uid", "order": "ASCENDING" },
+        { "fieldPath": "periodo_id", "order": "ASCENDING" },
+        { "fieldPath": "fecha", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "eventos_calendario",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "docente_uid", "order": "ASCENDING" },
+        { "fieldPath": "fecha_inicio", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "notificaciones",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "destinatario_uid", "order": "ASCENDING" },
+        { "fieldPath": "leida", "order": "ASCENDING" },
+        { "fieldPath": "fecha_creacion", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "auditoria",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "coleccion", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

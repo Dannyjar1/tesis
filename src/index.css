@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+    margin: 0;
+  }
+
+  #root {
+    width: 100%;
+    margin: 0;
+    text-align: left;
+  }
+}
+
+@layer utilities {
+  .animate-modal-in {
+    animation: modalIn 0.18s ease-out both;
+  }
+
+  @keyframes modalIn {
+    from {
+      opacity: 0;
+      transform: scale(0.96) translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+}

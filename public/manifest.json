@@ -1,0 +1,16 @@
+{
+  "name": "UIDE Distributivo Académico",
+  "short_name": "UIDE Distributivo",
+  "description": "Sistema de Gestión del Distributivo Académico - UIDE Campus Loja",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#003087",
+  "theme_color": "#003087",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

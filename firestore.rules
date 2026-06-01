@@ -1,0 +1,104 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function estaAutenticado() {
+      return request.auth != null;
+    }
+
+    function getRol() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol;
+    }
+
+    function esAdmin() {
+      return estaAutenticado() && getRol() == 'admin';
+    }
+
+    function esDirector() {
+      return estaAutenticado() && getRol() == 'director';
+    }
+
+    function esCoordinador() {
+      return estaAutenticado() && (getRol() == 'coordinador' || esDirector());
+    }
+
+    // /usuarios: el propio usuario lee su perfil; solo admin escribe
+    match /usuarios/{uid} {
+      allow read: if estaAutenticado() && (request.auth.uid == uid || esAdmin());
+      allow write: if esAdmin();
+    }
+
+    // /docentes: el propio docente lee; director/coordinador leen todos; admin escribe
+    match /docentes/{uid} {
+      allow read: if estaAutenticado() && (request.auth.uid == uid || esCoordinador());
+      allow write: if esAdmin() || esDirector();
+    }
+
+    // /periodos_academicos: todos leen; admin y director crean/cierran
+    match /periodos_academicos/{periodoId} {
+      allow read: if estaAutenticado();
+      allow write: if esAdmin() || esDirector();
+    }
+
+    // /distributivos: docente solo lee los suyos; director crea y aprueba
+    match /distributivos/{docId} {
+      allow read: if estaAutenticado() && (
+        resource.data.docente_uid == request.auth.uid || esCoordinador()
+      );
+      allow create: if esDirector();
+      allow update: if esDirector();
+      allow delete: if false;
+    }
+
+    // /actividades: docente gestiona las suyas; coordinador lee
+    match /actividades/{actId} {
+      allow read, write: if estaAutenticado() && (
+        resource.data.docente_uid == request.auth.uid || esCoordinador()
+      );
+    }
+
+    // /eventos_calendario: solo el docente propietario
+    match /eventos_calendario/{evtId} {
+      allow read, write: if estaAutenticado() &&
+        resource.data.docente_uid == request.auth.uid;
+    }
+
+    // /clasificaciones_ia: docente lee/actualiza las suyas; Cloud Functions crean
+    match /clasificaciones_ia/{cId} {
+      allow read: if estaAutenticado() && resource.data.docente_uid == request.auth.uid;
+      allow update: if estaAutenticado() && resource.data.docente_uid == request.auth.uid;
+      allow create, delete: if false;
+    }
+
+    // /feedback: docente escribe su propio feedback
+    match /feedback/{fbId} {
+      allow read, write: if estaAutenticado() && resource.data.docente_uid == request.auth.uid;
+    }
+
+    // /notificaciones: solo el destinatario lee; Cloud Functions crean
+    match /notificaciones/{notifId} {
+      allow read: if estaAutenticado() && (
+        resource.data.destinatario_uid == request.auth.uid || esAdmin()
+      );
+      allow write: if false;
+    }
+
+    // /reportes: coordinador y director acceden
+    match /reportes/{repId} {
+      allow read: if esCoordinador();
+      allow write: if false;
+    }
+
+    // /auditoria: solo lectura para admin y director; Cloud Functions escriben
+    match /auditoria/{logId} {
+      allow read: if esAdmin() || esDirector();
+      allow write: if false;
+    }
+
+    // /configuracion: todos leen; solo admin modifica
+    match /configuracion/{configId} {
+      allow read: if estaAutenticado();
+      allow write: if esAdmin();
+    }
+  }
+}

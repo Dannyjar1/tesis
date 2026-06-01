@@ -1,0 +1,5 @@
+URL: http://localhost:5173/
+Inputs encontrados: []
+
+Errores de consola:
+The requested module '/src/context/PeriodoContext.jsx' does not provide an export named 'usePeriodo'

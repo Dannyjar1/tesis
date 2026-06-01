@@ -1,0 +1,91 @@
+/**
+ * Datos semilla (seed) del sistema — UIDE Campus Loja.
+ * Usar para inicializar Firestore en el primer despliegue o en el mock de desarrollo.
+ * NO modificar correos ni nombres sin autorización del director del proyecto.
+ */
+
+export const CARRERAS_SEED = [
+  { id: 'administracion-empresas',  nombre: 'Administración de Empresas',              escuela: null,                                        activo: true },
+  { id: 'arquitectura',             nombre: 'Arquitectura',                              escuela: null,                                        activo: true },
+  { id: 'derecho',                  nombre: 'Derecho',                                  escuela: null,                                        activo: true },
+  { id: 'sistemas-informacion',     nombre: 'Ingeniería en Sistemas de la Información',  escuela: 'Escuela de Tecnologías de la Información',  director_uid: 'uid_locondezh', coordinador_uid: 'uid_davalarezole', activo: true },
+  { id: 'psicologia-clinica',       nombre: 'Psicología Clínica',                       escuela: null,                                        activo: true },
+  { id: 'marketing',                nombre: 'Marketing',                                escuela: null,                                        activo: true },
+  { id: 'negocios-internacionales', nombre: 'Negocios Internacionales',                escuela: null,                                        activo: true },
+]
+
+export const USUARIOS_SEED = [
+  {
+    uid:             'uid_paruizag',
+    nombre:          'Pablo',
+    apellido:        'Ruiz Aguirre',
+    nombre_completo: 'Pablo Ruiz Aguirre',
+    email:           'paruizag@uide.edu.ec',
+    password:        '1234',
+    rol:             'admin',
+    tipo_contrato:   null,
+    carrera_id:      null,
+    activo:          true,
+  },
+  {
+    uid:             'uid_locondezh',
+    nombre:          'Lorena Elizabeth',
+    apellido:        'Conde Zhingre',
+    nombre_completo: 'Lorena Elizabeth Conde Zhingre',
+    email:           'locondezh@uide.edu.ec',
+    password:        '1234',
+    rol:             'director',
+    tipo_contrato:   'tiempo_completo',
+    carrera_id:      'sistemas-informacion',
+    activo:          true,
+  },
+  {
+    uid:             'uid_davalarezole',
+    nombre:          'Darío Javier',
+    apellido:        'Valarezo León',
+    nombre_completo: 'Darío Javier Valarezo León',
+    email:           'davalarezole@uide.edu.ec',
+    password:        '1234',
+    rol:             'coordinador',
+    tipo_contrato:   'tiempo_completo',
+    carrera_id:      'sistemas-informacion',
+    activo:          true,
+  },
+  {
+    uid:             'uid_mipalaciosmo',
+    nombre:          'Milton Ricardo',
+    apellido:        'Palacios Morocho',
+    nombre_completo: 'Milton Ricardo Palacios Morocho',
+    email:           'mipalaciosmo@uide.edu.ec',
+    password:        '1234',
+    rol:             'docente',
+    tipo_contrato:   'tiempo_completo',
+    carrera_id:      'sistemas-informacion',
+    activo:          true,
+  },
+  {
+    uid:             'uid_yetorresbe',
+    nombre:          'Yeferson Mauricio',
+    apellido:        'Torres Berru',
+    nombre_completo: 'Yeferson Mauricio Torres Berru',
+    email:           'yetorresbe@uide.edu.ec',
+    password:        '1234',
+    rol:             'docente',
+    tipo_contrato:   'medio_tiempo',
+    carrera_id:      'sistemas-informacion',
+    activo:          true,
+  },
+  {
+    uid:             'uid_dajaramillogu',
+    nombre:          'Danny',
+    apellido:        'Jaramillo',
+    nombre_completo: 'Danny Jaramillo',
+    email:           'dajaramillogu@uide.edu.ec',
+    password:        '1234',
+    rol:             'administrativo',
+    cargo:           'representante_estudiantil',
+    tipo_contrato:   null,
+    carrera_id:      null,
+    activo:          true,
+  },
+]
