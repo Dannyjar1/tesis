@@ -3,11 +3,17 @@
  * Cuando hay sesión MSAL activa usa Graph API real; si no, cae al mock de localStorage.
  * RF-013, RF-014, RF-023 — PROJECT.md §6 MOD-03
  */
+import {
+  collection, doc, getDoc, getDocs, setDoc, updateDoc, writeBatch,
+  query, where, orderBy, Timestamp,
+} from 'firebase/firestore'
+import { db } from './firebase'
 import { getAccessToken, loginOutlook, logoutOutlook, getOutlookAccount } from './msalService'
 
 const GRAPH = 'https://graph.microsoft.com/v1.0'
+const COL_EVENTOS = 'eventos_calendario'
 
-// ── Claves localStorage (mock + caché) ──────────────────────────────────────
+// ── Claves localStorage (caché local y fallback) ─────────────────────────────
 const KEY_EVENTOS = (uid, periodo) => `uide_eventos_${uid}_${periodo}`
 const KEY_SYNC    = (uid, periodo) => `uide_cal_sync_${uid}_${periodo}`
 
@@ -163,6 +169,7 @@ export async function sincronizarCalendario(
       periodo_id:  periodoId,
     }))
 
+    await _guardarEventosFirestore(eventos, docenteUid, periodoId)
     localStorage.setItem(KEY_EVENTOS(docenteUid, periodoId), JSON.stringify(eventos))
     localStorage.setItem(KEY_SYNC(docenteUid, periodoId), new Date().toISOString())
     return { sincronizados: eventos.length, fuente: 'graph' }
@@ -179,10 +186,25 @@ export async function sincronizarCalendario(
     origen:              'calendario_outlook',
     fecha_sincronizacion: new Date().toISOString(),
   }))
+  await _guardarEventosFirestore(seed, docenteUid, periodoId)
   localStorage.setItem(KEY_EVENTOS(docenteUid, periodoId), JSON.stringify(seed))
   localStorage.setItem(KEY_SYNC(docenteUid, periodoId), new Date().toISOString())
   localStorage.setItem(`uide_cal_auth_${docenteUid}`, 'true')
   return { sincronizados: seed.length, fuente: 'mock' }
+}
+
+async function _guardarEventosFirestore(eventos, docenteUid, periodoId) {
+  if (!db) return
+  try {
+    const batch = writeBatch(db)
+    for (const evt of eventos) {
+      const ref = doc(db, COL_EVENTOS, `${docenteUid}_${evt.id}`)
+      batch.set(ref, { ...evt, fecha_sincronizacion: Timestamp.now() }, { merge: true })
+    }
+    await batch.commit()
+  } catch (err) {
+    console.warn('[calendarioService] Firestore error al guardar eventos:', err.code)
+  }
 }
 
 /**
@@ -192,6 +214,33 @@ export async function sincronizarCalendario(
  * @returns {Promise<Object[]>}
  */
 export async function getEventosCalendario(docenteUid, periodoId) {
+  if (db) {
+    try {
+      const snap = await getDocs(
+        query(
+          collection(db, COL_EVENTOS),
+          where('docente_uid', '==', docenteUid),
+          where('periodo_id',  '==', periodoId),
+          orderBy('fecha_inicio', 'asc'),
+        )
+      )
+      if (!snap.empty) {
+        const lista = snap.docs.map(d => {
+          const data = d.data()
+          return {
+            ...data,
+            fecha_inicio: data.fecha_inicio?.toDate?.()?.toISOString() ?? data.fecha_inicio,
+            fecha_fin:    data.fecha_fin?.toDate?.()?.toISOString()    ?? data.fecha_fin,
+          }
+        })
+        // Mantener localStorage sincronizado para acceso rápido
+        localStorage.setItem(KEY_EVENTOS(docenteUid, periodoId), JSON.stringify(lista))
+        return lista
+      }
+    } catch (err) {
+      console.warn('[calendarioService] Firestore no disponible, usando localStorage:', err.code)
+    }
+  }
   const raw = localStorage.getItem(KEY_EVENTOS(docenteUid, periodoId))
   const lista = raw ? JSON.parse(raw) : []
   return lista.sort((a, b) => new Date(a.fecha_inicio) - new Date(b.fecha_inicio))

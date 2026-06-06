@@ -1,17 +1,23 @@
 /**
- * Servicio de clasificación IA — implementación mock (reglas de keywords).
- * Simula el pipeline BETO de functions/clasificacion/main.py.
- * Sprint Firebase: reemplazar clasificarEvento() con llamada HTTP a la Cloud Function.
- * Colecciones destino: /clasificaciones_ia, /feedback
+ * iaService.js — Clasificación IA (mock BETO) + Firestore /clasificaciones_ia y /feedback.
+ * clasificarEvento() simula el pipeline BETO hasta que la Cloud Function esté desplegada.
+ * RF-015, RF-016, RN-010.
  */
+import {
+  collection, doc, getDoc, getDocs, setDoc, updateDoc,
+  query, where, orderBy, Timestamp,
+} from 'firebase/firestore'
+import { db } from './firebase'
 import { CATEGORIAS } from '../utils/constants'
+
+const COL_CLAS   = 'clasificaciones_ia'
+const COL_FEED   = 'feedback'
+const COL_EVENTOS = 'eventos_calendario'
 
 const KEY_CLAS = (uid, periodo) => `uide_clas_${uid}_${periodo}`
 const KEY_FEED = (uid)          => `uide_feedback_${uid}`
 
 // ── Clasificador por reglas (simula BETO) ────────────────────────────────────
-// Cada regla tiene tokens y peso. La categoría con mayor puntuación acumulada gana.
-// Las reglas más específicas tienen mayor peso para evitar ambigüedades.
 const REGLAS = [
   {
     cat: CATEGORIAS.INVESTIGACION,
@@ -48,29 +54,21 @@ function calcularConfianza(cat, puntuacion, totalPuntos) {
 }
 
 /**
- * Clasifica un texto (título + descripción) simulando BETO.
- * Sprint Firebase: reemplazar con POST a Cloud Function /clasificar.
- * @param {string} texto
+ * Clasifica un texto simulando BETO (NLP en español).
  * @returns {Promise<{ categoria: string, confianza: number, estado: string }>}
  */
 export async function clasificarEvento(texto) {
   await new Promise(r => setTimeout(r, 60 + Math.random() * 80))
-
   const t = texto.toLowerCase()
   const puntos = {}
-
   for (const regla of REGLAS) {
     const matches = regla.tokens.filter(token => t.includes(token)).length
-    if (matches > 0) {
-      puntos[regla.cat] = (puntos[regla.cat] ?? 0) + matches * regla.peso
-    }
+    if (matches > 0) puntos[regla.cat] = (puntos[regla.cat] ?? 0) + matches * regla.peso
   }
-
   const totalPuntos = Object.values(puntos).reduce((s, v) => s + v, 0)
   const ganadora = totalPuntos > 0
     ? Object.entries(puntos).sort((a, b) => b[1] - a[1])[0][0]
     : CATEGORIAS.GESTION
-
   return {
     categoria: ganadora,
     confianza: calcularConfianza(ganadora, puntos[ganadora] ?? 0, totalPuntos),
@@ -78,38 +76,36 @@ export async function clasificarEvento(texto) {
   }
 }
 
-// ── Almacenamiento mock (localStorage) ───────────────────────────────────────
+// ── Helpers localStorage ──────────────────────────────────────────────────────
 
-function leerClas(uid, periodo) {
+function localLeerClas(uid, periodo) {
   const r = localStorage.getItem(KEY_CLAS(uid, periodo))
   return r ? JSON.parse(r) : []
 }
-function guardarClas(uid, periodo, lista) {
+function localGuardarClas(uid, periodo, lista) {
   localStorage.setItem(KEY_CLAS(uid, periodo), JSON.stringify(lista))
 }
-function leerFeed(uid) {
+function localLeerFeed(uid) {
   const r = localStorage.getItem(KEY_FEED(uid))
   return r ? JSON.parse(r) : []
 }
-function guardarFeed(uid, lista) {
+function localGuardarFeed(uid, lista) {
   localStorage.setItem(KEY_FEED(uid), JSON.stringify(lista))
 }
 
+// ── API pública ───────────────────────────────────────────────────────────────
+
 /**
- * Clasifica todos los eventos pendientes en lote.
- * Actualiza estado_clasificacion y categoria_ia en los eventos del calendarioService.
- * @param {Object[]} eventos - Lista de eventos con estado_clasificacion === 'pendiente'
- * @param {string} docenteUid
- * @param {string} periodoId
- * @returns {Promise<{ clasificadas: number, errores: number }>}
+ * Clasifica todos los eventos pendientes en lote y guarda en Firestore.
  */
 export async function clasificarLote(eventos, docenteUid, periodoId) {
   const pendientes = eventos.filter(e => e.estado_clasificacion === 'pendiente')
   if (pendientes.length === 0) return { clasificadas: 0, errores: 0 }
 
-  const clases = leerClas(docenteUid, periodoId)
-  const KEY_EVENTOS = `uide_eventos_${docenteUid}_${periodoId}`
-  const todosEventos = JSON.parse(localStorage.getItem(KEY_EVENTOS) ?? '[]')
+  const localClas = localLeerClas(docenteUid, periodoId)
+  const KEY_EV_LOCAL = `uide_eventos_${docenteUid}_${periodoId}`
+  const todosEventosLocal = JSON.parse(localStorage.getItem(KEY_EV_LOCAL) ?? '[]')
+
   let clasificadas = 0
   let errores = 0
 
@@ -117,7 +113,7 @@ export async function clasificarLote(eventos, docenteUid, periodoId) {
     try {
       const texto = `${evento.titulo} ${evento.descripcion ?? ''}`.trim()
       const resultado = await clasificarEvento(texto)
-      const clasId = `clas_${evento.id}`
+      const clasId = `clas_${docenteUid}_${evento.id}`
 
       const nueva = {
         id:                  clasId,
@@ -133,14 +129,35 @@ export async function clasificarLote(eventos, docenteUid, periodoId) {
         estado:              'provisional',
       }
 
-      const idx = clases.findIndex(c => c.evento_id === evento.id)
-      if (idx >= 0) clases[idx] = nueva
-      else clases.push(nueva)
+      if (db) {
+        try {
+          await setDoc(doc(db, COL_CLAS, clasId), {
+            ...nueva,
+            fecha_clasificacion: Timestamp.now(),
+          })
+          const evRef = doc(db, COL_EVENTOS, `${docenteUid}_${evento.id}`)
+          const evSnap = await getDoc(evRef)
+          if (evSnap.exists()) {
+            await updateDoc(evRef, {
+              categoria_ia:         resultado.categoria,
+              confianza_ia:         resultado.confianza,
+              estado_clasificacion: 'provisional',
+              clasificacion_ia_id:  clasId,
+            })
+          }
+        } catch (err) {
+          console.warn('[iaService] Firestore error en clasificarLote:', err.code)
+        }
+      }
 
-      const idxEv = todosEventos.findIndex(e => e.id === evento.id)
+      const idx = localClas.findIndex(c => c.evento_id === evento.id)
+      if (idx >= 0) localClas[idx] = nueva
+      else localClas.push(nueva)
+
+      const idxEv = todosEventosLocal.findIndex(e => e.id === evento.id)
       if (idxEv >= 0) {
-        todosEventos[idxEv] = {
-          ...todosEventos[idxEv],
+        todosEventosLocal[idxEv] = {
+          ...todosEventosLocal[idxEv],
           categoria_ia:         resultado.categoria,
           confianza_ia:         resultado.confianza,
           estado_clasificacion: 'provisional',
@@ -153,72 +170,117 @@ export async function clasificarLote(eventos, docenteUid, periodoId) {
     }
   }
 
-  guardarClas(docenteUid, periodoId, clases)
-  localStorage.setItem(KEY_EVENTOS, JSON.stringify(todosEventos))
+  localGuardarClas(docenteUid, periodoId, localClas)
+  localStorage.setItem(KEY_EV_LOCAL, JSON.stringify(todosEventosLocal))
   return { clasificadas, errores }
 }
 
 /**
  * Devuelve clasificaciones del período ordenadas por fecha.
- * @param {string} docenteUid
- * @param {string} periodoId
- * @returns {Promise<Object[]>}
  */
 export async function getClasificaciones(docenteUid, periodoId) {
-  return leerClas(docenteUid, periodoId)
+  if (db) {
+    try {
+      const snap = await getDocs(
+        query(
+          collection(db, COL_CLAS),
+          where('docente_uid', '==', docenteUid),
+          where('periodo_id',  '==', periodoId),
+          orderBy('fecha_clasificacion', 'asc'),
+        )
+      )
+      if (!snap.empty) {
+        const lista = snap.docs.map(d => {
+          const data = d.data()
+          return {
+            ...data,
+            fecha_clasificacion:
+              data.fecha_clasificacion?.toDate?.()?.toISOString() ?? data.fecha_clasificacion,
+          }
+        })
+        localGuardarClas(docenteUid, periodoId, lista)
+        return lista
+      }
+    } catch (err) {
+      console.warn('[iaService] Firestore no disponible para getClasificaciones:', err.code)
+    }
+  }
+  return localLeerClas(docenteUid, periodoId)
     .sort((a, b) => new Date(a.fecha_clasificacion) - new Date(b.fecha_clasificacion))
 }
 
 /**
  * Registra corrección manual y la guarda en /feedback para reentrenamiento (RN-010).
- * @param {string} clasificacionId
- * @param {string} categoriaCorrecta
- * @param {string} docenteUid
- * @param {string} periodoId
  */
 export async function registrarFeedback(clasificacionId, categoriaCorrecta, docenteUid, periodoId) {
-  const clases = leerClas(docenteUid, periodoId)
-  const idx = clases.findIndex(c => c.id === clasificacionId)
+  const feedId = `feed_${docenteUid}_${Date.now()}`
+
+  if (db) {
+    try {
+      const clasRef = doc(db, COL_CLAS, clasificacionId)
+      const clasSnap = await getDoc(clasRef)
+      if (!clasSnap.exists()) throw new Error('Clasificación no encontrada.')
+      const clas = clasSnap.data()
+
+      await updateDoc(clasRef, {
+        categoria_corregida: categoriaCorrecta,
+        fue_corregida: true,
+      })
+      await setDoc(doc(db, COL_FEED, feedId), {
+        id:                 feedId,
+        clasificacion_id:   clasificacionId,
+        docente_uid:        docenteUid,
+        texto_original:     clas.texto_analizado,
+        categoria_predicha: clas.categoria_predicha,
+        categoria_correcta: categoriaCorrecta,
+        fecha_correccion:   Timestamp.now(),
+      })
+
+      const evRef = doc(db, COL_EVENTOS, `${docenteUid}_${clas.evento_id}`)
+      const evSnap = await getDoc(evRef)
+      if (evSnap.exists()) {
+        await updateDoc(evRef, {
+          categoria_ia:         categoriaCorrecta,
+          estado_clasificacion: 'confirmada',
+        })
+      }
+      return
+    } catch (err) {
+      if (!err.code) throw err
+      console.warn('[iaService] Firestore error en registrarFeedback:', err.code)
+    }
+  }
+
+  // Fallback localStorage
+  const localClas = localLeerClas(docenteUid, periodoId)
+  const idx = localClas.findIndex(c => c.id === clasificacionId)
   if (idx === -1) throw new Error('Clasificación no encontrada.')
+  const clas = localClas[idx]
+  localClas[idx] = { ...clas, categoria_corregida: categoriaCorrecta, fue_corregida: true }
+  localGuardarClas(docenteUid, periodoId, localClas)
 
-  const clas = clases[idx]
-  clases[idx] = { ...clas, categoria_corregida: categoriaCorrecta, fue_corregida: true }
-  guardarClas(docenteUid, periodoId, clases)
-
-  const feed = leerFeed(docenteUid)
+  const feed = localLeerFeed(docenteUid)
   feed.push({
-    id:                  `feed_${Date.now()}`,
-    clasificacion_id:    clasificacionId,
-    docente_uid:         docenteUid,
-    texto_original:      clas.texto_analizado,
-    categoria_predicha:  clas.categoria_predicha,
-    categoria_correcta:  categoriaCorrecta,
-    fecha_correccion:    new Date().toISOString(),
+    id: feedId, clasificacion_id: clasificacionId, docente_uid: docenteUid,
+    texto_original: clas.texto_analizado, categoria_predicha: clas.categoria_predicha,
+    categoria_correcta: categoriaCorrecta, fecha_correccion: new Date().toISOString(),
   })
-  guardarFeed(docenteUid, feed)
+  localGuardarFeed(docenteUid, feed)
 
-  // Actualizar el evento en el calendario con la categoría corregida
-  const KEY_EVENTOS = `uide_eventos_${docenteUid}_${periodoId}`
-  const eventos = JSON.parse(localStorage.getItem(KEY_EVENTOS) ?? '[]')
+  const KEY_EV_LOCAL = `uide_eventos_${docenteUid}_${periodoId}`
+  const eventos = JSON.parse(localStorage.getItem(KEY_EV_LOCAL) ?? '[]')
   const idxEv = eventos.findIndex(e => e.clasificacion_ia_id === clasificacionId)
   if (idxEv >= 0) {
-    eventos[idxEv] = {
-      ...eventos[idxEv],
-      categoria_ia:         categoriaCorrecta,
-      estado_clasificacion: 'confirmada',
-    }
-    localStorage.setItem(KEY_EVENTOS, JSON.stringify(eventos))
+    eventos[idxEv] = { ...eventos[idxEv], categoria_ia: categoriaCorrecta, estado_clasificacion: 'confirmada' }
+    localStorage.setItem(KEY_EV_LOCAL, JSON.stringify(eventos))
   }
 }
 
 /**
  * Estadísticas del proceso de clasificación para el FeedbackPanel.
- * @param {string} docenteUid
- * @param {string} periodoId
- * @returns {{ total: number, correctas: number, corregidas: number, precision: number }}
  */
 export function getEstadisticas(docenteUid, periodoId) {
-  const clases = leerClas(docenteUid, periodoId)
+  const clases = localLeerClas(docenteUid, periodoId)
   const total = clases.length
   const corregidas = clases.filter(c => c.fue_corregida).length
   const correctas = total - corregidas

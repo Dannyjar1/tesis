@@ -109,8 +109,10 @@ service cloud.firestore {
     // ── /clasificaciones_ia ───────────────────────────────────────────────────
     match /clasificaciones_ia/{cId} {
       allow read: if estaAutenticado() && resource.data.docente_uid == request.auth.uid;
+      allow create: if estaAutenticado() &&
+        request.resource.data.docente_uid == request.auth.uid;
       allow update: if estaAutenticado() && resource.data.docente_uid == request.auth.uid;
-      allow create, delete: if false;
+      allow delete: if false;
     }
 
     // ── /feedback ─────────────────────────────────────────────────────────────
