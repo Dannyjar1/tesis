@@ -19,12 +19,17 @@ export function PeriodoProvider({ children }) {
   const [cargandoPeriodos, setCargandoPeriodos] = useState(true)
 
   const recargarPeriodos = useCallback(async () => {
-    const lista = await getPeriodos()
-    setPeriodos(lista)
-    const activo = lista.find(p => p.estado === 'activo') ?? null
-    setPeriodoActivo(activo)
-    setPeriodoVisto(prev => prev ?? activo)
-    setCargandoPeriodos(false)
+    try {
+      const lista = await getPeriodos()
+      setPeriodos(lista)
+      const activo = lista.find(p => p.estado === 'activo') ?? null
+      setPeriodoActivo(activo)
+      setPeriodoVisto(prev => prev ?? activo)
+    } catch (err) {
+      console.error('[PeriodoContext] Error al cargar períodos:', err)
+    } finally {
+      setCargandoPeriodos(false)
+    }
   }, [])
 
   useEffect(() => { recargarPeriodos() }, [recargarPeriodos])
@@ -46,8 +51,8 @@ export function PeriodoProvider({ children }) {
 
   // Últimos 5 períodos cerrados/archivados para historial
   const historial = [...periodos]
-    .filter(p => ['cerrado', 'archivado'].includes(p.estado))
-    .sort((a, b) => b.fecha_fin.localeCompare(a.fecha_fin))
+    .filter(p => p.estado === 'finalizado')
+    .sort((a, b) => (b.fecha_fin ?? '').localeCompare(a.fecha_fin ?? ''))
     .slice(0, 5)
 
   return (

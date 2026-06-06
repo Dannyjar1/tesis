@@ -25,10 +25,15 @@ export default function PersonalPage() {
   const [guardando, setGuardando]     = useState(false)
 
   const cargar = useCallback(async () => {
-    if (!carreraId) return
-    const data = await getPersonal(carreraId)
-    setPersonal(data)
-    setCargando(false)
+    if (!carreraId) { setCargando(false); return }
+    try {
+      const data = await getPersonal(carreraId)
+      setPersonal(data)
+    } catch (err) {
+      console.error('[PersonalPage] Error al cargar personal:', err)
+    } finally {
+      setCargando(false)
+    }
   }, [carreraId])
 
   useEffect(() => { cargar() }, [cargar])

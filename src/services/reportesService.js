@@ -4,7 +4,7 @@
  * Referencia: RF-018, RN-007, RN-017.
  */
 import { exportarDistributivoPDF, exportarReporteCarreraPDF } from '../utils/exportPDF'
-import { getDistributivosPorPeriodo, getDocentesMock } from './distributivoService'
+import { getDistributivosPorPeriodo, getDocentes } from './distributivoService'
 import { TIPOS_CONTRATO } from '../utils/constants'
 
 const KEY_HISTORIAL = (uid) => `uide_reportes_${uid}`
@@ -37,7 +37,7 @@ function registrarReporte(uid, tipo, periodoId, codigoVerif, docenteUid = null) 
  */
 export async function generarReportePDFIndividual(filtros) {
   const { periodoId, docenteUid, generadoPorUid, generadoPorNombre, periodo } = filtros
-  const docentes = getDocentesMock()
+  const docentes = await getDocentes()
   const docente  = docentes.find(d => d.uid === docenteUid)
   if (!docente) throw new Error('Docente no encontrado.')
 
@@ -56,7 +56,7 @@ export async function generarReportePDFIndividual(filtros) {
  */
 export async function generarReportePDFCarrera(filtros) {
   const { periodoId, generadoPorUid, generadoPorNombre, periodo } = filtros
-  const docentes = getDocentesMock()
+  const docentes = await getDocentes()
   const distributivos = await getDistributivosPorPeriodo(periodoId)
 
   const docentesData = docentes.map(d => ({
@@ -76,7 +76,7 @@ export async function generarReportePDFCarrera(filtros) {
 export async function generarReporteExcel(filtros) {
   const { periodoId, generadoPorUid, periodo } = filtros
   const XLSX = await import('xlsx')
-  const docentes = getDocentesMock()
+  const docentes = await getDocentes()
   const distributivos = await getDistributivosPorPeriodo(periodoId)
 
   const filas = docentes.map(d => {

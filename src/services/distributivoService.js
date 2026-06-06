@@ -1,39 +1,26 @@
 /**
- * Servicio del distributivo académico — implementación mock (localStorage).
- * Sprint 1 (Firebase): reemplazar cada función con llamadas a Firestore SDK v10.
- * La interfaz de funciones no cambia al migrar a Firebase.
+ * distributivoService.js — Firestore /distributivos con fallback localStorage.
+ * ID de documento: {docenteUid}_{periodoId}
  */
+import {
+  collection, doc, getDoc, getDocs, setDoc, updateDoc,
+  query, where, orderBy, Timestamp, onSnapshot,
+} from 'firebase/firestore'
+import { db } from './firebase'
 import { validarCierreDistributivo } from '../utils/calculos'
-import { ESTADOS_DISTRIBUTIVO } from '../utils/constants'
+import { ESTADOS_DISTRIBUTIVO, TIPO_CONTRATO_HORAS } from '../utils/constants'
+import { USUARIOS_SEED } from './seedData'
 
-const KEY = 'uide_distributivos'
+const LOCAL_KEY = 'uide_distributivos'
+const COL = 'distributivos'
+const COL_USUARIOS = 'usuarios'
 
-// Docentes mock — en Firebase vendrán de la colección /docentes
-export const MOCK_DOCENTES = [
+const SEED_LOCAL = [
   {
-    uid: 'mock-docente-tc-001',
-    nombre_completo: 'MSc. Luis Peña Cabrera',
-    tipo_contrato: 'TC',
-    horas_contrato: 40,
-    categoria_escalafon: 'Agregado',
-    carrera: 'Ingeniería en TI',
-  },
-  {
-    uid: 'mock-docente-mt-001',
-    nombre_completo: 'Lic. Ana Mora Ríos',
-    tipo_contrato: 'MT',
-    horas_contrato: 20,
-    categoria_escalafon: 'Auxiliar',
-    carrera: 'Ingeniería en TI',
-  },
-]
-
-const SEED = [
-  {
-    id: 'mock-docente-tc-001_2026-A',
-    docente_uid: 'mock-docente-tc-001',
+    id: 'uid_mipalaciosmo_2026-A',
+    docente_uid: 'uid_mipalaciosmo',
     periodo_id: '2026-A',
-    tipo_contrato: 'TC',
+    tipo_contrato: 'tiempo_completo',
     estado: ESTADOS_DISTRIBUTIVO.BORRADOR,
     horas_docencia_directa: 18,
     horas_preparacion: 10.8,
@@ -55,54 +42,107 @@ const SEED = [
   },
 ]
 
-function leer() {
-  const raw = localStorage.getItem(KEY)
-  if (!raw) {
-    localStorage.setItem(KEY, JSON.stringify(SEED))
-    return SEED
+// ── Helpers localStorage ──────────────────────────────────────────────────────
+
+function localCargar() {
+  try {
+    const raw = localStorage.getItem(LOCAL_KEY)
+    if (raw) return JSON.parse(raw)
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(SEED_LOCAL))
+    return SEED_LOCAL
+  } catch { return SEED_LOCAL }
+}
+
+function localGuardar(lista) {
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(lista))
+}
+
+// ── Normalización Firestore → JS ──────────────────────────────────────────────
+
+function normalizar(data, id) {
+  return {
+    ...data,
+    id: id ?? data.id,
+    fecha_ultima_modificacion:
+      data.fecha_ultima_modificacion?.toDate?.()?.toISOString() ?? data.fecha_ultima_modificacion,
+    fecha_aprobacion:
+      data.fecha_aprobacion?.toDate?.()?.toISOString() ?? data.fecha_aprobacion ?? null,
   }
-  return JSON.parse(raw)
 }
 
-function guardar(lista) {
-  localStorage.setItem(KEY, JSON.stringify(lista))
-}
+// ── API pública ───────────────────────────────────────────────────────────────
 
-/**
- * Obtiene el distributivo de un docente para un período.
- * @param {string} docenteUid
- * @param {string} periodoId
- * @returns {Promise<Object|null>}
- */
+/** Obtiene el distributivo de un docente para un período. */
 export async function getDistributivo(docenteUid, periodoId) {
-  const lista = leer()
-  return lista.find(d => d.docente_uid === docenteUid && d.periodo_id === periodoId) ?? null
+  if (db) {
+    try {
+      const id = `${docenteUid}_${periodoId}`
+      const snap = await getDoc(doc(db, COL, id))
+      return snap.exists() ? normalizar(snap.data(), snap.id) : null
+    } catch (err) {
+      console.warn('[distributivoService] Firestore no disponible, usando localStorage:', err.code)
+    }
+  }
+  await new Promise(r => setTimeout(r, 100))
+  return localCargar().find(d => d.docente_uid === docenteUid && d.periodo_id === periodoId) ?? null
 }
 
-/**
- * Devuelve todos los distributivos del período (para el director).
- * @param {string} periodoId
- * @returns {Promise<Object[]>}
- */
+/** Devuelve todos los distributivos del período (director/coordinador). */
 export async function getDistributivosPorPeriodo(periodoId) {
-  return leer().filter(d => d.periodo_id === periodoId)
+  if (db) {
+    try {
+      const snap = await getDocs(
+        query(collection(db, COL), where('periodo_id', '==', periodoId))
+      )
+      return snap.docs.map(d => normalizar(d.data(), d.id))
+    } catch (err) {
+      console.warn('[distributivoService] Firestore no disponible, usando localStorage:', err.code)
+    }
+  }
+  await new Promise(r => setTimeout(r, 100))
+  return localCargar().filter(d => d.periodo_id === periodoId)
 }
 
 /**
- * Crea un distributivo nuevo en estado borrador.
- * Bloquea si ya existe uno activo/aprobado para el mismo docente+período (RN-001).
- * @param {Object} datos
- * @returns {Promise<Object>} distributivo creado
+ * Crea un distributivo en estado borrador.
+ * Lanza error si ya existe uno aprobado/vigente para el mismo docente+período (RN-001).
  */
 export async function crearDistributivo(datos) {
-  const lista = leer()
   const id = `${datos.docente_uid}_${datos.periodo_id}`
 
-  const existente = lista.find(d => d.id === id)
-  if (existente && [ESTADOS_DISTRIBUTIVO.APROBADO, ESTADOS_DISTRIBUTIVO.VIGENTE].includes(existente.estado)) {
-    throw new Error('Ya existe un distributivo aprobado/vigente para este docente en el período activo (RN-001).')
+  if (db) {
+    try {
+      const ref = doc(db, COL, id)
+      const snap = await getDoc(ref)
+      if (snap.exists()) {
+        const existente = snap.data()
+        if ([ESTADOS_DISTRIBUTIVO.APROBADO, ESTADOS_DISTRIBUTIVO.VIGENTE].includes(existente.estado)) {
+          throw new Error('Ya existe un distributivo aprobado/vigente para este docente en el período (RN-001).')
+        }
+      }
+      const nuevo = {
+        id,
+        ...datos,
+        estado: ESTADOS_DISTRIBUTIVO.BORRADOR,
+        aprobado_por: null,
+        fecha_aprobacion: null,
+        fecha_ultima_modificacion: Timestamp.now(),
+      }
+      await setDoc(ref, nuevo)
+      return normalizar(nuevo, id)
+    } catch (err) {
+      if (err.message.includes('RN-001')) throw err
+      console.warn('[distributivoService] Firestore error en crearDistributivo:', err.code)
+    }
   }
 
+  // Fallback localStorage
+  await new Promise(r => setTimeout(r, 200))
+  const lista = localCargar()
+  const existente = lista.find(d => d.id === id)
+  if (existente && [ESTADOS_DISTRIBUTIVO.APROBADO, ESTADOS_DISTRIBUTIVO.VIGENTE].includes(existente.estado)) {
+    throw new Error('Ya existe un distributivo aprobado/vigente para este docente en el período (RN-001).')
+  }
   const nuevo = {
     id,
     ...datos,
@@ -111,55 +151,80 @@ export async function crearDistributivo(datos) {
     fecha_aprobacion: null,
     fecha_ultima_modificacion: new Date().toISOString(),
   }
-
-  const sinExistente = lista.filter(d => d.id !== id)
-  guardar([...sinExistente, nuevo])
+  localGuardar([...lista.filter(d => d.id !== id), nuevo])
   return nuevo
 }
 
-/**
- * Actualiza un distributivo existente (solo en estado borrador o en_revision).
- * @param {string} distributivoId
- * @param {Object} cambios
- * @returns {Promise<Object>} distributivo actualizado
- */
+/** Actualiza un distributivo (solo en estado borrador o en_revision). */
 export async function actualizarDistributivo(distributivoId, cambios) {
-  const lista = leer()
+  if (db) {
+    try {
+      const ref = doc(db, COL, distributivoId)
+      const snap = await getDoc(ref)
+      if (!snap.exists()) throw new Error('Distributivo no encontrado.')
+      const actual = snap.data()
+      if ([ESTADOS_DISTRIBUTIVO.APROBADO, ESTADOS_DISTRIBUTIVO.VIGENTE].includes(actual.estado)) {
+        throw new Error('No se puede editar un distributivo aprobado o vigente.')
+      }
+      const actualizado = { ...cambios, fecha_ultima_modificacion: Timestamp.now() }
+      await updateDoc(ref, actualizado)
+      return normalizar({ ...actual, ...actualizado }, distributivoId)
+    } catch (err) {
+      if (!err.code) throw err
+      console.warn('[distributivoService] Firestore error en actualizarDistributivo:', err.code)
+    }
+  }
+
+  await new Promise(r => setTimeout(r, 200))
+  const lista = localCargar()
   const idx = lista.findIndex(d => d.id === distributivoId)
   if (idx === -1) throw new Error('Distributivo no encontrado.')
-
   const actual = lista[idx]
-  if (actual.estado === ESTADOS_DISTRIBUTIVO.APROBADO || actual.estado === ESTADOS_DISTRIBUTIVO.VIGENTE) {
+  if ([ESTADOS_DISTRIBUTIVO.APROBADO, ESTADOS_DISTRIBUTIVO.VIGENTE].includes(actual.estado)) {
     throw new Error('No se puede editar un distributivo aprobado o vigente.')
   }
-
-  const actualizado = {
-    ...actual,
-    ...cambios,
-    id: distributivoId,
-    fecha_ultima_modificacion: new Date().toISOString(),
-  }
+  const actualizado = { ...actual, ...cambios, id: distributivoId, fecha_ultima_modificacion: new Date().toISOString() }
   lista[idx] = actualizado
-  guardar(lista)
+  localGuardar(lista)
   return actualizado
 }
 
 /**
- * Aprueba un distributivo validado. Verifica la suma de horas antes de aprobar (RN-014).
+ * Aprueba un distributivo validado. Verifica suma de horas (RN-014).
  * @param {string} distributivoId
- * @param {string} aprobadoPorUid - UID del director
- * @param {number} horasContrato - 40 (TC) | 20 (MT)
- * @returns {Promise<Object>} distributivo aprobado
+ * @param {string} aprobadoPorUid — UID del director
+ * @param {number} horasContrato — 40 (TC) | 20 (MT)
  */
 export async function aprobarDistributivo(distributivoId, aprobadoPorUid, horasContrato) {
-  const lista = leer()
+  if (db) {
+    try {
+      const ref = doc(db, COL, distributivoId)
+      const snap = await getDoc(ref)
+      if (!snap.exists()) throw new Error('Distributivo no encontrado.')
+      const dist = snap.data()
+      const validacion = validarCierreDistributivo(dist, horasContrato)
+      if (!validacion.valido) throw new Error(validacion.mensaje)
+      const cambios = {
+        estado: ESTADOS_DISTRIBUTIVO.APROBADO,
+        aprobado_por: aprobadoPorUid,
+        fecha_aprobacion: Timestamp.now(),
+        fecha_ultima_modificacion: Timestamp.now(),
+      }
+      await updateDoc(ref, cambios)
+      return normalizar({ ...dist, ...cambios }, distributivoId)
+    } catch (err) {
+      if (!err.code) throw err
+      console.warn('[distributivoService] Firestore error en aprobarDistributivo:', err.code)
+    }
+  }
+
+  await new Promise(r => setTimeout(r, 200))
+  const lista = localCargar()
   const idx = lista.findIndex(d => d.id === distributivoId)
   if (idx === -1) throw new Error('Distributivo no encontrado.')
-
   const dist = lista[idx]
   const validacion = validarCierreDistributivo(dist, horasContrato)
   if (!validacion.valido) throw new Error(validacion.mensaje)
-
   const aprobado = {
     ...dist,
     estado: ESTADOS_DISTRIBUTIVO.APROBADO,
@@ -168,51 +233,77 @@ export async function aprobarDistributivo(distributivoId, aprobadoPorUid, horasC
     fecha_ultima_modificacion: new Date().toISOString(),
   }
   lista[idx] = aprobado
-  guardar(lista)
+  localGuardar(lista)
   return aprobado
 }
 
-/**
- * Cambia el estado del distributivo según el flujo permitido (RN-002).
- * @param {string} distributivoId
- * @param {string} nuevoEstado
- */
+/** Cambia el estado del distributivo según el flujo permitido (RN-002). */
 export async function cambiarEstadoDistributivo(distributivoId, nuevoEstado) {
-  const lista = leer()
+  if (db) {
+    try {
+      const ref = doc(db, COL, distributivoId)
+      const snap = await getDoc(ref)
+      if (!snap.exists()) throw new Error('Distributivo no encontrado.')
+      const cambios = { estado: nuevoEstado, fecha_ultima_modificacion: Timestamp.now() }
+      await updateDoc(ref, cambios)
+      return normalizar({ ...snap.data(), ...cambios }, distributivoId)
+    } catch (err) {
+      if (!err.code) throw err
+      console.warn('[distributivoService] Firestore error en cambiarEstado:', err.code)
+    }
+  }
+
+  await new Promise(r => setTimeout(r, 150))
+  const lista = localCargar()
   const idx = lista.findIndex(d => d.id === distributivoId)
   if (idx === -1) throw new Error('Distributivo no encontrado.')
-
-  lista[idx] = {
-    ...lista[idx],
-    estado: nuevoEstado,
-    fecha_ultima_modificacion: new Date().toISOString(),
-  }
-  guardar(lista)
+  lista[idx] = { ...lista[idx], estado: nuevoEstado, fecha_ultima_modificacion: new Date().toISOString() }
+  localGuardar(lista)
   return lista[idx]
 }
 
 /**
- * Suscripción simulada (mock). En Firebase: usa onSnapshot.
- * @param {string} docenteUid
- * @param {string} periodoId
- * @param {Function} callback
+ * Suscripción en tiempo real al distributivo de un docente.
  * @returns {Function} unsubscribe
  */
 export function suscribirseDistributivo(docenteUid, periodoId, callback) {
+  if (db) {
+    const id = `${docenteUid}_${periodoId}`
+    return onSnapshot(
+      doc(db, COL, id),
+      snap => callback(snap.exists() ? normalizar(snap.data(), snap.id) : null),
+      err => console.warn('[distributivoService] onSnapshot error:', err.code)
+    )
+  }
   getDistributivo(docenteUid, periodoId).then(callback)
   return () => {}
 }
 
 /**
- * Devuelve la lista de docentes mock. En Firebase: colección /docentes.
+ * Devuelve docentes de una carrera (o todos) desde Firestore /usuarios.
+ * Fallback: USUARIOS_SEED filtrados por rol==='docente'.
  */
-export function getDocentesMock() {
-  return MOCK_DOCENTES
+export async function getDocentes(carreraId = null) {
+  if (db) {
+    try {
+      const condiciones = [where('rol', '==', 'docente'), where('activo', '==', true)]
+      if (carreraId) condiciones.push(where('carrera_id', '==', carreraId))
+      const snap = await getDocs(query(collection(db, COL_USUARIOS), ...condiciones))
+      return snap.docs.map(d => d.data())
+    } catch (err) {
+      console.warn('[distributivoService] Firestore error en getDocentes:', err.code)
+    }
+  }
+  const docentes = USUARIOS_SEED.filter(u => u.rol === 'docente' && u.activo)
+  return carreraId ? docentes.filter(u => u.carrera_id === carreraId) : docentes
 }
 
-/**
- * Reinicia los datos mock (solo para tests).
- */
+/** @deprecated Usar getDocentes(). Mantenido por compatibilidad. */
+export function getDocentesMock() {
+  return USUARIOS_SEED.filter(u => u.rol === 'docente' && u.activo)
+}
+
+/** Reinicia datos mock (solo desarrollo/tests). */
 export function resetMock() {
-  localStorage.removeItem(KEY)
+  localStorage.removeItem(LOCAL_KEY)
 }

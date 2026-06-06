@@ -34,10 +34,15 @@ export default function MisActividadesPage() {
   const [columnaDestino, setColumnaDestino] = useState(null)
 
   const cargar = useCallback(async () => {
-    if (!user?.uid) return
-    const data = await getActividades(user.uid)
-    setActividades(data)
-    setCargando(false)
+    if (!user?.uid) { setCargando(false); return }
+    try {
+      const data = await getActividades(user.uid)
+      setActividades(data)
+    } catch (err) {
+      console.error('[MisActividades]', err)
+    } finally {
+      setCargando(false)
+    }
   }, [user?.uid])
 
   useEffect(() => { cargar() }, [cargar])

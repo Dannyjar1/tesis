@@ -2,7 +2,7 @@ import { useContext, useState } from 'react'
 import { PeriodoContext } from '../../context/PeriodoContext'
 import { useAuth } from '../auth/useAuth'
 import { useDistributivo } from '../../hooks/useDistributivo'
-import { ESTADO_COLORES, ESTADO_LABELS, TIPOS_CONTRATO } from '../../utils/constants'
+import { ESTADO_COLORES, ESTADO_LABELS, TIPO_CONTRATO_HORAS, TIPO_CONTRATO_LABELS } from '../../utils/constants'
 import { formatearFecha, formatearHoras } from '../../utils/formatters'
 import DistributivoTable from './DistributivoTable'
 import ResumenHoras from '../dashboard/ResumenHoras'
@@ -17,7 +17,7 @@ export default function DistributivoPage() {
   const [previsualizando, setPrevisualizando] = useState(false)
 
   const horasContrato = distributivo
-    ? (TIPOS_CONTRATO[distributivo.tipo_contrato]?.horas ?? 40)
+    ? (TIPO_CONTRATO_HORAS[distributivo.tipo_contrato] ?? 40)
     : 40
   const porcentaje = distributivo && horasContrato > 0
     ? Math.round((distributivo.total_horas / horasContrato) * 100)
@@ -86,7 +86,7 @@ export default function DistributivoPage() {
             <TarjetaStat label="Cumplimiento" valor={`${porcentaje}%`}
               color={porcentaje >= 80 ? 'text-green-600' : 'text-amber-600'} />
             <TarjetaStat label="Tipo de contrato"
-              valor={distributivo.total_horas <= 20 ? 'Medio Tiempo' : 'Tiempo Completo'}
+              valor={TIPO_CONTRATO_LABELS[distributivo.tipo_contrato] ?? distributivo.tipo_contrato}
               color="text-gray-700" />
             <TarjetaStat label="Última actualización"
               valor={formatearFecha(distributivo.fecha_ultima_modificacion)}

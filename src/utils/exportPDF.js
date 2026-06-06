@@ -49,7 +49,7 @@ function codigoVerificacion(periodoId, docenteNombre) {
   const ini = (docenteNombre ?? '')
     .split(' ').filter(p => p.length > 2).slice(0, 3)
     .map(p => p[0].toUpperCase()).join('')
-  const ts = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14)
+  const ts = new Date().toISOString().replace(/[^\d]/g, '').slice(0, 14)
   return `UIDE-${(periodoId ?? '').replace('-', '')}-${ini}-${ts}`
 }
 

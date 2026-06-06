@@ -1,35 +1,33 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   getDistributivosPorPeriodo,
-  getDocentesMock,
+  getDocentes,
 } from '../services/distributivoService'
 import { TIPOS_CONTRATO, UMBRAL_ALERTA_DEFAULT } from '../utils/constants'
 
-/**
- * Hook del dashboard — carga distributivos + docentes y calcula métricas.
- * Simula onSnapshot de Firestore con polling cada 15 segundos.
- * Sprint Firebase: reemplazar el polling con suscripciónDistributivos(onSnapshot).
- */
-export function useDashboard(periodoId) {
+export function useDashboard(periodoId, carreraId = null) {
   const [distributivos, setDistributivos] = useState([])
+  const [docentes, setDocentes]           = useState([])
   const [cargando, setCargando]           = useState(true)
   const [ultimaActualizacion, setUltima]  = useState(null)
   const intervalRef = useRef(null)
 
-  const docentes = getDocentesMock()
-
   const cargar = useCallback(async () => {
     if (!periodoId) { setCargando(false); return }
     try {
-      const lista = await getDistributivosPorPeriodo(periodoId)
+      const [lista, docentesList] = await Promise.all([
+        getDistributivosPorPeriodo(periodoId),
+        getDocentes(carreraId),
+      ])
       setDistributivos(lista)
+      setDocentes(docentesList)
       setUltima(new Date())
     } catch {
       // silencioso — no romper el dashboard por un error de carga
     } finally {
       setCargando(false)
     }
-  }, [periodoId])
+  }, [periodoId, carreraId])
 
   useEffect(() => {
     cargar()

@@ -4,6 +4,12 @@ import { useAuth } from '../modules/auth/useAuth'
 import { ROL_LABELS, ROLES, TIPO_CONTRATO_LABELS, CARRERA_LABELS, CARGO_LABELS } from '../utils/constants'
 
 const MENU = {
+  [ROLES.SUPERADMIN]: [
+    { path: '/sistema',            label: 'Carreras',           icon: IconGrid },
+    { path: '/sistema?tab=usuarios', label: 'Usuarios y Roles', icon: IconUsers },
+    { path: '/sistema?tab=seed',   label: 'Inicialización',     icon: IconSettings },
+    { path: '/notificaciones',     label: 'Notificaciones',     icon: IconBell },
+  ],
   [ROLES.ADMIN]: [
     { path: '/dashboard', label: 'Dashboard', icon: IconGrid },
     { path: '/admin/usuarios', label: 'Usuarios', icon: IconUsers },

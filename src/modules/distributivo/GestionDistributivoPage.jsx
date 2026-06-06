@@ -2,7 +2,7 @@ import { useState, useContext } from 'react'
 import { PeriodoContext } from '../../context/PeriodoContext'
 import { useAuth } from '../auth/useAuth'
 import { useGestionDistributivos } from '../../hooks/useDistributivo'
-import { ESTADO_COLORES, ESTADO_LABELS, ROLES, TIPOS_CONTRATO } from '../../utils/constants'
+import { ESTADO_COLORES, ESTADO_LABELS, ROLES, TIPO_CONTRATO_HORAS, TIPO_CONTRATO_LABELS, CARRERA_LABELS } from '../../utils/constants'
 import { formatearHoras } from '../../utils/formatters'
 import DistributivoForm from './DistributivoForm'
 import DistributivoTable from './DistributivoTable'
@@ -43,7 +43,7 @@ export default function GestionDistributivoPage() {
     setProcesando(true)
     setAlerta(null)
     try {
-      const horasContrato = TIPOS_CONTRATO[docente.tipo_contrato]?.horas ?? 40
+      const horasContrato = TIPO_CONTRATO_HORAS[docente.tipo_contrato] ?? 40
       await aprobar(dist.id, horasContrato)
       setAlerta({ tipo: 'success', msg: `Distributivo de ${docente.nombre_completo} aprobado correctamente.` })
     } catch (err) {
@@ -97,17 +97,17 @@ export default function GestionDistributivoPage() {
           <tbody className="divide-y divide-gray-100">
             {docentes.map(docente => {
               const dist = getDistributivoDeDocente(docente.uid)
-              const horasContrato = TIPOS_CONTRATO[docente.tipo_contrato]?.horas ?? 40
+              const horasContrato = TIPO_CONTRATO_HORAS[docente.tipo_contrato] ?? 40
               const puedeAprobar = esDirector && dist && dist.estado === 'borrador'
               return (
                 <tr key={docente.uid} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3">
                     <p className="font-medium text-gray-800">{docente.nombre_completo}</p>
-                    <p className="text-xs text-gray-400">{docente.carrera}</p>
+                    <p className="text-xs text-gray-400">{CARRERA_LABELS[docente.carrera_id] ?? docente.carrera_id ?? ''}</p>
                   </td>
                   <td className="px-4 py-3 hidden sm:table-cell">
                     <span className="text-xs font-medium text-gray-700 bg-gray-100 px-2 py-1 rounded-full">
-                      {docente.tipo_contrato} ({horasContrato}h)
+                      {TIPO_CONTRATO_LABELS[docente.tipo_contrato] ?? docente.tipo_contrato} ({horasContrato}h)
                     </span>
                   </td>
                   <td className="px-4 py-3">

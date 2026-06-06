@@ -7,12 +7,13 @@ import {
   actualizarDistributivo,
   aprobarDistributivo,
   cambiarEstadoDistributivo,
-  getDocentesMock,
+  suscribirseDistributivo,
+  getDocentes,
 } from '../services/distributivoService'
 
 /**
- * Hook para gestión del distributivo del docente autenticado.
- * Sprint Firebase: suscribirseDistributivo(onSnapshot) reemplaza la carga manual.
+ * Hook para el distributivo del docente autenticado.
+ * Usa onSnapshot (Firestore) o polling (localStorage) para actualizaciones en tiempo real.
  */
 export function useDistributivo(periodoId) {
   const { user } = useAuth()
@@ -20,7 +21,17 @@ export function useDistributivo(periodoId) {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
 
-  const cargar = useCallback(async () => {
+  useEffect(() => {
+    if (!user || !periodoId) { setCargando(false); return }
+    setCargando(true)
+    const unsub = suscribirseDistributivo(user.uid, periodoId, (data) => {
+      setDistributivo(data)
+      setCargando(false)
+    })
+    return unsub
+  }, [user, periodoId])
+
+  const recargar = useCallback(async () => {
     if (!user || !periodoId) return
     setCargando(true)
     try {
@@ -33,32 +44,35 @@ export function useDistributivo(periodoId) {
     }
   }, [user, periodoId])
 
-  useEffect(() => { cargar() }, [cargar])
-
-  return { distributivo, cargando, error, recargar: cargar }
+  return { distributivo, cargando, error, recargar }
 }
 
 /**
  * Hook para el director: gestiona distributivos de todos los docentes del período.
  */
-export function useGestionDistributivos(periodoId) {
+export function useGestionDistributivos(periodoId, carreraId = null) {
   const { user } = useAuth()
   const [distributivos, setDistributivos] = useState([])
+  const [docentes, setDocentes] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
 
   const cargar = useCallback(async () => {
-    if (!periodoId) return
+    if (!periodoId) { setCargando(false); return }
     setCargando(true)
     try {
-      const lista = await getDistributivosPorPeriodo(periodoId)
+      const [lista, docentesList] = await Promise.all([
+        getDistributivosPorPeriodo(periodoId),
+        getDocentes(carreraId),
+      ])
       setDistributivos(lista)
+      setDocentes(docentesList)
     } catch (err) {
       setError(err.message)
     } finally {
       setCargando(false)
     }
-  }, [periodoId])
+  }, [periodoId, carreraId])
 
   useEffect(() => { cargar() }, [cargar])
 
@@ -84,8 +98,6 @@ export function useGestionDistributivos(periodoId) {
     await cambiarEstadoDistributivo(id, nuevoEstado)
     await cargar()
   }
-
-  const docentes = getDocentesMock()
 
   return { distributivos, docentes, cargando, error, recargar: cargar, crear, actualizar, aprobar, cambiarEstado }
 }

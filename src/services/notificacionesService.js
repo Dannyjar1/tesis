@@ -6,32 +6,32 @@
 
 const KEY = (uid) => `uide_notifs_${uid}`
 
-// Seed de notificaciones por destinatario
+// Seed de notificaciones por destinatario (UIDs reales del seed)
 const SEED = {
-  'mock-coordinador-001': [
+  'uid_davalarezole': [
     {
       id: 'notif-001',
-      destinatario_uid: 'mock-coordinador-001',
+      destinatario_uid: 'uid_davalarezole',
       tipo: 'sin_distributivo',
       titulo: 'Docente sin distributivo asignado',
-      mensaje: 'Lic. Ana Mora Ríos no tiene distributivo asignado para el período 2026-A.',
-      docente_uid_ref: 'mock-docente-mt-001',
+      mensaje: 'Yeferson Torres Berru no tiene distributivo asignado para el período 2026-A.',
+      docente_uid_ref: 'uid_yetorresbe',
       leida: false,
       fecha_creacion: new Date(2026, 4, 20, 8, 0).toISOString(),
     },
     {
       id: 'notif-002',
-      destinatario_uid: 'mock-coordinador-001',
+      destinatario_uid: 'uid_davalarezole',
       tipo: 'distributivo_aprobado',
       titulo: 'Distributivo aprobado',
-      mensaje: 'El distributivo de MSc. Luis Peña Cabrera fue aprobado por el Director de Carrera.',
-      docente_uid_ref: 'mock-docente-tc-001',
+      mensaje: 'El distributivo de Milton Palacios Morocho fue aprobado por el Director de Carrera.',
+      docente_uid_ref: 'uid_mipalaciosmo',
       leida: false,
       fecha_creacion: new Date(2026, 4, 18, 10, 30).toISOString(),
     },
     {
       id: 'notif-003',
-      destinatario_uid: 'mock-coordinador-001',
+      destinatario_uid: 'uid_davalarezole',
       tipo: 'sistema',
       titulo: 'Período académico activo',
       mensaje: 'El período 2026-A está activo. Verifica que todos los distributivos estén aprobados antes del 30 de mayo.',
@@ -40,20 +40,20 @@ const SEED = {
       fecha_creacion: new Date(2026, 2, 1, 9, 0).toISOString(),
     },
   ],
-  'mock-director-001': [
+  'uid_locondezh': [
     {
       id: 'notif-004',
-      destinatario_uid: 'mock-director-001',
+      destinatario_uid: 'uid_locondezh',
       tipo: 'sin_distributivo',
       titulo: 'Docente sin distributivo',
-      mensaje: 'Lic. Ana Mora Ríos (MT) no tiene distributivo para el período 2026-A.',
-      docente_uid_ref: 'mock-docente-mt-001',
+      mensaje: 'Yeferson Torres Berru (MT) no tiene distributivo para el período 2026-A.',
+      docente_uid_ref: 'uid_yetorresbe',
       leida: false,
       fecha_creacion: new Date(2026, 4, 21, 8, 0).toISOString(),
     },
     {
       id: 'notif-005',
-      destinatario_uid: 'mock-director-001',
+      destinatario_uid: 'uid_locondezh',
       tipo: 'sistema',
       titulo: 'Sistema iniciado',
       mensaje: 'El sistema de gestión del distributivo UIDE campus Loja está operativo.',
@@ -62,26 +62,26 @@ const SEED = {
       fecha_creacion: new Date(2026, 2, 16, 9, 0).toISOString(),
     },
   ],
-  'mock-docente-tc-001': [
+  'uid_mipalaciosmo': [
     {
       id: 'notif-006',
-      destinatario_uid: 'mock-docente-tc-001',
+      destinatario_uid: 'uid_mipalaciosmo',
       tipo: 'distributivo_aprobado',
       titulo: 'Tu distributivo fue aprobado',
       mensaje: 'El Director de Carrera aprobó tu distributivo académico para el período 2026-A.',
-      docente_uid_ref: 'mock-docente-tc-001',
+      docente_uid_ref: 'uid_mipalaciosmo',
       leida: false,
       fecha_creacion: new Date(2026, 4, 18, 10, 35).toISOString(),
     },
   ],
-  'mock-docente-mt-001': [
+  'uid_yetorresbe': [
     {
       id: 'notif-007',
-      destinatario_uid: 'mock-docente-mt-001',
+      destinatario_uid: 'uid_yetorresbe',
       tipo: 'sin_distributivo',
       titulo: 'Distributivo pendiente',
       mensaje: 'Aún no tienes distributivo asignado para el período 2026-A. Contacta al Director de Carrera.',
-      docente_uid_ref: 'mock-docente-mt-001',
+      docente_uid_ref: 'uid_yetorresbe',
       leida: false,
       fecha_creacion: new Date(2026, 4, 22, 8, 0).toISOString(),
     },

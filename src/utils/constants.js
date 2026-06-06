@@ -1,13 +1,15 @@
-// ── Roles del sistema (4 niveles) ────────────────────────────────────────────
+// ── Roles del sistema (5 niveles) ────────────────────────────────────────────
 export const ROLES = {
-  ADMIN:          'admin',
-  DIRECTOR:       'director',
-  COORDINADOR:    'coordinador',
-  DOCENTE:        'docente',
+  SUPERADMIN:     'superadmin',   // TIC — administra el sistema: carreras, usuarios, roles
+  ADMIN:          'admin',        // Pro-Rector — autoridad académica global
+  DIRECTOR:       'director',     // Director de Carrera
+  COORDINADOR:    'coordinador',  // Coordinador Académico
+  DOCENTE:        'docente',      // Docente (TC / MT / TP / Honorario)
   ADMINISTRATIVO: 'administrativo',
 }
 
 export const ROL_LABELS = {
+  superadmin:     'TIC — Administrador del Sistema',
   admin:          'Pro-Rector',
   director:       'Director de Carrera',
   coordinador:    'Coordinador Académico',
@@ -106,11 +108,15 @@ export const ESTADO_COLORES = {
   archivado:   'bg-slate-100 text-slate-600',
 }
 
-// ── Tipos de contrato legacy (para cálculo de horas — mantener compatibilidad) ─
+// ── Tipos de contrato — claves cortas (legacy) y largas (Firestore/seed) ───────
 export const TIPOS_CONTRATO = {
-  TC: { sigla: 'TC', horas: 40,   nombre: 'Tiempo Completo' },
-  MT: { sigla: 'MT', horas: 20,   nombre: 'Medio Tiempo' },
-  TP: { sigla: 'TP', horas: null, nombre: 'Tiempo Parcial' },
+  TC:             { sigla: 'TC', horas: 40,   nombre: 'Tiempo Completo' },
+  MT:             { sigla: 'MT', horas: 20,   nombre: 'Medio Tiempo' },
+  TP:             { sigla: 'TP', horas: null, nombre: 'Tiempo Parcial' },
+  tiempo_completo: { sigla: 'TC', horas: 40,   nombre: 'Tiempo Completo' },
+  medio_tiempo:    { sigla: 'MT', horas: 20,   nombre: 'Medio Tiempo' },
+  tiempo_parcial:  { sigla: 'TP', horas: null, nombre: 'Tiempo Parcial' },
+  honorario:       { sigla: 'H',  horas: null, nombre: 'Honorario' },
 }
 
 export const CATEGORIAS_ESCALAFON = ['Auxiliar', 'Agregado', 'Principal']

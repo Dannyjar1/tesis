@@ -37,11 +37,11 @@ export default function CalendarioDistributivo() {
   const [alerta, setAlerta]               = useState('')
 
   useEffect(() => {
-    if (!user?.uid) return
-    getHorario(user.uid).then(data => {
-      setBloques(data)
-      setCargando(false)
-    })
+    if (!user?.uid) { setCargando(false); return }
+    getHorario(user.uid)
+      .then(data => setBloques(data))
+      .catch(err => console.error('[CalendarioDistributivo]', err))
+      .finally(() => setCargando(false))
   }, [user?.uid])
 
   // Pre-calcular qué slots están cubiertos por rowspan (no deben renderizar <td>)

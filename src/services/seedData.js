@@ -16,6 +16,19 @@ export const CARRERAS_SEED = [
 
 export const USUARIOS_SEED = [
   {
+    uid:             'uid_hcueva',
+    nombre:          'Henri Apolo',
+    apellido:        'Cueva Jaramillo',
+    nombre_completo: 'Henri Apolo Cueva Jaramillo',
+    email:           'hcueva@uide.edu.ec',
+    password:        '1234',
+    rol:             'superadmin',
+    tipo_contrato:   null,
+    carrera_id:      null,
+    cargo:           'Asistente de Soporte Usuario — TIC Ext. Loja',
+    activo:          true,
+  },
+  {
     uid:             'uid_paruizag',
     nombre:          'Pablo',
     apellido:        'Ruiz Aguirre',

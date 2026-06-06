@@ -8,6 +8,7 @@ import Sidebar from '../components/Sidebar'
 import RoleGuard from '../modules/auth/RoleGuard'
 
 import LoginPage from '../modules/auth/LoginPage'
+import SistemaPage from '../modules/sistema/SistemaPage'
 import DashboardPage from '../modules/dashboard/DashboardPage'
 import DistributivoPage from '../modules/distributivo/DistributivoPage'
 import GestionDistributivoPage from '../modules/distributivo/GestionDistributivoPage'
@@ -21,9 +22,8 @@ import MisActividadesPage from '../modules/misactividades/MisActividadesPage'
 import PersonalPage from '../modules/personal/PersonalPage'
 import AdministrativoDashboard from '../modules/administrativo/AdministrativoDashboard'
 
-const GESTION       = [ROLES.ADMIN, ROLES.DIRECTOR, ROLES.COORDINADOR]
-const PERSONAL      = [ROLES.DOCENTE, ROLES.ADMINISTRATIVO]   // vistas propias de cada usuario
-const DOCENTES      = [ROLES.DOCENTE]
+const GESTION        = [ROLES.ADMIN, ROLES.DIRECTOR, ROLES.COORDINADOR]
+const PERSONAL       = [ROLES.DOCENTE, ROLES.ADMINISTRATIVO]
 const ADMIN_DIRECTOR = [ROLES.ADMIN, ROLES.DIRECTOR]
 
 function AuthLayout() {
@@ -60,6 +60,7 @@ function AuthLayout() {
 }
 
 const HOME_MAP = {
+  [ROLES.SUPERADMIN]:     '/sistema',
   [ROLES.ADMIN]:          '/dashboard',
   [ROLES.DIRECTOR]:       '/dashboard',
   [ROLES.COORDINADOR]:    '/dashboard',
@@ -81,6 +82,11 @@ export default function AppRouter() {
       <Route path="/" element={<RootRedirect />} />
 
       <Route element={<AuthLayout />}>
+        {/* Superadmin — TIC */}
+        <Route path="/sistema" element={
+          <RoleGuard roles={[ROLES.SUPERADMIN]}><SistemaPage /></RoleGuard>
+        } />
+
         {/* Dashboard — gestión */}
         <Route path="/dashboard" element={
           <RoleGuard roles={GESTION}><DashboardPage /></RoleGuard>

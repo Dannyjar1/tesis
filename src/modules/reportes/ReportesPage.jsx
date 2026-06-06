@@ -7,7 +7,7 @@ import {
   generarReporteExcel,
   getHistorialReportes,
 } from '../../services/reportesService'
-import { getDocentesMock } from '../../services/distributivoService'
+import { getDocentes } from '../../services/distributivoService'
 import { formatearFecha } from '../../utils/formatters'
 import AlertBanner from '../../components/AlertBanner'
 import LoadingSpinner from '../../components/LoadingSpinner'
@@ -15,7 +15,11 @@ import LoadingSpinner from '../../components/LoadingSpinner'
 export default function ReportesPage() {
   const { user }          = useAuth()
   const { periodoActivo } = useContext(PeriodoContext)
-  const docentes          = getDocentesMock()
+  const [docentes, setDocentes] = useState([])
+
+  useEffect(() => {
+    getDocentes(user?.carrera_id ?? null).then(setDocentes)
+  }, [user?.carrera_id])
 
   const [tipoReporte, setTipoReporte] = useState('carrera')   // 'carrera' | 'individual'
   const [docenteSelec, setDocenteSelec] = useState('')
