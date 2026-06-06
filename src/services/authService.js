@@ -1,14 +1,15 @@
 /**
- * authService.js — Autenticación con Firebase Auth + Microsoft Azure AD.
+ * authService.js — Autenticación del sistema (MOD-01).
  *
- * Usa signInWithRedirect (en lugar de popup) porque Chrome convierte
- * los popups a pestañas, lo que rompe el handshake de Firebase.
+ * Conforme a PROJECT.md RF-001:
+ *   Firebase Authentication + Microsoft Azure AD + OAuth 2.0.
+ *   Login exclusivo con cuentas institucionales @uide.edu.ec.
  *
- * Flujo:
- *  1. loginConMicrosoft() → redirige la página a Microsoft login
- *  2. Microsoft autentica → redirige al handler de Firebase
- *  3. Firebase redirige de vuelta a la app
- *  4. getResultadoRedireccion() recoge el resultado en AuthContext
+ * - Identidad y sesión: Firebase Auth (proveedor microsoft.com) → da
+ *   request.auth.token.email para que las reglas verifiquen el dominio.
+ * - Perfil/rol: se resuelve consultando /usuarios por email en Firestore.
+ * - Calendario/correo (Graph API): MSAL solicita Calendars.Read y Mail.Read
+ *   por separado cuando el docente conecta Outlook (ver calendarioService).
  */
 import {
   OAuthProvider,
@@ -16,92 +17,101 @@ import {
   getRedirectResult,
   signOut,
 } from 'firebase/auth'
-import { doc, getDoc, collection, query, where, getDocs, setDoc, Timestamp } from 'firebase/firestore'
+import { collection, getDocs, query, where } from 'firebase/firestore'
 import { auth, db } from './firebase'
 import { USUARIOS_SEED } from './seedData'
+import { authLog } from './authDebug'
 
 const SESSION_KEY = 'uide_session'
 
+// Proveedor Microsoft — scopes mínimos de login (User.Read).
+// Los scopes de Graph (Calendars.Read, Mail.Read) se piden aparte vía MSAL
+// para no requerir consentimiento de administrador en el login.
 const provider = new OAuthProvider('microsoft.com')
 provider.addScope('User.Read')
-provider.setCustomParameters({
-  tenant: 'common',
-  prompt: 'select_account',
-})
-// Nota: Calendars.Read y Mail.Read se solicitan por separado via MSAL
-// cuando el docente conecta su calendario (RF-013, msalService.js)
+provider.setCustomParameters({ tenant: 'common', prompt: 'select_account' })
 
-async function resolverPerfil(firebaseUser) {
-  const email = firebaseUser.email?.toLowerCase()
+// ── Resolución del perfil por email ───────────────────────────────────────────
+
+async function resolverPerfil(email) {
+  const emailNorm = email?.toLowerCase()
+  authLog('resolverPerfil:email', emailNorm ?? '(null)')
+  if (!emailNorm) throw new Error('No se pudo obtener el email de la cuenta Microsoft.')
 
   if (db) {
     try {
-      // 1. Buscar por UID exacto (usuario ya registrado)
-      const snapUid = await getDoc(doc(db, 'usuarios', firebaseUser.uid))
-      if (snapUid.exists()) return snapUid.data()
-
-      // 2. Buscar por email (primer login — el superadmin pre-creó el usuario)
-      const q = query(collection(db, 'usuarios'), where('email', '==', email))
-      const snapEmail = await getDocs(q)
-      if (!snapEmail.empty) {
-        const datos = snapEmail.docs[0].data()
-        // Migrar documento al UID real de Firebase Auth
-        await setDoc(doc(db, 'usuarios', firebaseUser.uid), {
-          ...datos,
-          uid: firebaseUser.uid,
-          ultima_sesion: Timestamp.now(),
-        })
-        return { ...datos, uid: firebaseUser.uid }
-      }
-    } catch { /* Firestore sin reglas o sin conexión */ }
+      const snap = await getDocs(query(collection(db, 'usuarios'), where('email', '==', emailNorm)))
+      authLog('resolverPerfil:firestore', `encontrados=${snap.size}`)
+      if (!snap.empty) return snap.docs[0].data()
+    } catch (err) {
+      authLog('resolverPerfil:firestore-error', err.code ?? err.message)
+    }
   }
 
-  // Fallback: buscar en seed local (desarrollo sin Firebase)
-  const perfil = USUARIOS_SEED.find(u => u.email.toLowerCase() === email)
+  const perfil = USUARIOS_SEED.find(u => u.email.toLowerCase() === emailNorm)
   if (!perfil) {
+    authLog('resolverPerfil:NO-REGISTRADO', emailNorm)
     throw new Error(
-      `La cuenta ${email} no está registrada en el sistema. ` +
-      'Contacta al administrador de TIC para que te asigne acceso.'
+      `La cuenta ${email} no está registrada en el sistema UIDE. ` +
+      'Contacta al administrador TIC para que te asigne acceso.'
     )
   }
+  authLog('resolverPerfil:OK-seed', `${perfil.rol}`)
   const { password: _, ...datos } = perfil
-  return { ...datos, uid: firebaseUser.uid }
+  return datos
 }
 
+/** Resuelve el perfil a partir del usuario de Firebase (para onAuthStateChanged). */
+export async function resolverPerfilDesdeFirebase(firebaseUser) {
+  // El email puede venir en .email o en providerData (según el tipo de cuenta MS)
+  const email =
+    firebaseUser.email ??
+    firebaseUser.providerData?.find(p => p.email)?.email ??
+    null
+  const perfil = await resolverPerfil(email)
+  localStorage.setItem(SESSION_KEY, JSON.stringify(perfil))
+  return perfil
+}
+
+// ── API pública ───────────────────────────────────────────────────────────────
+
 /**
- * Inicia el flujo de login con Microsoft.
- * Redirige la página actual — no devuelve nada.
+ * Login con cuenta Microsoft institucional (Firebase Auth, redirect).
+ * Usa redirect en vez de popup: las extensiones del navegador (wallets, etc.)
+ * interceptan la mensajería entre ventanas y cuelgan el popup. El redirect es
+ * una navegación completa, sin ese handshake. La página navega fuera y el
+ * resultado se recoge con procesarRedirect() al volver.
  */
 export async function loginConMicrosoft() {
   if (!auth) throw new Error('Firebase no está configurado. Completa el .env.local.')
+  authLog('login:signInWithRedirect', 'navegando a Microsoft…')
   await signInWithRedirect(auth, provider)
 }
 
 /**
- * Recoge el resultado del redirect de Microsoft al volver a la app.
- * Llamar en el useEffect del AuthProvider al arrancar.
- * @returns {Promise<Object|null>} perfil del usuario o null si no hay redirect pendiente
+ * Procesa el retorno del redirect de Microsoft. Llamar al arrancar la app.
+ * onAuthStateChanged se encarga de cargar el perfil; aquí solo capturamos
+ * errores del proveedor para mostrarlos.
+ * @returns {Promise<void>}
  */
-export async function getResultadoRedireccion() {
-  if (!auth) return null
+export async function procesarRedirect() {
+  if (!auth) { authLog('procesarRedirect', 'auth=null'); return }
+  authLog('procesarRedirect:start', `origin=${window.location.origin}`)
   try {
-    const resultado = await getRedirectResult(auth)
-    if (!resultado) return null
-    const perfil = await resolverPerfil(resultado.user)
-    localStorage.setItem(SESSION_KEY, JSON.stringify(perfil))
-    return perfil
+    const result = await getRedirectResult(auth)
+    authLog('procesarRedirect:result', result ? `user=${result.user?.email}` : 'null (sin redirect pendiente)')
   } catch (err) {
-    const ignorar = ['auth/popup-closed-by-user', 'auth/cancelled-popup-request']
-    if (ignorar.includes(err?.code)) return null
+    authLog('procesarRedirect:ERROR', `${err.code} | ${err.message}`)
     throw err
   }
 }
 
 /**
- * Login de desarrollo — solo para el panel DEV.
+ * Login de desarrollo — solo para el panel DEV del login.
+ * No crea sesión de Firebase; opera sobre el seed local.
  */
 export async function loginMock(email, password) {
-  await new Promise(r => setTimeout(r, 300))
+  await new Promise(r => setTimeout(r, 200))
   const user = USUARIOS_SEED.find(u => u.email === email && u.password === password)
   if (!user) throw new Error('Credenciales incorrectas.')
   const { password: _, ...session } = user
@@ -110,7 +120,7 @@ export async function loginMock(email, password) {
 }
 
 /**
- * Cierra sesión de Firebase y limpia la sesión local.
+ * Cierra la sesión de Firebase y limpia la sesión local (RF-003).
  */
 export async function logout() {
   localStorage.removeItem(SESSION_KEY)

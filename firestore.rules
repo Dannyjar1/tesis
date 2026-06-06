@@ -2,148 +2,69 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ── Funciones de autenticación ────────────────────────────────────────────
-    function estaAutenticado() {
-      return request.auth != null;
+    // ── Modelo de seguridad (PROJECT.md MOD-01) ──────────────────────────────
+    // Identidad: Firebase Authentication con proveedor Microsoft Azure AD.
+    // Acceso a datos: solo sesiones autenticadas cuyo email pertenece al
+    // dominio institucional @uide.edu.ec (request.auth.token.email).
+    // Autorización por rol (admin/director/docente…) se aplica además en la
+    // capa de la aplicación (RoleGuard + rutas protegidas).
+
+    function esInstitucional() {
+      return request.auth != null
+        && request.auth.token.email is string
+        && request.auth.token.email.matches('(?i).*@uide[.]edu[.]ec');
     }
 
-    function getRol() {
-      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol;
-    }
-
-    function esSuperAdmin() {
-      return estaAutenticado() && getRol() == 'superadmin';
-    }
-
-    function esAdmin() {
-      return estaAutenticado() && (getRol() == 'admin' || esSuperAdmin());
-    }
-
-    function esDirector() {
-      return estaAutenticado() && (getRol() == 'director' || esAdmin());
-    }
-
-    function esCoordinador() {
-      return estaAutenticado() && (getRol() == 'coordinador' || esDirector());
-    }
-
-    // ── /usuarios ─────────────────────────────────────────────────────────────
-    // superadmin: acceso total
-    // admin: lee todos, escribe todos excepto superadmin
-    // director/coordinador: lee usuarios de su carrera
-    // docente: solo lee su propio perfil
+    // ── Colecciones del sistema ───────────────────────────────────────────────
     match /usuarios/{uid} {
-      allow read: if estaAutenticado() && (
-        request.auth.uid == uid || esCoordinador() || esSuperAdmin()
-      );
-      // Solo superadmin puede crear/editar el rol superadmin o admin
-      allow create: if esSuperAdmin() ||
-        (esAdmin() && request.resource.data.rol != 'superadmin');
-      allow update: if esSuperAdmin() ||
-        (esAdmin() && resource.data.rol != 'superadmin' && request.resource.data.rol != 'superadmin');
-      allow delete: if esSuperAdmin();
+      allow read, write: if esInstitucional();
     }
-
-    // ── /carreras ─────────────────────────────────────────────────────────────
-    // Solo superadmin gestiona carreras (crear, editar, habilitar/deshabilitar)
     match /carreras/{carreraId} {
-      allow read: if estaAutenticado();
-      allow write: if esSuperAdmin();
+      allow read, write: if esInstitucional();
     }
-
-    // ── /docentes ─────────────────────────────────────────────────────────────
     match /docentes/{uid} {
-      allow read: if estaAutenticado() && (request.auth.uid == uid || esCoordinador());
-      allow write: if esAdmin() || esDirector();
+      allow read, write: if esInstitucional();
     }
-
-    // ── /periodos_academicos ──────────────────────────────────────────────────
     match /periodos_academicos/{periodoId} {
-      allow read: if estaAutenticado();
-      allow write: if esAdmin() || esDirector();
+      allow read, write: if esInstitucional();
     }
-
-    // ── /distributivos ────────────────────────────────────────────────────────
     match /distributivos/{docId} {
-      allow read: if estaAutenticado() && (
-        resource.data.docente_uid == request.auth.uid || esCoordinador()
-      );
-      allow create: if esDirector();
-      allow update: if esDirector() ||
-        (estaAutenticado() && resource.data.docente_uid == request.auth.uid);
-      allow delete: if false;
+      allow read, write: if esInstitucional();
     }
-
-    // ── /actividades ──────────────────────────────────────────────────────────
     match /actividades/{actId} {
-      allow read, write: if estaAutenticado() && (
-        resource.data.docente_uid == request.auth.uid || esCoordinador()
-      );
+      allow read, write: if esInstitucional();
     }
-
-    // ── /tareas_todo (Mis Actividades / Kanban) ───────────────────────────────
     match /tareas_todo/{tareaId} {
-      allow read, write: if estaAutenticado() &&
-        resource.data.docente_uid == request.auth.uid;
-      allow create: if estaAutenticado() &&
-        request.resource.data.docente_uid == request.auth.uid;
+      allow read, write: if esInstitucional();
     }
-
-    // ── /horario_semanal ──────────────────────────────────────────────────────
     match /horario_semanal/{bloqueId} {
-      allow read: if estaAutenticado() && (
-        resource.data.docente_uid == request.auth.uid || esCoordinador()
-      );
-      allow create: if estaAutenticado() &&
-        request.resource.data.docente_uid == request.auth.uid;
-      allow delete: if estaAutenticado() &&
-        resource.data.docente_uid == request.auth.uid;
+      allow read, write: if esInstitucional();
     }
-
-    // ── /eventos_calendario ───────────────────────────────────────────────────
     match /eventos_calendario/{evtId} {
-      allow read, write: if estaAutenticado() &&
-        resource.data.docente_uid == request.auth.uid;
+      allow read, write: if esInstitucional();
     }
-
-    // ── /clasificaciones_ia ───────────────────────────────────────────────────
     match /clasificaciones_ia/{cId} {
-      allow read: if estaAutenticado() && resource.data.docente_uid == request.auth.uid;
-      allow create: if estaAutenticado() &&
-        request.resource.data.docente_uid == request.auth.uid;
-      allow update: if estaAutenticado() && resource.data.docente_uid == request.auth.uid;
-      allow delete: if false;
+      allow read, write: if esInstitucional();
     }
-
-    // ── /feedback ─────────────────────────────────────────────────────────────
     match /feedback/{fbId} {
-      allow read, write: if estaAutenticado() && resource.data.docente_uid == request.auth.uid;
+      allow read, write: if esInstitucional();
     }
-
-    // ── /notificaciones ───────────────────────────────────────────────────────
     match /notificaciones/{notifId} {
-      allow read: if estaAutenticado() && (
-        resource.data.destinatario_uid == request.auth.uid || esAdmin()
-      );
-      allow write: if false;
+      allow read, write: if esInstitucional();
     }
-
-    // ── /reportes ─────────────────────────────────────────────────────────────
     match /reportes/{repId} {
-      allow read: if esCoordinador();
-      allow write: if false;
+      allow read, write: if esInstitucional();
     }
-
-    // ── /auditoria ────────────────────────────────────────────────────────────
     match /auditoria/{logId} {
-      allow read: if esAdmin() || esDirector();
-      allow write: if false;
+      allow read, write: if esInstitucional();
+    }
+    match /configuracion/{configId} {
+      allow read, write: if esInstitucional();
     }
 
-    // ── /configuracion ────────────────────────────────────────────────────────
-    match /configuracion/{configId} {
-      allow read: if estaAutenticado();
-      allow write: if esAdmin();
+    // Por defecto, todo lo demás queda bloqueado.
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

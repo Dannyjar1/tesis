@@ -38,3 +38,5 @@ coverage/
 
 # Archivos temporales
 *.tmp
+# Firebase deploy cache
+.firebase/

@@ -5,16 +5,25 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "periodo_id", "order": "ASCENDING" },
-        { "fieldPath": "estado", "order": "ASCENDING" }
+        { "fieldPath": "estado",     "order": "ASCENDING" }
       ]
     },
     {
       "collectionGroup": "actividades",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "docente_uid", "order": "ASCENDING" },
-        { "fieldPath": "periodo_id", "order": "ASCENDING" },
-        { "fieldPath": "fecha", "order": "DESCENDING" }
+        { "fieldPath": "docente_uid",    "order": "ASCENDING" },
+        { "fieldPath": "periodo_id",     "order": "ASCENDING" },
+        { "fieldPath": "fecha_actividad","order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "clasificaciones_ia",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "docente_uid",          "order": "ASCENDING" },
+        { "fieldPath": "periodo_id",           "order": "ASCENDING" },
+        { "fieldPath": "fecha_clasificacion",  "order": "ASCENDING" }
       ]
     },
     {
@@ -22,16 +31,50 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "docente_uid", "order": "ASCENDING" },
-        { "fieldPath": "fecha_inicio", "order": "DESCENDING" }
+        { "fieldPath": "periodo_id",  "order": "ASCENDING" },
+        { "fieldPath": "fecha_inicio","order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "eventos_calendario",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "docente_uid", "order": "ASCENDING" },
+        { "fieldPath": "fecha_inicio","order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "horario_semanal",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "docente_uid", "order": "ASCENDING" },
+        { "fieldPath": "dia",         "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "tareas_todo",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "docente_uid",   "order": "ASCENDING" },
+        { "fieldPath": "fecha_creacion","order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "usuarios",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "rol",       "order": "ASCENDING" },
+        { "fieldPath": "activo",    "order": "ASCENDING" },
+        { "fieldPath": "carrera_id","order": "ASCENDING" }
       ]
     },
     {
       "collectionGroup": "notificaciones",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "destinatario_uid", "order": "ASCENDING" },
-        { "fieldPath": "leida", "order": "ASCENDING" },
-        { "fieldPath": "fecha_creacion", "order": "DESCENDING" }
+        { "fieldPath": "destinatario_uid","order": "ASCENDING" },
+        { "fieldPath": "leida",           "order": "ASCENDING" },
+        { "fieldPath": "fecha_creacion",  "order": "DESCENDING" }
       ]
     },
     {

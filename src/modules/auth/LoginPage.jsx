@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import logoUide from '../../assets/logo-uide.png'
 import { useNavigate, Navigate } from 'react-router-dom'
 import { useAuth } from './useAuth'
 import { ROLES, ROL_LABELS } from '../../utils/constants'
+import { getAuthLog, clearAuthLog } from '../../services/authDebug'
 
 const HOME_POR_ROL = {
   [ROLES.SUPERADMIN]:     '/sistema',
@@ -46,8 +47,17 @@ function MicrosoftIcon() {
 export default function LoginPage() {
   const [error, setError]       = useState('')
   const [cargando, setCargando] = useState(false)
-  const { login, loginMock, user } = useAuth()
+  const [logs, setLogs]         = useState(() => getAuthLog())
+  const { login, loginMock, user, authError } = useAuth()
   const navigate = useNavigate()
+
+  const errorVisible = error || authError
+
+  // Refrescar el panel de diagnóstico cada segundo (sobrevive al redirect)
+  useEffect(() => {
+    const t = setInterval(() => setLogs(getAuthLog()), 1000)
+    return () => clearInterval(t)
+  }, [])
 
   if (user) {
     return <Navigate to={HOME_POR_ROL[user.rol] ?? '/dashboard'} replace />
@@ -57,23 +67,12 @@ export default function LoginPage() {
     setError('')
     setCargando(true)
     try {
+      // Redirect: la página navega a Microsoft y vuelve. No hay código después.
       await login()
-      // signInWithRedirect navega la página fuera — el resultado se
-      // recoge en AuthContext al volver (getResultadoRedireccion).
     } catch (err) {
-      const cancelado =
-        err?.code      === 'auth/popup-closed-by-user'    ||
-        err?.code      === 'auth/cancelled-popup-request' ||
-        err?.errorCode === 'user_cancelled'               ||
-        err?.errorCode === 'popup_window_error'           ||
-        err?.message?.includes('user_cancelled')          ||
-        err?.message?.includes('popup-closed-by-user')
-      if (!cancelado) {
-        setError(err?.message ?? 'Error al iniciar sesión con Microsoft.')
-      }
+      setError(err?.message ?? 'Error al iniciar sesión con Microsoft.')
       setCargando(false)
     }
-    // No hay finally: si el redirect tuvo éxito la página ya navegó fuera.
   }
 
   async function handleCuentaPrueba(email, password) {
@@ -146,9 +145,9 @@ export default function LoginPage() {
               </span>
             </button>
 
-            {error && (
+            {errorVisible && (
               <div className="mt-4 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
-                <p className="text-red-700 text-sm">{error}</p>
+                <p className="text-red-700 text-sm">{errorVisible}</p>
               </div>
             )}
 
@@ -157,11 +156,52 @@ export default function LoginPage() {
             </p>
           </div>
 
+          {/* ── Panel de diagnóstico de autenticación ────────────────────────── */}
+          <div className="mt-4 w-full max-w-sm bg-slate-900 rounded-xl p-3 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[11px] font-bold text-emerald-400 uppercase tracking-wide font-mono">
+                🔍 Diagnóstico de login
+              </p>
+              <button
+                type="button"
+                onClick={() => { clearAuthLog(); setLogs([]) }}
+                className="text-[10px] text-slate-400 hover:text-white px-2 py-0.5 rounded border border-slate-700"
+              >
+                Limpiar
+              </button>
+            </div>
+            <div className="max-h-52 overflow-y-auto space-y-0.5">
+              {logs.length === 0 ? (
+                <p className="text-[10px] text-slate-500 font-mono">Sin eventos aún. Pulsa "Continuar con Microsoft".</p>
+              ) : (
+                logs.map((l, i) => (
+                  <div key={i} className="text-[10px] font-mono leading-tight">
+                    <span className="text-slate-500">{l.hora}</span>{' '}
+                    <span className={
+                      l.paso.includes('ERROR') || l.paso.includes('error') || l.paso.includes('NO-')
+                        ? 'text-red-400'
+                        : l.paso.includes('OK') || l.paso.includes('setUser')
+                        ? 'text-emerald-400'
+                        : 'text-sky-300'
+                    }>{l.paso}</span>
+                    {l.detalle && <span className="text-slate-300"> → {l.detalle}</span>}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
           {/* ── Panel de cuentas de prueba — solo en desarrollo ─────────────── */}
           {import.meta.env.DEV && (
-            <div className="mt-4 w-full max-w-sm bg-amber-50 border border-amber-300 rounded-xl p-4">
-              <p className="text-[11px] font-bold text-amber-800 mb-3 uppercase tracking-wide">
-                Acceso rápido (dev)
+            <div className="mt-4 w-full max-w-sm bg-amber-50 border-2 border-amber-400 rounded-xl p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                <p className="text-[11px] font-bold text-amber-900 uppercase tracking-wide">
+                  Acceso rápido — Entorno de desarrollo
+                </p>
+              </div>
+              <p className="text-[10px] text-amber-700 mb-3">
+                Haz clic en cualquier cuenta para ingresar directamente sin Microsoft.
               </p>
               <div className="space-y-1.5">
                 {CUENTAS_PRUEBA.map(({ email, password, etiqueta, rol }) => (
@@ -170,12 +210,12 @@ export default function LoginPage() {
                     type="button"
                     onClick={() => handleCuentaPrueba(email, password)}
                     disabled={cargando}
-                    className="w-full flex items-center gap-2 text-left px-2.5 py-1.5 rounded-lg hover:bg-amber-100 transition-colors disabled:opacity-50"
+                    className="w-full flex items-center gap-2 text-left px-3 py-2 rounded-lg bg-white border border-amber-200 hover:bg-amber-100 hover:border-amber-400 transition-colors disabled:opacity-50 shadow-sm"
                   >
-                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0 ${ROL_BADGE[rol]}`}>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 ${ROL_BADGE[rol]}`}>
                       {ROL_LABELS[rol] ?? rol}
                     </span>
-                    <span className="text-xs text-amber-800 truncate">{etiqueta}</span>
+                    <span className="text-xs text-gray-700 font-medium truncate">{etiqueta}</span>
                   </button>
                 ))}
               </div>

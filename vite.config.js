@@ -7,6 +7,11 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: false,
+    // Permite que el popup de Firebase Auth (Microsoft) haga postMessage de
+    // vuelta a la app. Sin esto, el popup se abre y se cierra sin completar.
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+    },
   },
 
   // pdfmake usa patrón UMD (this.pdfMake.vfs) que no funciona con ESM puro.
