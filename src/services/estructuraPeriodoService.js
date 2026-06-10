@@ -52,6 +52,7 @@ function asignacionVacia(periodoId, carreraId) {
   return {
     periodo_id:          periodoId,
     carrera_id:          carreraId,
+    director_uid:        null,   // director de la carrera EN ese período (cargo RBAC)
     coordinador_uid:     null,   // coordinador o responsable del período
     docentes_uid:        [],     // docentes asignados a esta carrera ESTE período
     administrativos_uid: [],
@@ -96,6 +97,7 @@ export async function getCarrerasDeUsuario(periodoId, uid) {
   const estructura = await getEstructuraPeriodo(periodoId)
   return Object.values(estructura)
     .filter(a =>
+      a.director_uid === uid ||
       a.coordinador_uid === uid ||
       (a.docentes_uid ?? []).includes(uid) ||
       (a.administrativos_uid ?? []).includes(uid))
@@ -165,6 +167,7 @@ export async function copiarEstructura(periodoOrigenId, periodoDestino, { copiar
   for (const [carreraId, asig] of Object.entries(origen)) {
     if (asig.eliminada) continue
     await guardarAsignacionCarrera(periodoDestino, carreraId, {
+      director_uid:          asig.director_uid ?? null,
       coordinador_uid:       asig.coordinador_uid ?? null,
       docentes_uid:          copiarUsuarios ? (asig.docentes_uid ?? []) : [],
       administrativos_uid:   copiarUsuarios ? (asig.administrativos_uid ?? []) : [],

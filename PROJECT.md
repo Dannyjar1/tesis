@@ -1641,6 +1641,29 @@ src/utils/constants.js               → helpers de rol
 
 **Plan de ejecución:** Esta migración se realiza **junto con la migración de subtipos de docente (§12.10)** en Sprint 6, al conectar Firebase real y reemplazar el mock. Ambas tocan los mismos archivos (`authService.js`, `AppRouter.jsx`, `Sidebar.jsx`, `constants.js`), por lo que ejecutarlas en un solo paso evita refactorizar dos veces y reduce el riesgo de regresiones. Para mostrar el rol "principal" en la UI (p. ej. Navbar), se define una jerarquía `admin > director > coordinador > docente` y se toma el de mayor nivel presente en `roles`.
 
+> ✅ **Estado:** ejecutada (jun-2026). Ver §12.12 para el modelo RBAC completo.
+
+---
+
+### 12.12 Modelo RBAC: tipos base de usuario + cargos institucionales
+
+**Decisión:**
+Los cargos institucionales NO son tipos de usuario independientes, sino **roles asignables sobre un docente**. El modelo distingue:
+
+| Categoría | Valores (`roles[]`) | Regla |
+|---|---|---|
+| **Tipos base** | `docente`, `administrativo` | Todo usuario tiene al menos uno |
+| **Cargos institucionales** | `coordinador` (Coordinador de Carrera), `director`, `admin` (Prorrector), `superadmin` (Administrador del Sistema), otros futuros | Todo cargo lo ejerce un docente: al asignar un cargo se añade `docente` automáticamente. Los únicos usuarios que no necesariamente son docentes son los administrativos |
+
+**Implementación:**
+- `constants.js`: `TIPOS_BASE_USUARIO` y `CARGOS_INSTITUCIONALES`
+- `UsuarioForm` (panel TIC): selección múltiple por checkboxes agrupados (tipo base + cargos); regla docente-automático aplicada en `toggleRol`; el rol principal se deriva por jerarquía al guardar
+- `guardarUsuario`: persiste `roles[]` tal como los seleccionó el superadmin
+- Visibilidad: el usuario con funciones docentes y cargo ve **fusionados** los módulos docentes y los de sus cargos (Sidebar concatena los menús de todos sus roles; `RoleGuard` permite el acceso si cualquiera de sus roles está autorizado)
+- Por período: la estructura jerárquica (§COL-003/carreras) almacena `director_uid` y `coordinador_uid` propios de cada período — los cargos pueden reasignarse semestre a semestre sin alterar el historial
+
+**Ejemplos válidos:** docente+coordinador · docente+coordinador+director · docente+admin (Prorrector que registra sus actividades académicas) · docente+superadmin (Administrador del Sistema que también dicta clases) · administrativo (único caso no-docente).
+
 ---
 
 ## 13. 🔗 DEPENDENCIAS Y TECNOLOGÍAS

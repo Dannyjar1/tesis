@@ -155,6 +155,25 @@ await check('Carreras: botón Agregar usuario abre modal con la carrera', async 
   await page.keyboard.press('Escape')
 })
 
+await check('RBAC: selección múltiple de roles con docente automático', async () => {
+  await page.getByRole('link', { name: 'Usuarios y Roles' }).click()
+  const fila = page.getByRole('row', { name: /Valarezo/ })
+  await fila.getByRole('button', { name: 'Editar' }).click()
+  await page.getByText('Cargos institucionales (selección múltiple)').waitFor()
+  // Marcar el cargo Director → "Docente" debe marcarse solo (regla RBAC)
+  await page.getByRole('checkbox', { name: 'Director de Carrera' }).check()
+  const docenteChk = page.getByRole('checkbox', { name: 'Docente', exact: true })
+  if (!(await docenteChk.isChecked())) throw new Error('Docente no se marcó automáticamente al asignar cargo')
+  await page.getByRole('button', { name: 'Guardar' }).click()
+  // La tabla muestra los chips de TODOS los roles del usuario
+  await fila.getByText('Director de Carrera').waitFor()
+  await fila.getByText('Docente', { exact: true }).waitFor()
+})
+await check('RBAC: la jerarquía de la carrera refleja el multi-rol', async () => {
+  await page.getByRole('button', { name: 'Carreras', exact: true }).click()
+  await page.getByText('Docentes (3)').waitFor()   // Valarezo ahora también cuenta como docente
+})
+
 await check('Superadmin: pestaña Períodos Académicos con estructura completa', async () => {
   await page.getByRole('link', { name: 'Períodos' }).click()
   await page.getByRole('button', { name: '+ Nuevo período' }).waitFor()      // crear período

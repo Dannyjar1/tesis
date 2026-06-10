@@ -42,7 +42,7 @@ export default function EstructuraPeriodo({ periodo, periodos }) {
   }, [periodo.id])
 
   const asig = estructura[carreraSel] ?? {
-    coordinador_uid: null, docentes_uid: [], administrativos_uid: [], indicadores: [],
+    director_uid: null, coordinador_uid: null, docentes_uid: [], administrativos_uid: [], indicadores: [],
   }
   const participa = !!estructura[carreraSel]
 
@@ -150,20 +150,36 @@ export default function EstructuraPeriodo({ periodo, periodos }) {
             </p>
           )}
 
-          {/* Coordinador / responsable */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Coordinador / responsable del período</label>
-            <select
-              value={asig.coordinador_uid ?? ''}
-              onChange={e => guardar({ coordinador_uid: e.target.value || null })}
-              disabled={esHistorial || guardando}
-              className="w-full sm:w-80 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-uide-primary disabled:bg-gray-50"
-            >
-              <option value="">— Sin responsable asignado —</option>
-              {elegiblesCoord.map(u => (
-                <option key={u.uid} value={u.uid}>{u.nombre_completo}</option>
-              ))}
-            </select>
+          {/* Cargos del período: director y coordinador/responsable (RBAC) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Director/a del período</label>
+              <select
+                value={asig.director_uid ?? ''}
+                onChange={e => guardar({ director_uid: e.target.value || null })}
+                disabled={esHistorial || guardando}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-uide-primary disabled:bg-gray-50"
+              >
+                <option value="">— Sin director asignado —</option>
+                {elegiblesCoord.map(u => (
+                  <option key={u.uid} value={u.uid}>{u.nombre_completo}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Coordinador / responsable del período</label>
+              <select
+                value={asig.coordinador_uid ?? ''}
+                onChange={e => guardar({ coordinador_uid: e.target.value || null })}
+                disabled={esHistorial || guardando}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-uide-primary disabled:bg-gray-50"
+              >
+                <option value="">— Sin responsable asignado —</option>
+                {elegiblesCoord.map(u => (
+                  <option key={u.uid} value={u.uid}>{u.nombre_completo}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Docentes del período */}

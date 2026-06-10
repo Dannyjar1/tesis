@@ -81,18 +81,17 @@ export async function getUsuariosPorCarrera(carreraId) {
  * @param {Object} datos - Campos del usuario según COL-001
  */
 export async function guardarUsuario(uid, datos) {
-  // Modelo multi-rol: siempre persistir roles[] junto al rol principal.
-  // Si el doc ya tenía varios roles y el rol elegido está entre ellos, se
-  // conservan; si cambió, se reinicia a [rol] (asignación explícita del TIC).
+  // RBAC multi-rol: el formulario envía roles[] (selección múltiple del TIC).
+  // Si solo llega rol (string, llamadas legadas), se normaliza a [rol].
+  const roles = Array.isArray(datos.roles) && datos.roles.length > 0
+    ? datos.roles
+    : [datos.rol]
+  const payload = { ...datos, roles }
+
   if (db) {
     try {
       const ref = doc(db, 'usuarios', uid)
       const snap = await getDoc(ref)
-      const previos = snap.exists() ? snap.data().roles : null
-      const roles = Array.isArray(previos) && previos.includes(datos.rol)
-        ? previos
-        : [datos.rol]
-      const payload = { ...datos, roles }
       if (snap.exists()) {
         await updateDoc(ref, { ...payload, ultima_modificacion: Timestamp.now() })
       } else {
@@ -103,10 +102,7 @@ export async function guardarUsuario(uid, datos) {
       console.warn('[sistemaService] Firestore error en guardarUsuario:', err.code)
     }
   }
-  // Fallback mock: overlay en localStorage
-  const previos = overlay(KEY_USUARIOS_LOCAL)[uid]?.roles
-  const roles = Array.isArray(previos) && previos.includes(datos.rol) ? previos : [datos.rol]
-  guardarOverlay(KEY_USUARIOS_LOCAL, uid, { ...datos, roles })
+  guardarOverlay(KEY_USUARIOS_LOCAL, uid, payload)
 }
 
 /**

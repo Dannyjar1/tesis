@@ -14,7 +14,10 @@ import {
 import {
   inicializarFirestore, inicializarPeriodoActivo, firestoreYaInicializado,
 } from '../../services/firestoreInitService'
-import { ROLES, ROL_LABELS, TIPO_CONTRATO_LABELS } from '../../utils/constants'
+import {
+  ROLES, ROL_LABELS, TIPO_CONTRATO_LABELS,
+  TIPOS_BASE_USUARIO, CARGOS_INSTITUCIONALES,
+} from '../../utils/constants'
 
 const TABS = [
   { id: 'carreras',  label: 'Carreras' },
@@ -385,7 +388,9 @@ function GestionUsuarios() {
     await cargar()
   }
 
-  const filtrados = filtroRol === 'todos' ? usuarios : usuarios.filter(u => u.rol === filtroRol)
+  // RBAC: el filtro considera TODOS los roles del usuario (multi-rol)
+  const rolesDe = (u) => u.roles ?? (u.rol ? [u.rol] : [])
+  const filtrados = filtroRol === 'todos' ? usuarios : usuarios.filter(u => rolesDe(u).includes(filtroRol))
   const rolesDisponibles = [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.DIRECTOR, ROLES.COORDINADOR, ROLES.DOCENTE, ROLES.ADMINISTRATIVO]
 
   return (
@@ -394,7 +399,7 @@ function GestionUsuarios() {
         <div className="flex gap-1.5 flex-wrap flex-1">
           <button onClick={() => setFiltroRol('todos')} className={`px-3 py-1 rounded-full text-xs font-semibold transition ${filtroRol === 'todos' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-500'}`}>Todos ({usuarios.length})</button>
           {rolesDisponibles.map(r => {
-            const n = usuarios.filter(u => u.rol === r).length
+            const n = usuarios.filter(u => rolesDe(u).includes(r)).length
             if (n === 0) return null
             return (
               <button key={r} onClick={() => setFiltroRol(r)} className={`px-3 py-1 rounded-full text-xs font-semibold transition ${filtroRol === r ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-500'}`}>
@@ -433,15 +438,20 @@ function GestionUsuarios() {
                     <p className="text-xs text-gray-400">{u.email}</p>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                      u.rol === 'superadmin' ? 'bg-red-100 text-red-700' :
-                      u.rol === 'admin'      ? 'bg-[#003087]/10 text-[#003087]' :
-                      u.rol === 'director'   ? 'bg-blue-100 text-blue-700' :
-                      u.rol === 'coordinador'? 'bg-purple-100 text-purple-700' :
+                    {/* RBAC: chip por cada rol del usuario (tipo base + cargos) */}
+                    <div className="flex flex-wrap gap-1">
+                      {rolesDe(u).map(r => (
+                        <span key={r} className={`text-xs px-2 py-1 rounded-full font-medium ${
+                          r === 'superadmin' ? 'bg-red-100 text-red-700' :
+                          r === 'admin'      ? 'bg-[#003087]/10 text-[#003087]' :
+                          r === 'director'   ? 'bg-blue-100 text-blue-700' :
+                          r === 'coordinador'? 'bg-purple-100 text-purple-700' :
                                                'bg-gray-100 text-gray-600'
-                    }`}>
-                      {ROL_LABELS[u.rol] ?? u.rol}
-                    </span>
+                        }`}>
+                          {ROL_LABELS[r] ?? r}
+                        </span>
+                      ))}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-500 hidden md:table-cell">
                     {carreras.find(c => c.id === u.carrera_id)?.nombre ?? '—'}
@@ -483,13 +493,16 @@ function GestionUsuarios() {
   )
 }
 
+// Jerarquía para derivar el rol principal a partir de roles[] (RBAC)
+const JERARQUIA = [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.DIRECTOR, ROLES.COORDINADOR, ROLES.DOCENTE, ROLES.ADMINISTRATIVO]
+
 function UsuarioForm({ usuario, onGuardar, onCancelar, cargando, error }) {
   const [form, setForm] = useState({
     nombre:          usuario?.nombre          ?? '',
     apellido:        usuario?.apellido        ?? '',
     nombre_completo: usuario?.nombre_completo ?? '',
     email:           usuario?.email           ?? '',
-    rol:             usuario?.rol             ?? ROLES.DOCENTE,
+    roles:           usuario?.roles ?? (usuario?.rol ? [usuario.rol] : [ROLES.DOCENTE]),
     tipo_contrato:   usuario?.tipo_contrato   ?? null,
     carrera_id:      usuario?.carrera_id      ?? null,
     activo:          usuario?.activo          ?? true,
@@ -503,8 +516,8 @@ function UsuarioForm({ usuario, onGuardar, onCancelar, cargando, error }) {
   const [creandoCarrera, setCreandoCarrera] = useState(false)
   const [errorCarrera, setErrorCarrera]   = useState('')
 
-  const necesitaCarrera  = [ROLES.DIRECTOR, ROLES.COORDINADOR, ROLES.DOCENTE].includes(form.rol)
-  const necesitaContrato = form.rol === ROLES.DOCENTE
+  const necesitaCarrera  = form.roles.some(r => [ROLES.DIRECTOR, ROLES.COORDINADOR, ROLES.DOCENTE].includes(r))
+  const necesitaContrato = form.roles.includes(ROLES.DOCENTE)
 
   // Cargar carreras cuando el formulario las necesita
   useEffect(() => {
@@ -522,13 +535,40 @@ function UsuarioForm({ usuario, onGuardar, onCancelar, cargando, error }) {
       if (k === 'nombre' || k === 'apellido') {
         next.nombre_completo = `${k === 'nombre' ? v : f.nombre} ${k === 'apellido' ? v : f.apellido}`.trim()
       }
-      // Al cambiar rol: limpiar carrera si ya no aplica, limpiar contrato si ya no es docente
-      if (k === 'rol') {
-        if (![ROLES.DIRECTOR, ROLES.COORDINADOR, ROLES.DOCENTE].includes(v)) next.carrera_id = null
-        if (v !== ROLES.DOCENTE) next.tipo_contrato = null
-      }
       return next
     })
+  }
+
+  /** RBAC: alterna un rol en la selección múltiple.
+   *  - Marcar un cargo institucional añade automáticamente "docente" (regla:
+   *    todo cargo lo ejerce un docente; solo administrativos quedan exentos).
+   *  - No se permite quitar "docente" mientras existan cargos marcados.
+   *  - Debe quedar al menos un rol seleccionado. */
+  function toggleRol(rol) {
+    setForm(f => {
+      let roles = f.roles.includes(rol)
+        ? f.roles.filter(r => r !== rol)
+        : [...f.roles, rol]
+
+      const tieneCargo = roles.some(r => CARGOS_INSTITUCIONALES.includes(r))
+      if (CARGOS_INSTITUCIONALES.includes(rol) && roles.includes(rol) && !roles.includes(ROLES.DOCENTE)) {
+        roles = [...roles, ROLES.DOCENTE]          // cargo nuevo → docente automático
+      }
+      if (rol === ROLES.DOCENTE && !roles.includes(ROLES.DOCENTE) && tieneCargo) {
+        roles = [...roles, ROLES.DOCENTE]          // no se quita docente con cargos activos
+      }
+      if (roles.length === 0) roles = [rol]        // mínimo un rol
+
+      const next = { ...f, roles }
+      if (!roles.some(r => [ROLES.DIRECTOR, ROLES.COORDINADOR, ROLES.DOCENTE].includes(r))) next.carrera_id = null
+      if (!roles.includes(ROLES.DOCENTE)) next.tipo_contrato = null
+      return next
+    })
+  }
+
+  /** Rol principal (mayor jerarquía) derivado de la selección múltiple. */
+  function rolPrincipal(roles) {
+    return JERARQUIA.find(r => roles.includes(r)) ?? roles[0]
   }
 
   async function handleCrearCarreraInline(e) {
@@ -557,7 +597,13 @@ function UsuarioForm({ usuario, onGuardar, onCancelar, cargando, error }) {
   const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#003087]'
 
   return (
-    <form onSubmit={e => { e.preventDefault(); onGuardar(form) }} className="space-y-4">
+    <form
+      onSubmit={e => {
+        e.preventDefault()
+        onGuardar({ ...form, rol: rolPrincipal(form.roles) })
+      }}
+      className="space-y-4"
+    >
 
       {/* Nombre / Apellido */}
       <div className="grid grid-cols-2 gap-3">
@@ -578,14 +624,44 @@ function UsuarioForm({ usuario, onGuardar, onCancelar, cargando, error }) {
           type="email" required placeholder="usuario@uide.edu.ec" className={inputCls} />
       </div>
 
-      {/* Rol */}
-      <div>
-        <label className="block text-xs font-semibold text-gray-600 mb-1">Rol *</label>
-        <select value={form.rol} onChange={e => set('rol', e.target.value)} required className={inputCls}>
-          {Object.entries(ROL_LABELS).map(([val, label]) => (
-            <option key={val} value={val}>{label}</option>
-          ))}
-        </select>
+      {/* Roles múltiples (RBAC): tipo base + cargos institucionales */}
+      <div className="border border-gray-200 rounded-lg p-3 space-y-3">
+        <div>
+          <p className="text-xs font-semibold text-gray-600 mb-1.5">Tipo de usuario *</p>
+          <div className="flex flex-wrap gap-x-5 gap-y-1.5">
+            {TIPOS_BASE_USUARIO.map(r => (
+              <label key={r} className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.roles.includes(r)}
+                  onChange={() => toggleRol(r)}
+                  className="h-4 w-4 rounded border-gray-300 text-[#003087] focus:ring-[#003087]"
+                />
+                {ROL_LABELS[r]}
+              </label>
+            ))}
+          </div>
+        </div>
+        <div>
+          <p className="text-xs font-semibold text-gray-600 mb-1.5">Cargos institucionales (selección múltiple)</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-1.5">
+            {CARGOS_INSTITUCIONALES.map(r => (
+              <label key={r} className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.roles.includes(r)}
+                  onChange={() => toggleRol(r)}
+                  className="h-4 w-4 rounded border-gray-300 text-[#003087] focus:ring-[#003087]"
+                />
+                {ROL_LABELS[r]}
+              </label>
+            ))}
+          </div>
+          <p className="text-[11px] text-gray-400 mt-1.5">
+            Un cargo siempre lo ejerce un docente: al marcar un cargo se añade "Docente" automáticamente.
+            Un mismo usuario puede acumular varios cargos (ej. Docente + Coordinador + Director).
+          </p>
+        </div>
       </div>
 
       {/* Carrera — solo cuando aplica */}

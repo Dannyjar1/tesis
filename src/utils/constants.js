@@ -23,6 +23,15 @@ export const CARGO_LABELS = {
   bienestar_universitario:   'Bienestar Universitario',
 }
 
+// ── Modelo RBAC: tipos base + cargos institucionales (roles múltiples) ────────
+// Un usuario tiene un TIPO BASE (docente o administrativo) y puede acumular
+// CARGOS institucionales sobre él (Coordinador de Carrera, Director,
+// Prorrector, Administrador del Sistema u otros futuros).
+// Regla institucional: todo cargo lo ejerce un docente — los únicos usuarios
+// que no necesariamente son docentes son los administrativos.
+export const TIPOS_BASE_USUARIO = [ROLES.DOCENTE, ROLES.ADMINISTRATIVO]
+export const CARGOS_INSTITUCIONALES = [ROLES.COORDINADOR, ROLES.DIRECTOR, ROLES.ADMIN, ROLES.SUPERADMIN]
+
 // ── Tipos de contrato (atributo del docente, no del rol) ─────────────────────
 export const TIPO_CONTRATO = {
   TIEMPO_COMPLETO: 'tiempo_completo',
