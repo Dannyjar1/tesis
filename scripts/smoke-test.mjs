@@ -155,6 +155,15 @@ await check('Carreras: botón Agregar usuario abre modal con la carrera', async 
   await page.keyboard.press('Escape')
 })
 
+await check('Superadmin: pestaña Períodos Académicos con estructura completa', async () => {
+  await page.getByRole('link', { name: 'Períodos' }).click()
+  await page.getByRole('button', { name: '+ Nuevo período' }).waitFor()      // crear período
+  await page.getByRole('button', { name: 'Estructura' }).first().waitFor()  // configurar jerarquía
+  await page.getByRole('button', { name: 'Estructura' }).first().click()
+  await page.getByText('Coordinador / responsable del período').waitFor()   // asignaciones
+  await page.keyboard.press('Escape')
+})
+
 // ── 9. Multi-rol: superadmin vinculado también como docente ──
 await check('Superadmin+docente: ve módulos de sistema Y docentes (fusión)', async () => {
   await page.evaluate(() => {

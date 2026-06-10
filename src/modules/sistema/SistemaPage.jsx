@@ -4,7 +4,9 @@
  * Ruta: /sistema  — solo accesible con rol 'superadmin'
  */
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Modal from '../../components/Modal'
+import PeriodosAdmin from '../admin/PeriodosAdmin'
 import {
   getCarreras, crearCarrera, actualizarCarrera, toggleActivoCarrera,
   getTodosUsuarios, guardarUsuario, toggleActivoUsuario,
@@ -16,12 +18,18 @@ import { ROLES, ROL_LABELS, TIPO_CONTRATO_LABELS } from '../../utils/constants'
 
 const TABS = [
   { id: 'carreras',  label: 'Carreras' },
+  { id: 'periodos',  label: 'Períodos Académicos' },
   { id: 'usuarios',  label: 'Usuarios y Roles' },
   { id: 'seed',      label: 'Inicialización del Sistema' },
 ]
 
 export default function SistemaPage() {
-  const [tab, setTab] = useState('carreras')
+  // La pestaña vive en la URL (?tab=periodos) para que los enlaces del
+  // sidebar funcionen y la vista sea compartible/recargable.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tabParam = searchParams.get('tab')
+  const tab = TABS.some(t => t.id === tabParam) ? tabParam : 'carreras'
+  const setTab = (id) => setSearchParams(id === 'carreras' ? {} : { tab: id })
 
   return (
     <div className="space-y-5">
@@ -45,6 +53,9 @@ export default function SistemaPage() {
       </div>
 
       {tab === 'carreras' && <GestionCarreras />}
+      {/* Períodos: estructura jerárquica Período → Carreras → Usuarios,
+          historial inmutable, copia de estructura — control total del TIC */}
+      {tab === 'periodos' && <PeriodosAdmin />}
       {tab === 'usuarios' && <GestionUsuarios />}
       {tab === 'seed'     && <PanelSeed />}
     </div>

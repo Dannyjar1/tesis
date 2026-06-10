@@ -1,14 +1,15 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import logoUide from '../assets/logo-uide.png'
 import { useAuth } from '../modules/auth/useAuth'
 import { ROL_LABELS, ROLES, TIPO_CONTRATO_LABELS, CARGO_LABELS } from '../utils/constants'
 
 const MENU = {
   [ROLES.SUPERADMIN]: [
-    { path: '/sistema',            label: 'Carreras',           icon: IconGrid },
-    { path: '/sistema?tab=usuarios', label: 'Usuarios y Roles', icon: IconUsers },
-    { path: '/sistema?tab=seed',   label: 'Inicialización',     icon: IconSettings },
-    { path: '/notificaciones',     label: 'Notificaciones',     icon: IconBell },
+    { path: '/sistema',              label: 'Carreras',           icon: IconGrid },
+    { path: '/sistema?tab=periodos', label: 'Períodos',           icon: IconCalendar },
+    { path: '/sistema?tab=usuarios', label: 'Usuarios y Roles',   icon: IconUsers },
+    { path: '/sistema?tab=seed',     label: 'Inicialización',     icon: IconSettings },
+    { path: '/notificaciones',       label: 'Notificaciones',     icon: IconBell },
   ],
   [ROLES.ADMIN]: [
     { path: '/dashboard', label: 'Dashboard', icon: IconGrid },
@@ -57,7 +58,17 @@ const MENU = {
 
 export default function Sidebar({ cerrado, onClose }) {
   const { user } = useAuth()
+  const { pathname, search } = useLocation()
   if (!user) return null
+
+  /** Activo exacto incluyendo query (?tab=...) para las pestañas de /sistema. */
+  function esActivo(path) {
+    const [p, q] = path.split('?')
+    if (p !== pathname) return false
+    const tabLink   = new URLSearchParams(q ?? '').get('tab')
+    const tabActual = new URLSearchParams(search).get('tab')
+    return (tabLink ?? null) === (tabActual ?? null)
+  }
 
   // Multi-rol: fusiona los menús de TODOS los roles del usuario (p. ej.
   // director + coordinador), deduplicando por ruta y respetando el orden del
@@ -111,13 +122,17 @@ export default function Sidebar({ cerrado, onClose }) {
           <NavLink
             key={path}
             to={path}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                isActive
+            className={({ isActive }) => {
+              // Para rutas con ?tab= el match debe incluir el query exacto
+              const activo = path.includes('?') || pathname === '/sistema'
+                ? esActivo(path)
+                : isActive
+              return `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                activo
                   ? 'bg-white text-uide-primary'
                   : 'text-blue-100 hover:bg-white/10 hover:text-white'
               }`
-            }
+            }}
           >
             <Icon className="h-5 w-5 flex-shrink-0" />
             {!cerrado && <span className="truncate">{label}</span>}
