@@ -5,7 +5,7 @@ import { ROLES } from '../utils/constants'
 import LoadingSpinner from '../components/LoadingSpinner'
 import Navbar from '../components/Navbar'
 import Sidebar from '../components/Sidebar'
-import RoleGuard from '../modules/auth/RoleGuard'
+import ModuloGuard from '../modules/auth/ModuloGuard'
 
 // Login estático (primera pintura); el resto de páginas se cargan bajo demanda
 // (code-splitting por ruta) para cumplir RNF-019: carga inicial < 2 segundos.
@@ -26,10 +26,6 @@ const AyudaPage                = lazy(() => import('../modules/ayuda/AyudaPage')
 const PerfilPage               = lazy(() => import('../modules/perfil/PerfilPage'))
 const PersonalPage             = lazy(() => import('../modules/personal/PersonalPage'))
 const AdministrativoDashboard  = lazy(() => import('../modules/administrativo/AdministrativoDashboard'))
-
-const GESTION        = [ROLES.ADMIN, ROLES.DIRECTOR, ROLES.COORDINADOR]
-const PERSONAL       = [ROLES.DOCENTE, ROLES.ADMINISTRATIVO]
-const ADMIN_DIRECTOR = [ROLES.ADMIN, ROLES.DIRECTOR]
 
 function AuthLayout() {
   const { user, loading } = useAuth()
@@ -94,55 +90,55 @@ export default function AppRouter() {
       <Route element={<AuthLayout />}>
         {/* Superadmin — TIC */}
         <Route path="/sistema" element={
-          <RoleGuard roles={[ROLES.SUPERADMIN]}><SistemaPage /></RoleGuard>
+          <ModuloGuard modulo={['sistema-carreras', 'sistema-periodos', 'sistema-usuarios', 'sistema-roles', 'sistema-seed']}><SistemaPage /></ModuloGuard>
         } />
 
         {/* Dashboard — gestión */}
         <Route path="/dashboard" element={
-          <RoleGuard roles={GESTION}><DashboardPage /></RoleGuard>
+          <ModuloGuard modulo="dashboard"><DashboardPage /></ModuloGuard>
         } />
 
         {/* Distributivo gestión — director y coordinador */}
         <Route path="/distributivo/gestion" element={
-          <RoleGuard roles={GESTION}><GestionDistributivoPage /></RoleGuard>
+          <ModuloGuard modulo="distributivos"><GestionDistributivoPage /></ModuloGuard>
         } />
 
         {/* Vistas personales — docente y administrativo */}
         <Route path="/mi-distributivo" element={
-          <RoleGuard roles={PERSONAL}><DistributivoPage /></RoleGuard>
+          <ModuloGuard modulo="mi-distributivo"><DistributivoPage /></ModuloGuard>
         } />
         <Route path="/calendario" element={
-          <RoleGuard roles={PERSONAL}><CalendarioPage /></RoleGuard>
+          <ModuloGuard modulo="calendario"><CalendarioPage /></ModuloGuard>
         } />
         <Route path="/ia" element={
-          <RoleGuard roles={PERSONAL}><ClasificacionPage /></RoleGuard>
+          <ModuloGuard modulo="ia"><ClasificacionPage /></ModuloGuard>
         } />
         <Route path="/mis-actividades" element={
-          <RoleGuard roles={[...PERSONAL, ROLES.COORDINADOR, ROLES.DIRECTOR]}>
+          <ModuloGuard modulo="mis-actividades">
             <MisActividadesPage />
-          </RoleGuard>
+          </ModuloGuard>
         } />
         <Route path="/horario" element={
-          <RoleGuard roles={PERSONAL}>
+          <ModuloGuard modulo="horario">
             <CalendarioDistributivo />
-          </RoleGuard>
+          </ModuloGuard>
         } />
         <Route path="/reportes" element={
-          <RoleGuard roles={[...GESTION, ROLES.ADMINISTRATIVO]}><ReportesPage /></RoleGuard>
+          <ModuloGuard modulo="reportes"><ReportesPage /></ModuloGuard>
         } />
 
         {/* Panel administrativo */}
         <Route path="/mi-panel" element={
-          <RoleGuard roles={[ROLES.ADMINISTRATIVO]}>
+          <ModuloGuard modulo="mi-panel">
             <AdministrativoDashboard />
-          </RoleGuard>
+          </ModuloGuard>
         } />
 
         {/* Personal — director (rw) y coordinador (ro) */}
         <Route path="/personal" element={
-          <RoleGuard roles={[ROLES.DIRECTOR, ROLES.COORDINADOR]}>
+          <ModuloGuard modulo="personal">
             <PersonalPage />
-          </RoleGuard>
+          </ModuloGuard>
         } />
 
         {/* Todos los roles autenticados */}
@@ -152,19 +148,19 @@ export default function AppRouter() {
 
         {/* Admin */}
         <Route path="/admin" element={
-          <RoleGuard roles={[ROLES.ADMIN]}><AdminPage seccion="panel" /></RoleGuard>
+          <ModuloGuard modulo="admin-usuarios"><AdminPage seccion="panel" /></ModuloGuard>
         } />
         <Route path="/admin/usuarios" element={
-          <RoleGuard roles={[ROLES.ADMIN]}><AdminPage seccion="usuarios" /></RoleGuard>
+          <ModuloGuard modulo="admin-usuarios"><AdminPage seccion="usuarios" /></ModuloGuard>
         } />
         <Route path="/admin/configuracion" element={
-          <RoleGuard roles={[ROLES.ADMIN]}><AdminPage seccion="configuracion" /></RoleGuard>
+          <ModuloGuard modulo="configuracion"><AdminPage seccion="configuracion" /></ModuloGuard>
         } />
         <Route path="/admin/periodos" element={
-          <RoleGuard roles={ADMIN_DIRECTOR}><AdminPage seccion="periodos" /></RoleGuard>
+          <ModuloGuard modulo="gestion-periodos"><AdminPage seccion="periodos" /></ModuloGuard>
         } />
         <Route path="/admin/auditoria" element={
-          <RoleGuard roles={ADMIN_DIRECTOR}><AdminPage seccion="auditoria" /></RoleGuard>
+          <ModuloGuard modulo="auditoria"><AdminPage seccion="auditoria" /></ModuloGuard>
         } />
       </Route>
 

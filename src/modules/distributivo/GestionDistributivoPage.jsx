@@ -2,6 +2,7 @@ import { useState, useContext } from 'react'
 import { PeriodoContext } from '../../context/PeriodoContext'
 import { useAuth } from '../auth/useAuth'
 import { useGestionDistributivos } from '../../hooks/useDistributivo'
+import { usePermisos } from '../../hooks/usePermisos'
 import { ESTADO_COLORES, ESTADO_LABELS, ROLES, TIPO_CONTRATO_HORAS, TIPO_CONTRATO_LABELS, CARRERA_LABELS } from '../../utils/constants'
 import { formatearHoras } from '../../utils/formatters'
 import { puedeElaborarDistributivo, validarCargaCompartida } from '../../services/matrizProductividadService'
@@ -22,8 +23,10 @@ export default function GestionDistributivoPage() {
   const [alerta, setAlerta] = useState(null)
   const [procesando, setProcesando] = useState(false)
 
-  // Multi-rol: un usuario puede ser director + coordinador a la vez
-  const esDirector = (user?.roles ?? [user?.rol]).includes(ROLES.DIRECTOR)
+  // RBAC: la potestad de aprobar viene de la ACCIÓN del rol (definible por el
+  // superadmin en Roles y Permisos), no de un rol codificado.
+  const { tieneAccion } = usePermisos()
+  const esDirector = tieneAccion('distributivos', 'aprobar')
 
   function getDistributivoDeDocente(uid) {
     return distributivos.find(d => d.docente_uid === uid) ?? null

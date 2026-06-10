@@ -7,6 +7,8 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Modal from '../../components/Modal'
 import PeriodosAdmin from '../admin/PeriodosAdmin'
+import GestionRoles from './GestionRoles'
+import { getDefinicionesSync } from '../../services/rolesService'
 import {
   getCarreras, crearCarrera, actualizarCarrera, toggleActivoCarrera,
   getTodosUsuarios, guardarUsuario, toggleActivoUsuario,
@@ -15,14 +17,14 @@ import {
   inicializarFirestore, inicializarPeriodoActivo, firestoreYaInicializado,
 } from '../../services/firestoreInitService'
 import {
-  ROLES, ROL_LABELS, TIPO_CONTRATO_LABELS,
-  TIPOS_BASE_USUARIO, CARGOS_INSTITUCIONALES,
+  ROLES, ROL_LABELS, TIPO_CONTRATO_LABELS, TIPOS_BASE_USUARIO,
 } from '../../utils/constants'
 
 const TABS = [
   { id: 'carreras',  label: 'Carreras' },
   { id: 'periodos',  label: 'Períodos Académicos' },
   { id: 'usuarios',  label: 'Usuarios y Roles' },
+  { id: 'roles',     label: 'Roles y Permisos' },
   { id: 'seed',      label: 'Inicialización del Sistema' },
 ]
 
@@ -60,6 +62,8 @@ export default function SistemaPage() {
           historial inmutable, copia de estructura — control total del TIC */}
       {tab === 'periodos' && <PeriodosAdmin />}
       {tab === 'usuarios' && <GestionUsuarios />}
+      {/* RBAC dinámico: crear/modificar roles, módulos y acciones (sin código) */}
+      {tab === 'roles'    && <GestionRoles />}
       {tab === 'seed'     && <PanelSeed />}
     </div>
   )
@@ -516,6 +520,12 @@ function UsuarioForm({ usuario, onGuardar, onCancelar, cargando, error }) {
   const [creandoCarrera, setCreandoCarrera] = useState(false)
   const [errorCarrera, setErrorCarrera]   = useState('')
 
+  // RBAC dinámico: los cargos asignables son TODAS las definiciones de rol
+  // activas excepto los tipos base — incluye roles personalizados creados
+  // por el superadmin (ej. "Auditor CACES") sin tocar código.
+  const cargosAsignables = getDefinicionesSync()
+    .filter(d => d.activo !== false && !TIPOS_BASE_USUARIO.includes(d.id))
+
   const necesitaCarrera  = form.roles.some(r => [ROLES.DIRECTOR, ROLES.COORDINADOR, ROLES.DOCENTE].includes(r))
   const necesitaContrato = form.roles.includes(ROLES.DOCENTE)
 
@@ -550,8 +560,9 @@ function UsuarioForm({ usuario, onGuardar, onCancelar, cargando, error }) {
         ? f.roles.filter(r => r !== rol)
         : [...f.roles, rol]
 
-      const tieneCargo = roles.some(r => CARGOS_INSTITUCIONALES.includes(r))
-      if (CARGOS_INSTITUCIONALES.includes(rol) && roles.includes(rol) && !roles.includes(ROLES.DOCENTE)) {
+      const esCargo = (r) => !TIPOS_BASE_USUARIO.includes(r)
+      const tieneCargo = roles.some(esCargo)
+      if (esCargo(rol) && roles.includes(rol) && !roles.includes(ROLES.DOCENTE)) {
         roles = [...roles, ROLES.DOCENTE]          // cargo nuevo → docente automático
       }
       if (rol === ROLES.DOCENTE && !roles.includes(ROLES.DOCENTE) && tieneCargo) {
@@ -645,15 +656,15 @@ function UsuarioForm({ usuario, onGuardar, onCancelar, cargando, error }) {
         <div>
           <p className="text-xs font-semibold text-gray-600 mb-1.5">Cargos institucionales (selección múltiple)</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-1.5">
-            {CARGOS_INSTITUCIONALES.map(r => (
-              <label key={r} className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+            {cargosAsignables.map(c => (
+              <label key={c.id} className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={form.roles.includes(r)}
-                  onChange={() => toggleRol(r)}
+                  checked={form.roles.includes(c.id)}
+                  onChange={() => toggleRol(c.id)}
                   className="h-4 w-4 rounded border-gray-300 text-[#003087] focus:ring-[#003087]"
                 />
-                {ROL_LABELS[r]}
+                {c.nombre}
               </label>
             ))}
           </div>

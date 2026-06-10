@@ -1278,6 +1278,7 @@ const USUARIOS_SEED = [
 | `/planes_mejora` | Plan de mejoras accionable por incumplimiento de horas (no solo notificación). Sin eliminación (trazabilidad). | `docente_uid`, `periodo_id`, `descripcion`, `fecha_registro`, `fecha_compromiso`, `responsable_nombre`, `estado` (abierto/cumplido/incumplido) | RF-037 |
 | `/matriz_productividad` | Matriz de Productividad pre-asignada desde Rectorado; paso previo al distributivo. Solo lectura excepto Admin. | `docente_uid`, `periodo_id`, `horas_investigacion`, `proyecto`, `estado` (aprobada), `origen: "rectorado"` | RF-043 |
 | `/oficios` | Notificación formal por incumplimiento: oficio registrado con numeración secuencial (`OFI-<año>-NNN`) o constancia del envío Outlook. | `numero`, `docente_uid`, `periodo_id`, `motivo`, `cuerpo`, `plan_mejora_id`, `via`, `fecha_emision`, `emitido_por` | RF-044 |
+| `/roles_definicion` | RBAC dinámico: definición de cada rol (de sistema o personalizado) con sus módulos visibles y acciones ejecutables; editable por el superadmin sin tocar código (§12.13). | `id`, `nombre`, `modulos[]`, `acciones{modulo: [...]}`, `activo`, `es_sistema` | RBAC |
 
 > Campos añadidos a colecciones existentes: `/usuarios.telefono_whatsapp` (RF-038, notificaciones Twilio) y `/tareas_todo.imprevista` (RF-041, validación de 2 semanas de anticipación en la capa de aplicación).
 
@@ -1663,6 +1664,30 @@ Los cargos institucionales NO son tipos de usuario independientes, sino **roles 
 - Por período: la estructura jerárquica (§COL-003/carreras) almacena `director_uid` y `coordinador_uid` propios de cada período — los cargos pueden reasignarse semestre a semestre sin alterar el historial
 
 **Ejemplos válidos:** docente+coordinador · docente+coordinador+director · docente+admin (Prorrector que registra sus actividades académicas) · docente+superadmin (Administrador del Sistema que también dicta clases) · administrativo (único caso no-docente).
+
+---
+
+### 12.13 RBAC dinámico: roles, módulos y acciones como DATOS
+
+**Decisión:**
+La visualización de módulos, menús y funcionalidades NO depende de listas codificadas por rol: se construye dinámicamente a partir de **definiciones de rol almacenadas como datos**, editables por el superadmin sin modificar el código fuente.
+
+**Arquitectura:**
+
+| Pieza | Archivo | Responsabilidad |
+|---|---|---|
+| Registro de módulos | `src/utils/modulos.js` | Catálogo único de módulos del sistema (id, label, ruta, ícono, acciones soportadas: visualizar/crear/editar/aprobar/eliminar/exportar/administrar) |
+| Definiciones de rol | `src/services/rolesService.js` + colección `/roles_definicion` | Cada rol declara sus `modulos[]` y `acciones{}`. Los 6 roles de sistema vienen sembrados (`ROLES_DEFAULT`); los personalizados se crean desde la UI. `activo: false` retira los permisos sin borrar el rol |
+| Permisos acumulativos | `computarPermisos(rolesUsuario, definiciones)` | UNIÓN de módulos y acciones de todos los roles activos del usuario (función pura, testeada) |
+| Hook de permisos | `src/hooks/usePermisos.js` | `tieneModulo(id)` / `tieneAccion(modulo, accion)` para menú, rutas y botones |
+| Menú dinámico | `Sidebar.jsx` | Se construye filtrando el registro de módulos con los permisos del usuario — la interfaz nunca depende de un único rol |
+| Guard por módulo | `src/modules/auth/ModuloGuard.jsx` | Las rutas validan el MÓDULO, no roles fijos: un rol personalizado nuevo otorga acceso a sus rutas sin tocar el router |
+| UI de administración | `src/modules/sistema/GestionRoles.jsx` (pestaña "Roles y Permisos") | Crear/modificar roles, activar/desactivar, y definir módulos+acciones por rol con checkboxes |
+| Acciones en lógica | ej. `GestionDistributivoPage` | `tieneAccion('distributivos','aprobar')` gobierna la aprobación (potestad configurable, ya no atada al rol "director") |
+
+**Flujo verificado E2E:** el superadmin crea el rol "Auditor CACES" (módulos Reportes + Auditoría) → el rol aparece como cargo asignable en Usuarios y Roles → un docente con ese rol ve en su menú los módulos docentes MÁS Auditoría/Reportes y accede a `/admin/auditoria` sin que exista ninguna referencia al rol en el código.
+
+> Los cargos asignables del formulario de usuario provienen de las definiciones activas (no de constantes), por lo que la estructura escala a nuevos cargos institucionales, carreras y períodos sin modificar el código fuente.
 
 ---
 
