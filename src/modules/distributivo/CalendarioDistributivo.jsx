@@ -129,7 +129,7 @@ export default function CalendarioDistributivo() {
       {alerta && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">
           {alerta}
-          <button className="ml-3 text-red-400 hover:text-red-700" onClick={() => setAlerta('')}>✕</button>
+          <button className="ml-3 text-red-400 hover:text-red-700" onClick={() => setAlerta('')}>×</button>
         </div>
       )}
 

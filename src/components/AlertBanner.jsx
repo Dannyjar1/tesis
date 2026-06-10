@@ -20,7 +20,7 @@ export default function AlertBanner({ tipo = 'info', mensaje, onCerrar }) {
           className="flex-shrink-0 font-bold opacity-60 hover:opacity-100"
           aria-label="Cerrar"
         >
-          ✕
+          ×
         </button>
       )}
     </div>

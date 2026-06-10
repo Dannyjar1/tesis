@@ -1,6 +1,7 @@
-import { useState, useContext } from 'react'
+import { useState, useContext, useEffect } from 'react'
 import { PeriodoContext } from '../../context/PeriodoContext'
 import { useCalendario } from '../../hooks/useCalendario'
+import { getAuthLog, clearAuthLog } from '../../services/authDebug'
 import {
   getSemana,
   formatearRangoSemana,
@@ -10,8 +11,10 @@ import {
 import SyncOutlookButton from './SyncOutlookButton'
 import CalendarioConfig from './CalendarioConfig'
 import EventoCard from './EventoCard'
+import CorreosDistPanel from './CorreosDistPanel'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import AlertBanner from '../../components/AlertBanner'
+import { IconCalendario, IconEtiqueta } from '../../components/icons'
 
 export default function CalendarioPage() {
   const { periodoActivo } = useContext(PeriodoContext)
@@ -23,6 +26,13 @@ export default function CalendarioPage() {
 
   const [offsetSemana, setOffsetSemana] = useState(0)
   const [alerta, setAlerta] = useState(null)
+  const [logs, setLogs] = useState(() => getAuthLog())
+  const [vista, setVista] = useState('agenda') // 'agenda' | 'correos' (RF-023)
+
+  useEffect(() => {
+    const t = setInterval(() => setLogs(getAuthLog()), 1000)
+    return () => clearInterval(t)
+  }, [])
 
   const { inicio, fin } = getSemana(offsetSemana)
 
@@ -93,8 +103,27 @@ export default function CalendarioPage() {
       )}
       {error && <AlertBanner tipo="error" mensaje={error} />}
 
+      {/* Toggle Agenda | Correos DIST/* (RF-023) */}
+      <div className="inline-flex rounded-lg border border-gray-200 bg-white p-0.5">
+        {[['agenda', 'Agenda', IconCalendario], ['correos', 'Correos DIST/*', IconEtiqueta]].map(([clave, etiqueta, Icono]) => (
+          <button
+            key={clave}
+            onClick={() => setVista(clave)}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${
+              vista === clave
+                ? 'bg-uide-primary text-white shadow-sm'
+                : 'text-gray-500 hover:text-gray-800'
+            }`}
+          >
+            <span className="inline-flex items-center gap-1.5"><Icono className="h-4 w-4" />{etiqueta}</span>
+          </button>
+        ))}
+      </div>
+
+      {vista === 'correos' && <CorreosDistPanel />}
+
       {/* Bloque de autorización — solo si no ha conectado su calendario */}
-      {!autorizado && (
+      {vista === 'agenda' && !autorizado && (
         <CalendarioConfig
           autorizado={false}
           onAutorizar={handleAutorizar}
@@ -103,7 +132,7 @@ export default function CalendarioPage() {
       )}
 
       {/* Stats — visible solo cuando autorizado */}
-      {autorizado && (
+      {vista === 'agenda' && autorizado && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <StatCard label="Eventos totales"    valor={totalEventos} color="text-uide-primary" />
           <StatCard label="Esta semana"        valor={eventosSemana.length} color="text-blue-600" />
@@ -116,9 +145,9 @@ export default function CalendarioPage() {
       )}
 
       {/* Vista de agenda semanal */}
-      {autorizado && totalEventos === 0 && (
+      {vista === 'agenda' && autorizado && totalEventos === 0 && (
         <div className="bg-white rounded-xl border-2 border-dashed border-gray-200 p-12 text-center">
-          <div className="text-4xl mb-3">📅</div>
+          <IconCalendario className="h-10 w-10 mx-auto mb-3 text-gray-300" />
           <h2 className="text-base font-semibold text-gray-700">Sin eventos sincronizados</h2>
           <p className="text-gray-400 text-sm mt-1">
             Haz clic en "Sincronizar Outlook" para importar tus eventos del calendario.
@@ -126,7 +155,7 @@ export default function CalendarioPage() {
         </div>
       )}
 
-      {autorizado && totalEventos > 0 && (
+      {vista === 'agenda' && autorizado && totalEventos > 0 && (
         <div className="space-y-3">
           {/* Navegación semanal */}
           <div className="flex items-center justify-between bg-white rounded-xl border border-gray-200 px-4 py-3">
@@ -218,7 +247,7 @@ export default function CalendarioPage() {
       )}
 
       {/* Bloque de revocar acceso — al fondo, solo cuando autorizado */}
-      {autorizado && (
+      {vista === 'agenda' && autorizado && (
         <CalendarioConfig
           autorizado
           onAutorizar={handleAutorizar}
@@ -226,6 +255,41 @@ export default function CalendarioPage() {
           autorizando={false}
         />
       )}
+
+      {/* ── Panel de diagnóstico (temporal) ──────────────────────────────────── */}
+      <div className="bg-slate-900 rounded-xl p-3 shadow-sm">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[11px] font-bold text-emerald-400 uppercase tracking-wide font-mono">
+            Diagnóstico Outlook / sincronización
+          </p>
+          <button
+            type="button"
+            onClick={() => { clearAuthLog(); setLogs([]) }}
+            className="text-[10px] text-slate-400 hover:text-white px-2 py-0.5 rounded border border-slate-700"
+          >
+            Limpiar
+          </button>
+        </div>
+        <div className="max-h-52 overflow-y-auto space-y-0.5">
+          {logs.length === 0 ? (
+            <p className="text-[10px] text-slate-500 font-mono">Sin eventos aún. Conecta Outlook y sincroniza.</p>
+          ) : (
+            logs.map((l, i) => (
+              <div key={i} className="text-[10px] font-mono leading-tight">
+                <span className="text-slate-500">{l.hora}</span>{' '}
+                <span className={
+                  l.paso.includes('ERROR') || l.paso.includes('error')
+                    ? 'text-red-400'
+                    : l.paso.includes('OK') || l.paso.includes('graph-OK')
+                    ? 'text-emerald-400'
+                    : 'text-sky-300'
+                }>{l.paso}</span>
+                {l.detalle && <span className="text-slate-300"> → {l.detalle}</span>}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   )
 }

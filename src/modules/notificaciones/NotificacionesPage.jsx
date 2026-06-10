@@ -1,6 +1,7 @@
 import { useContext } from 'react'
 import { NotificacionContext } from '../../context/NotificacionContext'
 import NotificacionItem from './NotificacionItem'
+import { IconCampana } from '../../components/icons'
 
 export default function NotificacionesPage() {
   const { notificaciones, noLeidas, marcarLeida, marcarTodasLeidas } = useContext(NotificacionContext)
@@ -33,7 +34,7 @@ export default function NotificacionesPage() {
       {/* Sin notificaciones */}
       {notificaciones.length === 0 && (
         <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <div className="text-4xl mb-3">🔔</div>
+          <IconCampana className="h-10 w-10 mx-auto mb-3 text-gray-300" />
           <p className="text-gray-500 text-sm">Sin notificaciones por el momento.</p>
           <p className="text-gray-400 text-xs mt-1">
             Las alertas de incumplimiento y aprobaciones aparecerán aquí.

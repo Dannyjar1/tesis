@@ -5,6 +5,7 @@ import { getPersonal, crearPersonal, actualizarPersonal, toggleActivo } from '..
 import Modal from '../../components/Modal'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import DocenteForm from './DocenteForm'
+import { IconUsuarios } from '../../components/icons'
 
 const CONTRATO_BADGE = {
   tiempo_completo: 'bg-blue-100 text-blue-700',
@@ -129,7 +130,7 @@ export default function PersonalPage() {
         <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>
       ) : personal.length === 0 ? (
         <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-12 text-center">
-          <p className="text-4xl mb-3">👥</p>
+          <IconUsuarios className="h-10 w-10 mx-auto mb-3 text-gray-300" />
           <p className="text-gray-500 font-medium">Sin personal registrado</p>
           {esDirector && (
             <p className="text-gray-400 text-sm mt-1">

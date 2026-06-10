@@ -70,7 +70,7 @@ export default function ActividadItem({ actividad, onToggle, onActualizar, onEli
           </span>
           {fecha_limite && (
             <span className={`text-[11px] ${vencida ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
-              {vencida ? '⚠ Vencida: ' : 'Hasta: '}
+              {vencida ? 'Vencida: ' : 'Hasta: '}
               {new Date(fecha_limite + 'T12:00:00').toLocaleDateString('es-EC', { day: 'numeric', month: 'short', year: 'numeric' })}
             </span>
           )}

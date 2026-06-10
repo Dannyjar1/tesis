@@ -31,6 +31,23 @@ const provider = new OAuthProvider('microsoft.com')
 provider.addScope('User.Read')
 provider.setCustomParameters({ tenant: 'common', prompt: 'select_account' })
 
+// ── Normalización multi-rol ───────────────────────────────────────────────────
+// Firestore guarda roles: ["director","coordinador"] (array — un usuario puede
+// ejercer varios roles a la vez). El código legado usa rol (string). Esta
+// normalización garantiza AMBOS campos en el perfil de sesión:
+//   roles → array para checks roles.includes('x')
+//   rol   → rol principal (mayor jerarquía) para menú, home y etiquetas UI.
+const JERARQUIA_ROLES = ['superadmin', 'admin', 'director', 'coordinador', 'docente', 'administrativo']
+
+export function normalizarRolesPerfil(perfil) {
+  if (!perfil) return perfil
+  const roles = Array.isArray(perfil.roles) && perfil.roles.length > 0
+    ? perfil.roles
+    : perfil.rol ? [perfil.rol] : []
+  const rol = JERARQUIA_ROLES.find(r => roles.includes(r)) ?? roles[0] ?? null
+  return { ...perfil, roles, rol }
+}
+
 // ── Resolución del perfil por email ───────────────────────────────────────────
 
 async function resolverPerfil(email) {
@@ -57,7 +74,7 @@ async function resolverPerfil(email) {
     )
   }
   authLog('resolverPerfil:OK-seed', `${perfil.rol}`)
-  const { password: _, ...datos } = perfil
+  const datos = { ...perfil }; delete datos.password
   return datos
 }
 
@@ -68,7 +85,7 @@ export async function resolverPerfilDesdeFirebase(firebaseUser) {
     firebaseUser.email ??
     firebaseUser.providerData?.find(p => p.email)?.email ??
     null
-  const perfil = await resolverPerfil(email)
+  const perfil = normalizarRolesPerfil(await resolverPerfil(email))
   localStorage.setItem(SESSION_KEY, JSON.stringify(perfil))
   return perfil
 }
@@ -114,9 +131,10 @@ export async function loginMock(email, password) {
   await new Promise(r => setTimeout(r, 200))
   const user = USUARIOS_SEED.find(u => u.email === email && u.password === password)
   if (!user) throw new Error('Credenciales incorrectas.')
-  const { password: _, ...session } = user
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session))
-  return session
+  const session = { ...user }; delete session.password
+  const normalizada = normalizarRolesPerfil(session)
+  localStorage.setItem(SESSION_KEY, JSON.stringify(normalizada))
+  return normalizada
 }
 
 /**
@@ -132,5 +150,5 @@ export async function logout() {
  */
 export function getCurrentUser() {
   const raw = localStorage.getItem(SESSION_KEY)
-  return raw ? JSON.parse(raw) : null
+  return raw ? normalizarRolesPerfil(JSON.parse(raw)) : null
 }

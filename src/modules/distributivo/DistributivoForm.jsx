@@ -202,7 +202,7 @@ export default function DistributivoForm({ docente, periodoId, distributivoExist
           />
         </div>
         <p className={`text-xs font-medium ${validacion.valido ? 'text-green-700' : 'text-red-700'}`}>
-          {validacion.valido ? '✓ Distribución válida — lista para aprobar' : validacion.mensaje}
+          {validacion.valido ? 'Distribución válida — lista para aprobar' : validacion.mensaje}
         </p>
       </div>
 

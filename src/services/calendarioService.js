@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore'
 import { db } from './firebase'
 import { getAccessToken, loginOutlook, logoutOutlook, getOutlookAccount } from './msalService'
+import { authLog } from './authDebug'
 
 const GRAPH = 'https://graph.microsoft.com/v1.0'
 const COL_EVENTOS = 'eventos_calendario'
@@ -143,7 +144,8 @@ export async function sincronizarCalendario(
   fechaFin,
 ) {
   let token = null
-  try { token = await getAccessToken() } catch { /* sin MSAL */ }
+  try { token = await getAccessToken() } catch (e) { authLog('sync:getToken-error', e.message ?? e) }
+  authLog('sync:token', token ? `OK (${token.length} chars)` : 'null → ruta mock')
 
   if (token) {
     // ── Ruta real: Microsoft Graph API ──────────────────────────────────────
@@ -168,6 +170,7 @@ export async function sincronizarCalendario(
       docente_uid: docenteUid,
       periodo_id:  periodoId,
     }))
+    authLog('sync:graph-OK', `${eventos.length} eventos de Outlook`)
 
     await _guardarEventosFirestore(eventos, docenteUid, periodoId)
     localStorage.setItem(KEY_EVENTOS(docenteUid, periodoId), JSON.stringify(eventos))

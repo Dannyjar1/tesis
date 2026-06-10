@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import logoUide from '../assets/logo-uide.png'
 import { useAuth } from '../modules/auth/useAuth'
-import { ROL_LABELS, ROLES, TIPO_CONTRATO_LABELS, CARRERA_LABELS, CARGO_LABELS } from '../utils/constants'
+import { ROL_LABELS, ROLES, TIPO_CONTRATO_LABELS, CARGO_LABELS } from '../utils/constants'
 
 const MENU = {
   [ROLES.SUPERADMIN]: [
@@ -55,11 +55,25 @@ const MENU = {
   ],
 }
 
-export default function Sidebar({ cerrado, onToggle, onClose }) {
+export default function Sidebar({ cerrado, onClose }) {
   const { user } = useAuth()
   if (!user) return null
 
-  const items = MENU[user.rol] ?? []
+  // Multi-rol: fusiona los menús de TODOS los roles del usuario (p. ej.
+  // director + coordinador), deduplicando por ruta y respetando el orden del
+  // rol principal. "Mi Perfil" (RF-038) y "Ayuda" (RF-039) van para todos.
+  const rolesUsuario = user.roles ?? [user.rol]
+  const fusionado = []
+  for (const r of [user.rol, ...rolesUsuario]) {
+    for (const item of MENU[r] ?? []) {
+      if (!fusionado.some(i => i.path === item.path)) fusionado.push(item)
+    }
+  }
+  const items = [
+    ...fusionado,
+    { path: '/perfil', label: 'Mi Perfil', icon: IconUser },
+    { path: '/ayuda',  label: 'Ayuda',     icon: IconHelp },
+  ]
   const inicial = user.nombre_completo?.charAt(0).toUpperCase() ?? '?'
 
   return (
@@ -229,20 +243,29 @@ function IconChecklist({ className }) {
   )
 }
 
-function IconPlanet({ className }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-        d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  )
-}
-
 function IconClock({ className }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
         d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  )
+}
+
+function IconUser({ className }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+    </svg>
+  )
+}
+
+function IconHelp({ className }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+        d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
   )
 }

@@ -1,13 +1,18 @@
+# Núcleo Firebase Functions (Python) — requerido siempre
+firebase-functions==0.4.2
 firebase-admin==6.5.0
 functions-framework==3.5.0
 
-# Sprint 2: sincronización calendario
+# Sprint 2: sincronización calendario (Graph API server-side)
 httpx==0.27.0
 
 # Sprint 3: clasificación NLP con BETO
-torch==2.3.0
-transformers==4.40.0
-scikit-learn==1.4.2
+# La función 'clasificar' opera por defecto en modo heurístico (keywords) y NO
+# necesita estas dependencias. Descomentar SOLO al activar el modelo fine-tuned
+# (CLASIFICADOR_MODO=beto) — añaden ~2 GB al despliegue y requieren memoria 2GiB.
+# torch==2.3.0
+# transformers==4.40.0
+# scikit-learn==1.4.2
 
 # Sprint 5: generación de reportes
 reportlab==4.2.0

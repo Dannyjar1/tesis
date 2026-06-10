@@ -46,7 +46,7 @@ export default function ActividadCard({ actividad, onActualizar, onEliminar, onD
 
         {fecha_limite && (
           <p className={`text-[11px] mt-1.5 ${vencida ? 'text-red-500 font-semibold' : 'text-gray-400'}`}>
-            {vencida ? '⚠ ' : ''}
+            {vencida ? '' : ''}
             {new Date(fecha_limite + 'T12:00:00').toLocaleDateString('es-EC', {
               day: 'numeric', month: 'short', year: 'numeric',
             })}

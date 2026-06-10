@@ -160,7 +160,7 @@ export default function LoginPage() {
           <div className="mt-4 w-full max-w-sm bg-slate-900 rounded-xl p-3 shadow-sm">
             <div className="flex items-center justify-between mb-2">
               <p className="text-[11px] font-bold text-emerald-400 uppercase tracking-wide font-mono">
-                🔍 Diagnóstico de login
+                Diagnóstico de login
               </p>
               <button
                 type="button"

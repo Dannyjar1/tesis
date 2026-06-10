@@ -223,8 +223,8 @@ function notaValidacion(distributivo) {
   const esValido      = Math.abs(total - horasContrato) < 0.01
   return {
     text: esValido
-      ? `✓  Válido — suma exactamente ${horasContrato}h semanales (Reglamento CES 2021, Art. 6)`
-      : `✗  Inválido — suma ${total}h; diferencia de ${Math.abs(horasContrato - total).toFixed(1)}h respecto al contrato`,
+      ? `Válido — suma exactamente ${horasContrato}h semanales (Reglamento CES 2021, Art. 6)`
+      : `Inválido — suma ${total}h; diferencia de ${Math.abs(horasContrato - total).toFixed(1)}h respecto al contrato`,
     fontSize: 8,
     color: esValido ? C.verde : C.rojo,
     margin: [0, 0, 0, 16],

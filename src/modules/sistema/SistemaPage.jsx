@@ -471,7 +471,7 @@ function UsuarioForm({ usuario, onGuardar, onCancelar, cargando, error }) {
               onClick={() => { setMostrarNuevaCarrera(v => !v); setErrorCarrera('') }}
               className="text-xs text-[#003087] font-semibold hover:underline"
             >
-              {mostrarNuevaCarrera ? '✕ Cancelar' : '+ Nueva carrera'}
+              {mostrarNuevaCarrera ? 'Cancelar' : '+ Nueva carrera'}
             </button>
           </div>
 

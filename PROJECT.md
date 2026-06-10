@@ -8,7 +8,7 @@
 | Campo | Detalle |
 |---|---|
 | **Autor** | Danny Francisco Jaramillo Guachón |
-| **Email** | dfjaramillo@uide.edu.ec |
+| **Email** | dajaramillogu@uide.edu.ec |
 | **Universidad** | Universidad Internacional del Ecuador (UIDE) — Campus Loja |
 | **Carrera** | Ingeniería en Tecnologías de la Información |
 | **Metodología** | SCRUM (desarrollo iterativo e incremental) |
@@ -29,6 +29,7 @@
 8. [Reglas de Cálculo del Distributivo Académico](#8-reglas-de-cálculo-del-distributivo-académico)
 9. [Colecciones de Base de Datos](#9-colecciones-de-base-de-datos)
 10. [Métricas de Evaluación](#10-métricas-de-evaluación-del-sistema)
+    - [Datos de validación — instrumentos aplicados](#-datos-de-validación--instrumentos-aplicados)
 11. [Plan de Sprints](#11-plan-de-sprints-scrum)
 12. [Correcciones y Decisiones Técnicas](#12-correcciones-y-decisiones-técnicas)
 13. [Dependencias y Tecnologías](#13-dependencias-y-tecnologías)
@@ -346,6 +347,15 @@ uide-distributivo-app/
 | RF-034 | Descarga del propio PDF por el docente | El sistema debe permitir al docente descargar el PDF de su propio distributivo activo con formato institucional UIDE, con previsualización obligatoria previa. Esta acción está disponible desde la vista "Mi Distributivo". | Media | MOD-06 |
 | RF-035 | Modales con Liquid Glass para todos los formularios | Todos los formularios del sistema (crear actividad, agregar docente, asignar período, crear distributivo, etc.) deben abrirse en Modales con efecto Liquid Glass (fondo desenfocado y oscurecido). Este patrón aplica a todos los roles y vistas del sistema. | Media | Transversal |
 | RF-036 | Tablero Kanban con vista Estadísticas integrada | El módulo Mis Actividades debe presentar un tablero Kanban de tres columnas (Por hacer, En progreso, Completadas) con cambio de estado por drag and drop, y una vista de Estadísticas que muestre KPIs globales, progreso por categoría CES y gráfico semanal. Ambas vistas se alimentan del mismo estado React sin fetch adicional (RN-027). | Media | MOD-09 |
+| RF-037 | Plan de mejoras por incumplimiento de horas | Cuando un docente no cumple las horas asignadas en su distributivo, el sistema debe registrar un **plan de mejoras** formal asociado al docente y al período, con fecha de registro, fecha compromiso de subsanación y responsable de seguimiento. No se limita a una notificación: genera un registro accionable y verificable en el sistema. | Alta | MOD-05, MOD-07 |
+| RF-038 | Notificaciones in-app o WhatsApp asistidas por IA | El sistema debe enviar avisos de actividades pendientes y fechas límite al docente mediante notificaciones in-app y/o WhatsApp asistidas por IA. La modalidad definitiva (in-app, WhatsApp o ambas) queda **pendiente de decisión institucional**. | Media | MOD-07 |
+| RF-039 | Módulo de ayuda por rol (/ayuda) | El sistema debe ofrecer un módulo `/ayuda` con preguntas frecuentes (FAQ), guías y tutoriales segmentados por rol (Admin, Director, Coordinador, Docente), presentados como **acordeones desplegables por sección**. | Media | Transversal |
+| RF-040 | Diferenciación visual por rol y área en el panel de control | El panel de control debe diferenciar visualmente los bloques según el rol y el área del usuario, de modo que cada rol (Admin, Director, Coordinador, Docente) vea una composición de bloques visualmente distinta y adaptada a sus funciones. | Media | MOD-05 |
+| RF-041 | Registro de actividades imprevistas con anticipación mínima | El sistema debe permitir registrar actividades imprevistas validando un mínimo de **2 semanas de anticipación** entre la fecha de registro y la fecha de ejecución de la actividad. Si no se cumple la anticipación mínima, el sistema bloquea el registro. | Media | MOD-09 |
+| RF-042 | Docentes compartidos entre carreras | El sistema debe permitir que un docente sea asignado en más de una carrera, garantizando que la **suma de horas en todas sus carreras no supere el límite total** de su contrato. No se debe duplicar la carga horaria entre carreras. | Alta | MOD-02 |
+| RF-043 | Matriz de Productividad como paso previo al distributivo | El sistema debe gestionar una **Matriz de Productividad** previa al distributivo. La carga de investigación llega **pre-asignada desde Rectorado** y es de **solo lectura para todos los roles excepto Admin**. El distributivo solo puede elaborarse a partir de una Matriz de Productividad aprobada. | Alta | MOD-02 |
+| RF-044 | Notificación formal de incumplimiento vía Outlook u oficio | Ante un incumplimiento, el sistema debe permitir emitir una notificación formal al docente, ya sea por correo institucional Outlook (Microsoft Graph API) o mediante un oficio registrado y archivado en el sistema para respaldo documental. | Media | MOD-07, MOD-03 |
+| RF-045 | Vista de reportes globales consolidados | El sistema debe ofrecer una vista consolidada con todos los docentes de la carrera, disponible de forma inmediata, sin tiempos de espera perceptibles para el usuario. | Alta | MOD-05, MOD-06 |
 
 > 📝 **Nota de implementación:** Los requerimientos RF-007 al RF-010 deben implementarse como funciones puras en `src/utils/calculos.js` con pruebas unitarias obligatorias. Cada fórmula debe estar documentada con JSDoc indicando la referencia al artículo del Reglamento CES 2021 correspondiente.
 
@@ -372,6 +382,9 @@ uide-distributivo-app/
 | RNF-015 | Cobertura de pruebas | El sistema debe contar con una cobertura mínima de pruebas funcionales sobre los requerimientos identificados en la fase de análisis. | ≥ 80% de RF validados mediante pruebas funcionales documentadas |
 | RNF-016 | Validación de cruces horarios | El motor de asignación de horario gráfico no debe permitir que dos actividades del mismo docente se solapen en la misma franja horaria. La franja 13:00–14:00 (almuerzo) es siempre no asignable. | 0 cruces de horario permitidos; error visible inmediato al detectar solapamiento |
 | RNF-017 | Rendimiento de la vista de horario | La vista gráfica semanal del distributivo debe renderizar todos los bloques de actividad sin retraso perceptible. | Tiempo de renderizado < 1 segundo para hasta 40 bloques de actividad por semana |
+| RNF-018 | Usabilidad | La interfaz debe ser simple, intuitiva y amigable para usuarios no técnicos. Fue el requerimiento **más mencionado en ambas entrevistas** (Director de Derecho y Coordinador de Business School). Prioridad alta. | SUS ≥ 70 y retroalimentación cualitativa positiva de ≥ 80% de los evaluadores |
+| RNF-019 | Rendimiento | El tiempo de carga de las vistas principales (dashboard, distributivo, reportes) debe ser inferior a 2 segundos. El patrón de uso semanal fue confirmado por todos los entrevistados. | Tiempo de carga < 2 segundos en las vistas principales |
+| RNF-020 | Rendimiento (reportes) | La generación y descarga de reportes debe ser inmediata, sin procesos en segundo plano que demoren la experiencia del usuario. | Reporte disponible para descarga sin espera perceptible (< 2 segundos) |
 
 > 📝 **Nota de implementación:** El RNF-009 requiere construir un dataset de entrenamiento con eventos de calendario reales de la UIDE etiquetados manualmente antes del Sprint 3. Coordinar con el Coordinador académico para obtener ejemplos reales de cada categoría de actividad.
 
@@ -927,17 +940,20 @@ Almacena los perfiles, roles y permisos de todos los usuarios del sistema.
 | `apellido` | string | Apellidos del usuario | Sí | `"Palacios Morocho"` |
 | `nombre_completo` | string | Nombre completo (nombre + apellido) | Sí | `"Milton Ricardo Palacios Morocho"` |
 | `email` | string | Correo institucional @uide.edu.ec | Sí | `"mipalaciosmo@uide.edu.ec"` |
-| `rol` | string | Rol del usuario: uno de 4 valores posibles | Sí | `"admin"`, `"director"`, `"coordinador"`, `"docente"` |
+| `roles` | array&lt;string&gt; | Lista de roles del usuario. Un usuario puede ejercer **más de un rol simultáneamente** (p. ej. Director + Coordinador). Cada elemento es uno de 4 valores posibles. Reemplaza al campo `rol` (string) del modelo anterior. | Sí | `["director", "coordinador"]`, `["docente"]` |
 | `tipo_contrato` | string | Tipo de contrato docente (null para admin sin contrato) | No | `"tiempo_completo"`, `"medio_tiempo"`, `"tiempo_parcial"`, `"honorario"`, `null` |
 | `carrera_id` | string | ID de la carrera a la que pertenece (de /carreras) | Sí* | `"sistemas-informacion"` |
 | `activo` | boolean | Estado de la cuenta | Sí | `true` |
 | `creado_en` | timestamp | Fecha de creación de la cuenta | Sí | `Timestamp(2026, 3, 16)` |
 | `ultima_sesion` | timestamp | Última sesión activa | No | `Timestamp(2026, 5, 20)` |
 | `microsoft_token_ref` | string | Referencia cifrada al token OAuth | No | `"tokens/uid_abc123"` |
+| `telefono_whatsapp` | string | Número WhatsApp para notificaciones Twilio (RF-038). Formato internacional `+` y 10–15 dígitos; `null` = sin notificaciones | No | `"+593991234567"`, `null` |
 
 > *`carrera_id` es requerido para `director`, `coordinador` y `docente`. Para `admin` (Pro-Rector) es `null` porque tiene acceso global a todas las carreras.
 
 > **Conflicto con código existente (v1.3.0):** El código actual usa `"docente_tc"`, `"docente_mt"`, `"docente_tp"` como valores del campo `rol`. La migración al modelo unificado `"docente"` + campo `tipo_contrato` se realizará en Sprint 6 como parte de la conexión a Firebase real. Hasta entonces, el mock de localStorage sigue usando los subtipos de docente. Ver §12.10 para el plan de migración.
+
+> **Migración a `roles` (array) — instrumentos del 9-jun-2026:** Las entrevistas confirmaron que un mismo usuario puede ejercer **más de un rol a la vez** (caso real: Director + Coordinador). Por ello el campo escalar `rol: "director"` se reemplaza por `roles: ["director", "coordinador"]` (array). Toda verificación de permisos pasa de `rol === "x"` a `roles.includes("x")`, tanto en las reglas de seguridad de Firestore como en el frontend. Esta migración se ejecuta junto con la migración de subtipos de docente (§12.10) en Sprint 6. Ver §12.11 para el plan detallado.
 
 ### COL-002: /docentes
 
@@ -1179,7 +1195,7 @@ const USUARIOS_SEED = [
     apellido:       'Ruiz Aguirre',
     nombre_completo:'Pablo Ruiz Aguirre',
     email:          'paruizag@uide.edu.ec',
-    rol:            'admin',
+    roles:          ['admin'],
     tipo_contrato:  null,
     carrera_id:     null,
     activo:         true,
@@ -1190,7 +1206,7 @@ const USUARIOS_SEED = [
     apellido:       'Conde Zhingre',
     nombre_completo:'Lorena Elizabeth Conde Zhingre',
     email:          'locondezh@uide.edu.ec',
-    rol:            'director',
+    roles:          ['director'],
     tipo_contrato:  'tiempo_completo',
     carrera_id:     'sistemas-informacion',
     activo:         true,
@@ -1201,7 +1217,7 @@ const USUARIOS_SEED = [
     apellido:       'Valarezo León',
     nombre_completo:'Darío Javier Valarezo León',
     email:          'davalarezole@uide.edu.ec',
-    rol:            'coordinador',
+    roles:          ['coordinador'],
     tipo_contrato:  'tiempo_completo',
     carrera_id:     'sistemas-informacion',
     activo:         true,
@@ -1212,7 +1228,7 @@ const USUARIOS_SEED = [
     apellido:       'Palacios Morocho',
     nombre_completo:'Milton Ricardo Palacios Morocho',
     email:          'mipalaciosmo@uide.edu.ec',
-    rol:            'docente',
+    roles:          ['docente'],
     tipo_contrato:  'tiempo_completo',
     carrera_id:     'sistemas-informacion',
     activo:         true,
@@ -1223,7 +1239,7 @@ const USUARIOS_SEED = [
     apellido:       'Torres Berru',
     nombre_completo:'Yeferson Mauricio Torres Berru',
     email:          'yetorresbe@uide.edu.ec',
-    rol:            'docente',
+    roles:          ['docente'],
     tipo_contrato:  'medio_tiempo',
     carrera_id:     'sistemas-informacion',
     activo:         true,
@@ -1232,6 +1248,16 @@ const USUARIOS_SEED = [
 ```
 
 ---
+
+### Colecciones añadidas — requerimientos del 9-jun-2026 (RF-037…RF-044)
+
+| Colección | Propósito | Campos clave | RF |
+|---|---|---|---|
+| `/planes_mejora` | Plan de mejoras accionable por incumplimiento de horas (no solo notificación). Sin eliminación (trazabilidad). | `docente_uid`, `periodo_id`, `descripcion`, `fecha_registro`, `fecha_compromiso`, `responsable_nombre`, `estado` (abierto/cumplido/incumplido) | RF-037 |
+| `/matriz_productividad` | Matriz de Productividad pre-asignada desde Rectorado; paso previo al distributivo. Solo lectura excepto Admin. | `docente_uid`, `periodo_id`, `horas_investigacion`, `proyecto`, `estado` (aprobada), `origen: "rectorado"` | RF-043 |
+| `/oficios` | Notificación formal por incumplimiento: oficio registrado con numeración secuencial (`OFI-<año>-NNN`) o constancia del envío Outlook. | `numero`, `docente_uid`, `periodo_id`, `motivo`, `cuerpo`, `plan_mejora_id`, `via`, `fecha_emision`, `emitido_por` | RF-044 |
+
+> Campos añadidos a colecciones existentes: `/usuarios.telefono_whatsapp` (RF-038, notificaciones Twilio) y `/tareas_todo.imprevista` (RF-041, validación de 2 semanas de anticipación en la capa de aplicación).
 
 ### Reglas de Seguridad de Firestore
 
@@ -1250,8 +1276,8 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
     }
 
-    function getRol() {
-      return getUsuario().rol;
+    function getRoles() {
+      return getUsuario().roles;   // array<string>: un usuario puede tener varios roles
     }
 
     function getCarreraId() {
@@ -1259,16 +1285,17 @@ service cloud.firestore {
     }
 
     // ── Funciones de rol ─────────────────────────────────────────────
+    // Un usuario puede ejercer más de un rol; se evalúa pertenencia al array `roles`.
     function esAdmin() {
-      return estaAutenticado() && getRol() == 'admin';
+      return estaAutenticado() && ('admin' in getRoles());
     }
 
     function esDirector() {
-      return estaAutenticado() && getRol() == 'director';
+      return estaAutenticado() && ('director' in getRoles());
     }
 
     function esCoordinador() {
-      return estaAutenticado() && (getRol() == 'coordinador' || esDirector());
+      return estaAutenticado() && (('coordinador' in getRoles()) || esDirector());
     }
 
     // ── Alcance por carrera ──────────────────────────────────────────
@@ -1387,6 +1414,24 @@ service cloud.firestore {
 | **Responsividad** | Adaptación a dispositivos | Sin pérdida de funcionalidad desde 320px | Chrome DevTools — vista responsiva |
 
 > 📝 **Nota de implementación:** El cuestionario SUS debe aplicarse al final del Sprint 5 con docentes y coordinadores reales del campus Loja. Incluir mínimo 5 evaluadores de diferentes roles para que los resultados sean estadísticamente representativos. Documentar los resultados en la sección 3.2 del Capítulo III de la tesis.
+
+---
+
+## 📋 DATOS DE VALIDACIÓN — INSTRUMENTOS APLICADOS
+
+> Sección incorporada el **9 de junio de 2026** a partir de los resultados de los instrumentos de investigación aplicados en el campus Loja: **entrevistas semiestructuradas** (Director de Derecho y Coordinador de Business School) y **encuestas** al personal docente. Estos datos respaldan los requerimientos RF-037 a RF-045 y RNF-018 a RNF-020, y alimentan la justificación del problema en el Capítulo III de la tesis.
+
+| Métrica | Valor |
+|---|---|
+| Tiempo perdido semanal — Director Derecho | +10 horas |
+| Tiempo perdido semanal — Coord. Business School | 5–10 horas |
+| Margen de error proceso manual | 10–15% |
+| Importancia sistema web (promedio encuestas) | 4.0 / 5 |
+| Encuestados que pierden 4h+ semanales | 100% (6/6) |
+| Función mejor valorada | Cálculo automático y calendario (3.67/5) |
+| Consenso sobre existencia de sistema de control | 50% sí / 33% no / 17% no sabe |
+
+> 📝 **Lectura de los datos:** La pérdida de tiempo reportada (5 a +10 h/semana) y el margen de error manual (10–15%) cuantifican el problema que el sistema resuelve. El 100% de encuestados que pierde 4h+ semanales y la valoración de importancia (4.0/5) justifican la prioridad del proyecto. La función mejor valorada (cálculo automático y calendario) confirma el foco en MOD-02 y MOD-03. La falta de consenso sobre la existencia de un sistema de control (solo 50% afirma que existe) evidencia la ausencia de una herramienta formal y centralizada.
 
 ---
 
@@ -1542,6 +1587,37 @@ src/modules/auth/useAuth.js → comparaciones por rol de docente
 
 **Decisión de compatibilidad:**
 Mientras no se migre el frontend (Sprint 6), el mock de `authService.js` puede seguir retornando `"docente_tc"` etc. para mantener compatibilidad con el router existente. La migración es atómica: ocurre cuando se conecta Firebase real y se reemplaza el mock.
+
+---
+
+### 12.11 Migración de rol escalar a `roles` (array) — multi-rol
+
+**Hallazgo (entrevistas del 9-jun-2026):**
+Un mismo usuario puede ejercer **más de un rol de forma simultánea**. El caso confirmado es un funcionario que es a la vez **Director y Coordinador** de su carrera. El modelo escalar `rol: "director"` no puede representar esto sin perder permisos.
+
+**Decisión:**
+Reemplazar el campo escalar `rol` (string) por `roles` (array de strings) en la colección `/usuarios`. Toda verificación de pertenencia a un rol pasa de la comparación `rol === "x"` a la pertenencia `roles.includes("x")` (frontend) y `'x' in getRoles()` (reglas de Firestore).
+
+**Estado del modelo (PROJECT.md, fuente de verdad):** ✅ migrado.
+- COL-001 `/usuarios`: campo `roles: array<string>` (antes `rol: string`).
+- Datos semilla (`USUARIOS_SEED`): los 5 usuarios usan `roles: [...]`.
+- Reglas de Firestore: `getRoles()`, con `esAdmin/esDirector/esCoordinador` evaluando `'x' in getRoles()`.
+
+**Estado del frontend:** ⏳ pendiente — el código aún lee `user.rol` (string). Archivos a migrar (`rol === "x"` → `roles.includes("x")`):
+```plaintext
+src/services/authService.js          → perfil mock/real: rol → roles (array)
+src/context/AuthContext.jsx          → logs y propagación del perfil (perfil.rol)
+src/components/ProtectedRoute.jsx     → roles.includes(user.rol) → user.roles.some(r => rolesPermitidos.includes(r))
+src/modules/auth/RoleGuard.jsx        → comparación de rol
+src/router/AppRouter.jsx              → listas de roles permitidos por ruta
+src/components/Sidebar.jsx            → menú por rol → unión de menús de todos los roles del usuario
+src/components/Navbar.jsx             → etiqueta de rol mostrada (varios roles)
+src/services/seedData.js, firestoreInitService.js → seed con roles: [...]
+src/utils/constants.js               → helpers de rol
++ servicios/vistas que lean el rol para filtrar (personalService, distributivoService, AdminPage, UsuariosTable, DashboardPage, etc.)
+```
+
+**Plan de ejecución:** Esta migración se realiza **junto con la migración de subtipos de docente (§12.10)** en Sprint 6, al conectar Firebase real y reemplazar el mock. Ambas tocan los mismos archivos (`authService.js`, `AppRouter.jsx`, `Sidebar.jsx`, `constants.js`), por lo que ejecutarlas en un solo paso evita refactorizar dos veces y reduce el riesgo de regresiones. Para mostrar el rol "principal" en la UI (p. ej. Navbar), se define una jerarquía `admin > director > coordinador > docente` y se toma el de mayor nivel presente en `roles`.
 
 ---
 

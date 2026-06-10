@@ -7,6 +7,7 @@ import FeedbackPanel from './FeedbackPanel'
 import Modal from '../../components/Modal'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import AlertBanner from '../../components/AlertBanner'
+import { IconRobot, IconChispa } from '../../components/icons'
 
 const FILTROS = [
   { id: 'todos',       label: 'Todos' },
@@ -125,7 +126,7 @@ export default function ClasificacionPage() {
       {/* Sin eventos sincronizados */}
       {sinEventos && (
         <div className="bg-white rounded-xl border-2 border-dashed border-gray-200 p-12 text-center">
-          <div className="text-4xl mb-3">🤖</div>
+          <IconRobot className="h-10 w-10 mx-auto mb-3 text-gray-300" />
           <h2 className="text-base font-semibold text-gray-700">Sin eventos para clasificar</h2>
           <p className="text-gray-400 text-sm mt-1">
             Primero sincroniza tu calendario Outlook en la sección <strong>Calendario</strong>.
@@ -136,7 +137,7 @@ export default function ClasificacionPage() {
       {/* Eventos pendientes de clasificar */}
       {!sinEventos && todosPendientes && !clasificando && (
         <div className="bg-uide-light border border-uide-secondary/30 rounded-xl p-6 text-center">
-          <div className="text-3xl mb-2">✨</div>
+          <IconChispa className="h-8 w-8 mx-auto mb-2 text-gray-300" />
           <p className="text-uide-primary font-semibold text-sm">
             {pendientesCount} eventos listos para clasificar
           </p>

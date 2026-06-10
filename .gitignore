@@ -40,3 +40,4 @@ coverage/
 *.tmp
 # Firebase deploy cache
 .firebase/
+__pycache__/

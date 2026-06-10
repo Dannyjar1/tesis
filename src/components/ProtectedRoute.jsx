@@ -2,10 +2,10 @@ import { Navigate } from 'react-router-dom'
 import { useAuth } from '../modules/auth/useAuth'
 import LoadingSpinner from './LoadingSpinner'
 
+// Rol unificado "docente" + tipo_contrato (migración §12.10 PROJECT.md)
 const HOME_POR_ROL = {
-  docente_tc: '/mi-distributivo',
-  docente_mt: '/mi-distributivo',
-  docente_tp: '/mi-distributivo',
+  docente:        '/mi-distributivo',
+  administrativo: '/mi-panel',
 }
 
 /**
@@ -25,7 +25,9 @@ export default function ProtectedRoute({ children, roles }) {
 
   if (!user) return <Navigate to="/login" replace />
 
-  if (roles && !roles.includes(user.rol)) {
+  // Multi-rol: basta con que UNO de los roles del usuario esté permitido.
+  const rolesUsuario = user.roles ?? [user.rol]
+  if (roles && !rolesUsuario.some(r => roles.includes(r))) {
     return <Navigate to={HOME_POR_ROL[user.rol] ?? '/dashboard'} replace />
   }
 

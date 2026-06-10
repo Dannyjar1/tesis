@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../modules/auth/useAuth'
 import { ROLES } from '../utils/constants'
@@ -7,20 +7,25 @@ import Navbar from '../components/Navbar'
 import Sidebar from '../components/Sidebar'
 import RoleGuard from '../modules/auth/RoleGuard'
 
+// Login estático (primera pintura); el resto de páginas se cargan bajo demanda
+// (code-splitting por ruta) para cumplir RNF-019: carga inicial < 2 segundos.
+// pdfmake/xlsx/recharts solo se descargan al entrar a la vista que los usa.
 import LoginPage from '../modules/auth/LoginPage'
-import SistemaPage from '../modules/sistema/SistemaPage'
-import DashboardPage from '../modules/dashboard/DashboardPage'
-import DistributivoPage from '../modules/distributivo/DistributivoPage'
-import GestionDistributivoPage from '../modules/distributivo/GestionDistributivoPage'
-import CalendarioDistributivo from '../modules/distributivo/CalendarioDistributivo'
-import CalendarioPage from '../modules/calendario/CalendarioPage'
-import ClasificacionPage from '../modules/ia/ClasificacionPage'
-import ReportesPage from '../modules/reportes/ReportesPage'
-import NotificacionesPage from '../modules/notificaciones/NotificacionesPage'
-import AdminPage from '../modules/admin/AdminPage'
-import MisActividadesPage from '../modules/misactividades/MisActividadesPage'
-import PersonalPage from '../modules/personal/PersonalPage'
-import AdministrativoDashboard from '../modules/administrativo/AdministrativoDashboard'
+const SistemaPage              = lazy(() => import('../modules/sistema/SistemaPage'))
+const DashboardPage            = lazy(() => import('../modules/dashboard/DashboardPage'))
+const DistributivoPage         = lazy(() => import('../modules/distributivo/DistributivoPage'))
+const GestionDistributivoPage  = lazy(() => import('../modules/distributivo/GestionDistributivoPage'))
+const CalendarioDistributivo   = lazy(() => import('../modules/distributivo/CalendarioDistributivo'))
+const CalendarioPage           = lazy(() => import('../modules/calendario/CalendarioPage'))
+const ClasificacionPage        = lazy(() => import('../modules/ia/ClasificacionPage'))
+const ReportesPage             = lazy(() => import('../modules/reportes/ReportesPage'))
+const NotificacionesPage       = lazy(() => import('../modules/notificaciones/NotificacionesPage'))
+const AdminPage                = lazy(() => import('../modules/admin/AdminPage'))
+const MisActividadesPage       = lazy(() => import('../modules/misactividades/MisActividadesPage'))
+const AyudaPage                = lazy(() => import('../modules/ayuda/AyudaPage'))
+const PerfilPage               = lazy(() => import('../modules/perfil/PerfilPage'))
+const PersonalPage             = lazy(() => import('../modules/personal/PersonalPage'))
+const AdministrativoDashboard  = lazy(() => import('../modules/administrativo/AdministrativoDashboard'))
 
 const GESTION        = [ROLES.ADMIN, ROLES.DIRECTOR, ROLES.COORDINADOR]
 const PERSONAL       = [ROLES.DOCENTE, ROLES.ADMINISTRATIVO]
@@ -52,7 +57,12 @@ function AuthLayout() {
           onToggleSidebar={() => setSidebarCerrado(v => !v)}
         />
         <main className="flex-1 overflow-auto p-6">
-          <Outlet />
+          {/* Suspense: spinner mientras se descarga el chunk de la ruta (lazy) */}
+          <Suspense fallback={
+            <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>
+          }>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>
@@ -137,6 +147,8 @@ export default function AppRouter() {
 
         {/* Todos los roles autenticados */}
         <Route path="/notificaciones" element={<NotificacionesPage />} />
+        <Route path="/ayuda" element={<AyudaPage />} />
+        <Route path="/perfil" element={<PerfilPage />} />
 
         {/* Admin */}
         <Route path="/admin" element={

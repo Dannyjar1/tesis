@@ -18,25 +18,31 @@ CATEGORIA_LABELS = {
 }
 
 # Palabras clave por categoría para reglas heurísticas y fine-tuning del dataset.
+# Alineadas con el clasificador mock del frontend (src/services/iaService.js)
+# para que ambos motores produzcan resultados consistentes. El matching es
+# insensible a acentos (ver heuristica._sin_acentos).
 KEYWORDS_POR_CATEGORIA = {
     "docencia": [
         "clase", "clases", "cátedra", "laboratorio", "taller", "seminario",
-        "aula", "materia", "asignatura", "estudiantes", "enseñanza",
+        "aula", "materia", "asignatura", "enseñanza", "examen", "parcial",
+        "módulo", "titulación", "tribunal", "defensa", "grupo a", "grupo b",
     ],
     "investigacion": [
-        "investigación", "proyecto", "artículo", "paper", "publicación",
-        "laboratorio de investigación", "congreso", "ponencia", "CEDIA",
+        "investigación", "artículo", "paper", "publicación", "revista",
+        "científico", "científica", "congreso", "ponencia", "CEDIA", "DGI",
+        "indexada", "scopus",
     ],
     "vinculacion": [
-        "vinculación", "prácticas comunitarias", "PPP", "prácticas pre-profesionales",
-        "comunidad", "empresa", "graduados", "seguimiento",
+        "vinculación", "comunitaria", "comunitarias", "PPP",
+        "pre-profesional", "pre-profesionales", "comunidad", "barrio",
+        "parroquia", "graduados", "ciudadana", "emprendedor", "adultos mayores",
     ],
     "tutoria": [
-        "tutoría", "tutorias", "asesoría", "preparación", "estudiante",
-        "consulta", "apoyo académico",
+        "tutoría", "tutorias", "asesoría", "atención a estudiantes",
+        "consulta", "consultas", "apoyo académico", "oficina",
     ],
     "gestion": [
         "reunión", "comité", "consejo", "directivo", "coordinación",
-        "gestión", "administrativo", "planificación", "informe",
+        "gestión", "administrativo", "planificación", "informe", "acreditación",
     ],
 }

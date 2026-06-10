@@ -9,6 +9,7 @@ import ResumenHoras from '../dashboard/ResumenHoras'
 import PrevisualizacionPDF from '../reportes/PrevisualizacionPDF'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import AlertBanner from '../../components/AlertBanner'
+import { IconClipboard } from '../../components/icons'
 
 export default function DistributivoPage() {
   const { user } = useAuth()
@@ -72,7 +73,7 @@ export default function DistributivoPage() {
 
       {!distributivo ? (
         <div className="bg-white rounded-xl border-2 border-dashed border-gray-200 p-12 text-center">
-          <div className="text-4xl mb-3">📋</div>
+          <IconClipboard className="h-10 w-10 mx-auto mb-3 text-gray-300" />
           <h2 className="text-lg font-semibold text-gray-700">Sin distributivo asignado</h2>
           <p className="text-gray-400 text-sm mt-1">
             El Director de Carrera aún no ha creado tu distributivo para el período activo.

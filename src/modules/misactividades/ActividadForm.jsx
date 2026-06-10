@@ -1,7 +1,11 @@
 import { useState } from 'react'
 import { CATEGORIA_LABELS } from '../../utils/constants'
 
-const VACIO = { titulo: '', categoria_ces: 'docencia', fecha_limite: '' }
+const VACIO = { titulo: '', categoria_ces: 'docencia', fecha_limite: '', imprevista: false }
+
+// RF-041: las actividades imprevistas requieren registrarse con un mínimo de
+// 2 semanas de anticipación a su fecha de ejecución (fecha_limite).
+const DIAS_MINIMOS_IMPREVISTA = 14
 
 export default function ActividadForm({ inicial = null, onGuardar, onCancelar, cargando }) {
   const [form, setForm] = useState(inicial ?? VACIO)
@@ -15,6 +19,22 @@ export default function ActividadForm({ inicial = null, onGuardar, onCancelar, c
   function handleSubmit(e) {
     e.preventDefault()
     if (!form.titulo.trim()) { setError('El título es obligatorio.'); return }
+
+    // RF-041: validación de anticipación mínima para imprevistas
+    if (form.imprevista) {
+      if (!form.fecha_limite) {
+        setError('Una actividad imprevista requiere fecha de ejecución.')
+        return
+      }
+      const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
+      const ejecucion = new Date(`${form.fecha_limite}T00:00:00`)
+      const diasAnticipacion = Math.floor((ejecucion - hoy) / 86400000)
+      if (diasAnticipacion < DIAS_MINIMOS_IMPREVISTA) {
+        setError(`Las actividades imprevistas deben registrarse con mínimo 2 semanas de anticipación (faltan ${Math.max(diasAnticipacion, 0)} día${diasAnticipacion === 1 ? '' : 's'} para la fecha indicada).`)
+        return
+      }
+    }
+
     onGuardar({ ...form, titulo: form.titulo.trim() })
   }
 
@@ -60,6 +80,21 @@ export default function ActividadForm({ inicial = null, onGuardar, onCancelar, c
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-uide-primary"
         />
       </div>
+
+      {/* Actividad imprevista (RF-041) */}
+      <label className="flex items-start gap-2 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={form.imprevista ?? false}
+          onChange={e => set('imprevista', e.target.checked)}
+          className="mt-0.5 h-4 w-4 rounded border-gray-300 text-uide-primary focus:ring-uide-primary"
+        />
+        <span className="text-xs text-gray-600">
+          <span className="font-medium text-gray-800">Actividad imprevista</span>
+          {' '}— no planificada en el distributivo. Debe registrarse con mínimo{' '}
+          <span className="font-medium">2 semanas de anticipación</span> a su fecha de ejecución.
+        </span>
+      </label>
 
       {/* Acciones */}
       <div className="flex gap-2 justify-end pt-1">

@@ -15,6 +15,7 @@ import LoadingSpinner from '../../components/LoadingSpinner'
 import PlanetCategoria from '../planet/PlanetCategoria'
 import PlanetSemanaChart from '../planet/PlanetSemanaChart'
 import { CATEGORIA_LABELS } from '../../utils/constants'
+import { IconGrafico } from '../../components/icons'
 
 const COLUMNAS = [
   { estado: 'por_hacer',   label: 'Por hacer' },
@@ -233,7 +234,7 @@ function VistaEstadisticas({ stats, actividades }) {
   if (total === 0) {
     return (
       <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-16 text-center">
-        <p className="text-4xl mb-3">📊</p>
+        <IconGrafico className="h-10 w-10 mx-auto mb-3 text-gray-300" />
         <p className="text-gray-500 font-medium">Sin actividades aún</p>
         <p className="text-gray-400 text-sm mt-1">Crea actividades en el Tablero para ver estadísticas aquí.</p>
       </div>

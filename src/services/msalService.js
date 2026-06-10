@@ -5,9 +5,18 @@
  * - getAccessToken(): token para Microsoft Graph API
  */
 import { PublicClientApplication, InteractionRequiredAuthError } from '@azure/msal-browser'
+import { authLog } from './authDebug'
 
 const CLIENT_ID    = import.meta.env.VITE_MSAL_CLIENT_ID
-const REDIRECT_URI = import.meta.env.VITE_MSAL_REDIRECT_URI ?? window.location.origin
+// Tenant institucional UIDE (single-tenant). Cuando TI entregue el Directory ID
+// se define VITE_MSAL_TENANT_ID en .env.local y el login queda restringido a
+// cuentas @uide.edu.ec. Sin él, cae a 'common' para no romper el dev/mock.
+const TENANT_ID    = import.meta.env.VITE_MSAL_TENANT_ID
+const AUTHORITY    = `https://login.microsoftonline.com/${TENANT_ID || 'common'}`
+// El redirect URI se adapta al dominio actual (localhost en dev,
+// firebaseapp.com/web.app en producción). Cada origen debe estar registrado
+// como "SPA redirect URI" en el portal de Azure.
+const REDIRECT_URI = window.location.origin
 
 // Scopes mínimos para login del sistema (MOD-01)
 export const LOGIN_SCOPES = ['User.Read', 'offline_access']
@@ -23,13 +32,16 @@ export const OUTLOOK_SCOPES = [
 const msalConfig = {
   auth: {
     clientId: CLIENT_ID,
-    // 'common' acepta cuentas organizacionales (UIDE @uide.edu.ec) y personales
-    authority: 'https://login.microsoftonline.com/common',
+    // Single-tenant cuando VITE_MSAL_TENANT_ID está definido (solo @uide.edu.ec);
+    // 'common' como fallback en desarrollo mientras no se tenga el tenant_id.
+    authority: AUTHORITY,
     redirectUri: REDIRECT_URI,
   },
   cache: {
-    cacheLocation: 'sessionStorage',
-    storeAuthStateInCookie: false,
+    // localStorage + cookie de estado: más confiable para el flujo de redirect
+    // (el token/cuenta sobrevive a la navegación completa y a recargas).
+    cacheLocation: 'localStorage',
+    storeAuthStateInCookie: true,
   },
 }
 
@@ -58,8 +70,13 @@ async function getMsal() {
     initPromise = (async () => {
       await msalInstance.initialize()
       // handleRedirectPromise() es obligatorio antes de cualquier interacción
-      // en MSAL v3+. También limpia el flag interaction_in_progress.
-      await msalInstance.handleRedirectPromise().catch(() => {})
+      // en MSAL v3+. Procesa el retorno del redirect de Outlook.
+      try {
+        const res = await msalInstance.handleRedirectPromise()
+        if (res) authLog('msal:redirectResult', `cuenta=${res.account?.username} scopes=${res.scopes?.length}`)
+      } catch (e) {
+        authLog('msal:redirectResult-ERROR', `${e.errorCode ?? ''} ${e.message ?? e}`)
+      }
     })()
   }
   await initPromise
@@ -88,19 +105,23 @@ export async function loginSistema() {
 }
 
 /**
- * Abre el popup de Outlook para el docente (RF-013 — autorización individual).
- * Agrega scopes de Calendar y Mail sobre la cuenta ya existente si la hay.
- * @returns {Promise<import('@azure/msal-browser').AccountInfo>}
+ * Autoriza el calendario Outlook del docente (RF-013) vía REDIRECT.
+ * Se usa redirect (no popup) porque las extensiones del navegador cuelgan el
+ * popup. La página navega a Microsoft y vuelve; handleRedirectPromise (en la
+ * init de getMsal) procesa el retorno y cachea la cuenta + tokens.
  */
 export async function loginOutlook() {
   const msal = await getMsal()
   const accounts = msal.getAllAccounts()
-  const result = await msal.loginPopup({
+  authLog('msal:loginRedirect', `scopes=Calendars.Read,Mail.Read redirectUri=${REDIRECT_URI}`)
+  await msal.loginRedirect({
     scopes: OUTLOOK_SCOPES,
     account: accounts.length > 0 ? accounts[0] : undefined,
     prompt: accounts.length > 0 ? undefined : 'select_account',
+    // Al volver de Microsoft, regresar a la página donde estaba (el calendario)
+    redirectStartPage: window.location.href,
   })
-  return result.account
+  // La página navega fuera; no retorna.
 }
 
 /**
@@ -110,7 +131,9 @@ export async function logoutOutlook() {
   const msal = await getMsal()
   const accounts = msal.getAllAccounts()
   if (accounts.length > 0) {
-    await msal.logoutPopup({ account: accounts[0] })
+    // logoutRedirect navega fuera; usamos clearCache para no perder la sesión
+    // de Firebase del sistema. Solo limpiamos la cuenta MSAL localmente.
+    await msal.clearCache({ account: accounts[0] })
   }
 }
 
@@ -142,11 +165,12 @@ export async function getAccessToken() {
     return result.accessToken
   } catch (err) {
     if (err instanceof InteractionRequiredAuthError) {
-      const result = await msal.acquireTokenPopup({
+      // Requiere interacción → redirect (no popup). Navega fuera y vuelve.
+      await msal.acquireTokenRedirect({
         scopes: OUTLOOK_SCOPES,
         account: accounts[0],
       })
-      return result.accessToken
+      return null
     }
     console.error('[msalService] Error al obtener token:', err)
     throw err

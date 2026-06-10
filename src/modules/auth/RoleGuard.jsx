@@ -18,7 +18,9 @@ export default function RoleGuard({ roles, children }) {
   const { user } = useAuth()
 
   if (!user) return <Navigate to="/login" replace />
-  if (roles && !roles.includes(user.rol)) {
+  // Multi-rol: basta con que UNO de los roles del usuario esté permitido.
+  const rolesUsuario = user.roles ?? [user.rol]
+  if (roles && !rolesUsuario.some(r => roles.includes(r))) {
     return <Navigate to={HOME_POR_ROL[user.rol] ?? '/dashboard'} replace />
   }
 

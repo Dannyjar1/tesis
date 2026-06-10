@@ -20,10 +20,19 @@ Respuesta 200: {
 }
 """
 import json
+import os
 import uuid
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Modo de clasificación:
+#   "heuristica" (default) — keywords por categoría; no requiere torch/transformers.
+#   "beto"                 — modelo BETO fine-tuned; requiere RUTA_MODELO_BETO y
+#                            descomentar torch/transformers en requirements.txt.
+# Si BETO falla en runtime, siempre se cae a la heurística (la función nunca 500
+# por ausencia del modelo).
+CLASIFICADOR_MODO = os.environ.get("CLASIFICADOR_MODO", "heuristica")
 
 CORS_HEADERS = {
     "Access-Control-Allow-Origin":  "*",
@@ -59,11 +68,23 @@ def clasificar(request):
 
         # ── Pipeline de clasificación ─────────────────────────────────────────
         from .preprocesamiento import preprocesar
-        from .modelo_beto import cargar_modelo, predecir_categoria
+        from .heuristica import clasificar_heuristica
 
         texto_limpio = preprocesar(texto)
-        tokenizer, modelo = cargar_modelo()
-        resultado = predecir_categoria(texto_limpio, tokenizer, modelo)
+
+        resultado = None
+        if CLASIFICADOR_MODO == "beto":
+            try:
+                from .modelo_beto import cargar_modelo, predecir_categoria
+                tokenizer, modelo = cargar_modelo()
+                resultado = predecir_categoria(texto_limpio, tokenizer, modelo)
+                resultado["motor"] = "beto"
+            except Exception as beto_err:  # modelo ausente / sin torch / OOM
+                logger.warning("BETO no disponible (%s); fallback heurística", beto_err)
+
+        if resultado is None:
+            resultado = clasificar_heuristica(texto_limpio)
+            resultado["motor"] = "heuristica"
 
         # ── Persistir en Firestore ────────────────────────────────────────────
         clasificacion_id = f"clas_{uuid.uuid4().hex[:12]}"
@@ -82,6 +103,7 @@ def clasificar(request):
             "probabilidades":      resultado["probabilidades"],
             "categoria_corregida": None,
             "fue_corregida":       False,
+            "motor":               resultado.get("motor", "heuristica"),
             "fecha_clasificacion": firestore.SERVER_TIMESTAMP,
             "estado":              "provisional",
         })
@@ -106,6 +128,7 @@ def clasificar(request):
                 "categoria":        resultado["categoria"],
                 "confianza":        resultado["confianza"],
                 "probabilidades":   resultado["probabilidades"],
+                "motor":            resultado.get("motor", "heuristica"),
                 "estado":           "provisional",
             }),
             200,

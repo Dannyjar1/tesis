@@ -3,6 +3,7 @@ import { useAuth } from '../auth/useAuth'
 import { getPeriodos } from '../../services/periodoService'
 import { CARGO_LABELS } from '../../utils/constants'
 import LoadingSpinner from '../../components/LoadingSpinner'
+import { IconCalendario } from '../../components/icons'
 
 function calcularProgreso(inicio, fin) {
   const hoy   = new Date()
@@ -103,7 +104,7 @@ export default function AdministrativoDashboard() {
             </div>
           ) : (
             <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-10 text-center">
-              <p className="text-3xl mb-2">📅</p>
+              <IconCalendario className="h-8 w-8 mx-auto mb-2 text-gray-300" />
               <p className="text-gray-500 font-medium">No hay período activo</p>
             </div>
           )}

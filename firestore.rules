@@ -7,7 +7,13 @@ service cloud.firestore {
     // Acceso a datos: solo sesiones autenticadas cuyo email pertenece al
     // dominio institucional @uide.edu.ec (request.auth.token.email).
     // Autorización por rol (admin/director/docente…) se aplica además en la
-    // capa de la aplicación (RoleGuard + rutas protegidas).
+    // capa de la aplicación (RoleGuard + rutas protegidas, modelo roles[]).
+    //
+    // PENDIENTE (al conectar Azure AD real): cuando /usuarios quede keyed por
+    // el UID de Firebase Auth, activar el modelo completo por rol documentado
+    // en PROJECT.md §9 (getRoles() con 'admin' in roles, alcance por carrera_id).
+    // Hoy los UID de la app son del seed y no coinciden con request.auth.uid,
+    // por lo que las funciones de rol en reglas bloquearían el sistema.
 
     function esInstitucional() {
       return request.auth != null
@@ -29,7 +35,9 @@ service cloud.firestore {
       allow read, write: if esInstitucional();
     }
     match /distributivos/{docId} {
-      allow read, write: if esInstitucional();
+      // RF-022/RN: los distributivos se archivan, nunca se eliminan (trazabilidad CACES)
+      allow read, create, update: if esInstitucional();
+      allow delete: if false;
     }
     match /actividades/{actId} {
       allow read, write: if esInstitucional();
@@ -56,10 +64,27 @@ service cloud.firestore {
       allow read, write: if esInstitucional();
     }
     match /auditoria/{logId} {
-      allow read, write: if esInstitucional();
+      // RN-009: la auditoría es inmutable — solo se crean registros, jamás se
+      // modifican ni eliminan (evidencia para acreditación CACES)
+      allow read, create: if esInstitucional();
+      allow update, delete: if false;
     }
     match /configuracion/{configId} {
       allow read, write: if esInstitucional();
+    }
+    match /planes_mejora/{planId} {
+      // RF-037: planes de mejora por incumplimiento — sin eliminación (trazabilidad)
+      allow read, create, update: if esInstitucional();
+      allow delete: if false;
+    }
+    match /matriz_productividad/{matrizId} {
+      // RF-043: pre-asignada desde Rectorado. La restricción "solo Admin edita"
+      // se aplica en la capa de aplicación (puedeEditarMatriz) hasta que los
+      // documentos /usuarios queden keyed por el UID real de Firebase Auth;
+      // entonces se trasladará aquí con get(/usuarios/$(request.auth.uid)).data.roles
+      allow read: if esInstitucional();
+      allow create, update: if esInstitucional();
+      allow delete: if false;
     }
 
     // Por defecto, todo lo demás queda bloqueado.

@@ -60,6 +60,7 @@ export async function crearActividad(docenteUid, datos) {
     categoria_ces:   datos.categoria_ces,
     fecha_limite:    datos.fecha_limite ?? null,
     estado:          'por_hacer',
+    imprevista:      datos.imprevista ?? false, // RF-041
     fecha_creacion:  new Date().toISOString(),
     fecha_completada: null,
   }
