@@ -2,6 +2,7 @@ import { useContext, useState } from 'react'
 import { PeriodoContext } from '../../context/PeriodoContext'
 import Modal from '../../components/Modal'
 import LoadingSpinner from '../../components/LoadingSpinner'
+import EstructuraPeriodo from './EstructuraPeriodo'
 
 const ESTADO_BADGE = {
   planificacion: 'bg-gray-100 text-gray-700',
@@ -30,6 +31,7 @@ export default function PeriodosAdmin() {
   } = useContext(PeriodoContext)
 
   const [modalCrear, setModalCrear] = useState(false)
+  const [modalEstructura, setModalEstructura] = useState(null) // período seleccionado
   const [guardando, setGuardando]   = useState(false)
   const [procesando, setProcesando] = useState(null)
 
@@ -102,6 +104,14 @@ export default function PeriodosAdmin() {
                   <span className={`text-xs px-2 py-1 rounded-full font-medium ${ESTADO_BADGE[p.estado] ?? 'bg-gray-100 text-gray-600'}`}>
                     {ESTADO_NOMBRE[p.estado] ?? p.estado}
                   </span>
+                  {/* Estructura jerárquica: Período → Carreras → Usuarios.
+                      Editable en activo/próximo; consulta en finalizados. */}
+                  <button
+                    onClick={() => setModalEstructura(p)}
+                    className="text-xs text-uide-primary border border-uide-primary/30 hover:bg-uide-primary/5 px-2.5 py-1 rounded-lg transition"
+                  >
+                    {p.estado === 'finalizado' ? 'Consultar' : 'Estructura'}
+                  </button>
                   {(p.estado === 'planificacion' || p.estado === 'proximo') && (
                     <button
                       onClick={() => handleActivar(p)}
@@ -138,9 +148,17 @@ export default function PeriodosAdmin() {
                   <p className="text-sm text-gray-700 font-medium">{p.nombre}</p>
                   <p className="text-xs text-gray-400">{p.fecha_inicio} — {p.fecha_fin}</p>
                 </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ESTADO_BADGE[p.estado] ?? 'bg-gray-100 text-gray-500'}`}>
-                  {ESTADO_NOMBRE[p.estado] ?? p.estado}
-                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setModalEstructura(p)}
+                    className="text-xs text-uide-secondary hover:underline"
+                  >
+                    Consultar
+                  </button>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ESTADO_BADGE[p.estado] ?? 'bg-gray-100 text-gray-500'}`}>
+                    {ESTADO_NOMBRE[p.estado] ?? p.estado}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
@@ -158,6 +176,20 @@ export default function PeriodosAdmin() {
           onCancelar={() => setModalCrear(false)}
           cargando={guardando}
         />
+      </Modal>
+
+      {/* Modal estructura jerárquica del período (RN: historial inmutable) */}
+      <Modal
+        abierto={!!modalEstructura}
+        onCerrar={() => setModalEstructura(null)}
+        titulo={modalEstructura?.estado === 'finalizado'
+          ? `Historial — ${modalEstructura?.nombre}`
+          : `Estructura del período — ${modalEstructura?.nombre}`}
+        ancho="max-w-3xl"
+      >
+        {modalEstructura && (
+          <EstructuraPeriodo periodo={modalEstructura} periodos={periodos} />
+        )}
       </Modal>
     </div>
   )

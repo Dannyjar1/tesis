@@ -155,6 +155,38 @@ await check('Carreras: botón Agregar usuario abre modal con la carrera', async 
   await page.keyboard.press('Escape')
 })
 
+// ── 9. Multi-rol: superadmin vinculado también como docente ──
+await check('Superadmin+docente: ve módulos de sistema Y docentes (fusión)', async () => {
+  await page.evaluate(() => {
+    const s = JSON.parse(localStorage.getItem('uide_session'))
+    s.roles = ['superadmin', 'docente']
+    s.carrera_id = 'sistemas-informacion'
+    s.tipo_contrato = 'tiempo_completo'
+    localStorage.setItem('uide_session', JSON.stringify(s))
+  })
+  await page.goto(`${BASE}/sistema`, { waitUntil: 'domcontentloaded' })
+  await page.getByRole('link', { name: 'Carreras', exact: true }).waitFor()        // menú superadmin
+  await page.getByRole('link', { name: 'Mi Distributivo' }).waitFor()              // menú docente
+  await page.goto(`${BASE}/mi-distributivo`, { waitUntil: 'domcontentloaded' })    // acceso docente permitido
+  if (page.url().includes('/login')) throw new Error('redirigido fuera de módulo docente')
+})
+
+// ── 10. Estructura jerárquica del período (Período → Carreras → Usuarios) ──
+await check('Estructura del período: modal con carreras y asignaciones', async () => {
+  await logout()
+  await login('Director — Sistemas')
+  await page.goto(`${BASE}/admin/periodos`, { waitUntil: 'domcontentloaded' })
+  await page.getByRole('button', { name: 'Estructura' }).first().click()
+  await page.getByText('Coordinador / responsable del período').waitFor()
+  await page.getByRole('button', { name: 'Derecho' }).waitFor()                    // selector de carreras
+  await page.keyboard.press('Escape')
+})
+await check('Historial inmutable: período finalizado en modo consulta', async () => {
+  await page.getByRole('button', { name: 'Consultar' }).first().click()
+  await page.getByText('historial inmutable').waitFor()
+  await page.keyboard.press('Escape')
+})
+
 await browser.close()
 const fails = resultados.filter(r => r[0] === 'FAIL').length
 console.log(`\n══ ${resultados.length} checks · ${resultados.length - fails} OK · ${fails} FAIL · ${((Date.now() - t0) / 1000).toFixed(1)}s ══`)

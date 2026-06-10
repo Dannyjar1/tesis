@@ -993,11 +993,33 @@ Gestión de los períodos académicos de la institución. Cada período es compl
 
 ```plaintext
 /periodos_academicos/{periodoId}/
+  ├── carreras/          ← ESTRUCTURA JERÁRQUICA del período (ver abajo)
   ├── docentes/          ← UIDs de docentes asignados exclusivamente a este período
   ├── distributivos/     ← distributivos de los docentes de este período
   ├── actividades/       ← actividades registradas en este período
   └── estadisticas/      ← resúmenes de cumplimiento para historial
 ```
+
+**Subcolección `/carreras` — estructura jerárquica histórica (Período → Carreras → Usuarios):**
+
+Cada documento `/periodos_academicos/{periodoId}/carreras/{carreraId}` configura la
+participación de una carrera en ese período concreto:
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `carrera_id` | string | Referencia al catálogo global `/carreras` (dinámico, gestionado por superadmin) |
+| `periodo_id` | string | Período al que pertenece esta configuración (trazabilidad) |
+| `coordinador_uid` | string | Coordinador o responsable de la carrera EN ese período |
+| `docentes_uid` | array | Docentes asignados a la carrera en ese período |
+| `administrativos_uid` | array | Administrativos asignados en ese período |
+| `indicadores` | array | Indicadores definidos para el período `[{id, nombre}]` |
+| `actividades_plantilla` | array | Actividades definidas para el período |
+
+**Reglas de la estructura jerárquica** (servicio `estructuraPeriodoService.js`):
+- Los períodos `finalizado` son **historial inmutable**: toda escritura se rechaza (`assertEditable`); la consulta es libre y no afecta al período vigente.
+- Al crear un período se puede **copiar la estructura del anterior** (`copiarEstructura`) — mantener carreras, responsables e indicadores — y ajustarla sin tocar el origen.
+- Las carreras del catálogo no están codificadas: el superadmin crea nuevas para futuros períodos y cada período referencia las que participan.
+- Trazabilidad por usuario: `getCarrerasDeUsuario(periodoId, uid)` responde en qué carreras participó cualquier usuario en cualquier período (incluye docentes compartidos entre carreras).
 
 > **Nota sobre estados del período:** Los valores válidos del campo `estado` son `"activo"`, `"finalizado"` y `"proximo"`. El término **"finalizado"** reemplaza cualquier uso anterior de "cerrado" o "archivado" para períodos concluidos. El estado `"proximo"` corresponde al período creado automáticamente al cerrar el activo (RN-021), aún sin docentes ni distributivos asignados.
 
