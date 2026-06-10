@@ -3,6 +3,7 @@ import { useAuth } from '../auth/useAuth'
 import { getPeriodos } from '../../services/periodoService'
 import { CARGO_LABELS } from '../../utils/constants'
 import LoadingSpinner from '../../components/LoadingSpinner'
+import RolBanner from '../dashboard/RolBanner'
 import { IconCalendario } from '../../components/icons'
 
 function calcularProgreso(inicio, fin) {
@@ -43,6 +44,9 @@ export default function AdministrativoDashboard() {
 
   return (
     <div className="flex flex-col gap-6">
+
+      {/* Diferenciación visual por rol (RF-040) */}
+      <RolBanner user={user} />
 
       {/* Header personal */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
