@@ -47,13 +47,13 @@ export const TIPO_CONTRATO_HORAS = {
 
 // ── Carreras UIDE Campus Loja ─────────────────────────────────────────────────
 export const CARRERAS = [
-  { id: 'administracion-empresas',  nombre: 'Administración de Empresas',             escuela: null },
-  { id: 'arquitectura',             nombre: 'Arquitectura',                             escuela: null },
-  { id: 'derecho',                  nombre: 'Derecho',                                 escuela: null },
-  { id: 'sistemas-informacion',     nombre: 'Ingeniería en Sistemas de la Información', escuela: 'Escuela de Tecnologías de la Información' },
-  { id: 'psicologia-clinica',       nombre: 'Psicología Clínica',                      escuela: null },
-  { id: 'marketing',                nombre: 'Marketing',                               escuela: null },
-  { id: 'negocios-internacionales', nombre: 'Negocios Internacionales',               escuela: null },
+  { id: 'administracion-empresas',  nombre: 'Administración de Empresas',             facultad: 'Business School' },
+  { id: 'arquitectura',             nombre: 'Arquitectura',                             facultad: 'Facultad de Arquitectura, Diseño y Arte' },
+  { id: 'derecho',                  nombre: 'Derecho',                                 facultad: 'Facultad de Jurisprudencia, Ciencias Sociales y Humanidades' },
+  { id: 'sistemas-informacion',     nombre: 'Ingeniería en Sistemas de la Información', facultad: 'Facultad de Ingenierías Digitales y Tecnologías Emergentes' },
+  { id: 'psicologia-clinica',       nombre: 'Psicología Clínica',                      facultad: 'Facultad de Ciencias Médicas, de la Salud y la Vida' },
+  { id: 'marketing',                nombre: 'Marketing',                               facultad: 'Business School' },
+  { id: 'negocios-internacionales', nombre: 'Negocios Internacionales',               facultad: 'Business School' },
 ]
 
 export const CARRERA_LABELS = Object.fromEntries(CARRERAS.map(c => [c.id, c.nombre]))

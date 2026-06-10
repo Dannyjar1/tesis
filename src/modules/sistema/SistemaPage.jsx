@@ -55,14 +55,18 @@ export default function SistemaPage() {
 
 function GestionCarreras() {
   const [carreras, setCarreras] = useState([])
+  const [usuarios, setUsuarios] = useState([])
   const [cargando, setCargando] = useState(true)
   const [modal, setModal] = useState(null) // null | { modo: 'crear'|'editar', carrera?: {} }
+  const [modalUsuario, setModalUsuario] = useState(null) // null | { carrera, usuario? }
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
 
   const cargar = async () => {
     setCargando(true)
-    setCarreras(await getCarreras())
+    const [c, u] = await Promise.all([getCarreras(), getTodosUsuarios()])
+    setCarreras(c)
+    setUsuarios(u)
     setCargando(false)
   }
 
@@ -86,9 +90,36 @@ function GestionCarreras() {
     }
   }
 
+  async function handleGuardarUsuario(datos) {
+    setGuardando(true)
+    setError('')
+    try {
+      const uid = modalUsuario.usuario?.uid ?? `uid_${Date.now()}`
+      await guardarUsuario(uid, datos)
+      setModalUsuario(null)
+      await cargar()
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setGuardando(false)
+    }
+  }
+
   async function handleToggle(c) {
     await toggleActivoCarrera(c.id, !c.activo)
     await cargar()
+  }
+
+  /** Jerarquía de la carrera: director → coordinador → docentes → administrativos. */
+  function jerarquia(carreraId) {
+    const de = (rol) => usuarios.filter(u =>
+      u.carrera_id === carreraId && (u.roles ?? [u.rol]).includes(rol))
+    return {
+      directores:      de(ROLES.DIRECTOR),
+      coordinadores:   de(ROLES.COORDINADOR),
+      docentes:        de(ROLES.DOCENTE),
+      administrativos: de(ROLES.ADMINISTRATIVO),
+    }
   }
 
   return (
@@ -106,39 +137,76 @@ function GestionCarreras() {
       {cargando ? (
         <div className="py-10 text-center text-sm text-gray-400">Cargando...</div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Carrera</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Escuela</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Estado</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {carreras.map(c => (
-                <tr key={c.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-gray-800">{c.nombre}</p>
-                    <p className="text-xs text-gray-400">{c.id}</p>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 text-xs hidden md:table-cell">{c.escuela ?? '—'}</td>
-                  <td className="px-4 py-3">
+        <div className="space-y-4">
+          {carreras.map(c => {
+            const j = jerarquia(c.id)
+            return (
+              <div key={c.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                {/* Cabecera de la carrera */}
+                <div className="px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-gray-100">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-gray-900">{c.nombre}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Facultad: <span className="font-medium text-[#003087]">{c.facultad ?? c.escuela ?? 'Sin facultad asignada'}</span>
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${c.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                       {c.activo ? 'Activa' : 'Inactiva'}
                     </span>
-                  </td>
-                  <td className="px-4 py-3 text-right space-x-2">
+                    <button
+                      onClick={() => setModalUsuario({ carrera: c })}
+                      className="text-xs font-semibold text-white bg-[#003087] px-3 py-1.5 rounded-lg hover:opacity-90 transition"
+                    >
+                      + Agregar usuario
+                    </button>
                     <button onClick={() => setModal({ modo: 'editar', carrera: c })} className="text-xs text-blue-600 hover:underline">Editar</button>
                     <button onClick={() => handleToggle(c)} className={`text-xs ${c.activo ? 'text-gray-400 hover:text-red-600' : 'text-green-600 hover:underline'}`}>
                       {c.activo ? 'Desactivar' : 'Activar'}
                     </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                </div>
+
+                {/* Organización jerárquica */}
+                <div className="px-5 py-3 space-y-2">
+                  <NivelJerarquico
+                    etiqueta="Director/a"
+                    usuarios={j.directores}
+                    color="bg-blue-100 text-blue-800"
+                    vacio="Sin director asignado"
+                    onEditar={u => setModalUsuario({ carrera: c, usuario: u })}
+                  />
+                  <NivelJerarquico
+                    etiqueta="Coordinador/a"
+                    usuarios={j.coordinadores}
+                    color="bg-purple-100 text-purple-800"
+                    vacio="Sin coordinador asignado"
+                    onEditar={u => setModalUsuario({ carrera: c, usuario: u })}
+                    sangria
+                  />
+                  <NivelJerarquico
+                    etiqueta={`Docentes (${j.docentes.length})`}
+                    usuarios={j.docentes}
+                    color="bg-gray-100 text-gray-700"
+                    vacio="Sin docentes registrados"
+                    onEditar={u => setModalUsuario({ carrera: c, usuario: u })}
+                    mostrarContrato
+                    sangria doble
+                  />
+                  {j.administrativos.length > 0 && (
+                    <NivelJerarquico
+                      etiqueta={`Administrativos (${j.administrativos.length})`}
+                      usuarios={j.administrativos}
+                      color="bg-amber-100 text-amber-800"
+                      vacio=""
+                      onEditar={u => setModalUsuario({ carrera: c, usuario: u })}
+                      sangria doble
+                    />
+                  )}
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
 
@@ -155,15 +223,62 @@ function GestionCarreras() {
           error={error}
         />
       </Modal>
+
+      {/* Crear/editar usuario directamente desde la carrera */}
+      <Modal
+        abierto={!!modalUsuario}
+        onCerrar={() => { setModalUsuario(null); setError('') }}
+        titulo={modalUsuario?.usuario
+          ? `Editar — ${modalUsuario.usuario.nombre_completo}`
+          : `Nuevo usuario — ${modalUsuario?.carrera?.nombre ?? ''}`}
+      >
+        <UsuarioForm
+          usuario={modalUsuario?.usuario ?? { carrera_id: modalUsuario?.carrera?.id, rol: ROLES.DOCENTE }}
+          onGuardar={handleGuardarUsuario}
+          onCancelar={() => { setModalUsuario(null); setError('') }}
+          cargando={guardando}
+          error={error}
+        />
+      </Modal>
+    </div>
+  )
+}
+
+/** Fila de un nivel de la organización jerárquica de la carrera. */
+function NivelJerarquico({ etiqueta, usuarios, color, vacio, onEditar, mostrarContrato, sangria, doble }) {
+  const pad = doble ? 'pl-8' : sangria ? 'pl-4' : ''
+  return (
+    <div className={`flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3 ${pad}`}>
+      <span className={`flex-shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full ${color} sm:mt-0.5`}>
+        {etiqueta}
+      </span>
+      <div className="flex flex-wrap gap-x-4 gap-y-1 min-w-0">
+        {usuarios.length === 0 ? (
+          <span className="text-xs text-gray-400 italic">{vacio}</span>
+        ) : usuarios.map(u => (
+          <button
+            key={u.uid}
+            onClick={() => onEditar(u)}
+            title="Editar usuario"
+            className="text-xs text-gray-700 hover:text-[#003087] hover:underline text-left"
+          >
+            {u.nombre_completo}
+            {mostrarContrato && u.tipo_contrato && (
+              <span className="text-gray-400"> · {TIPO_CONTRATO_LABELS[u.tipo_contrato]?.split(' — ')[0] ?? u.tipo_contrato}</span>
+            )}
+            {!u.activo && <span className="text-red-400"> (inactivo)</span>}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
 
 function CarreraForm({ carrera, onGuardar, onCancelar, cargando, error }) {
   const [form, setForm] = useState({
-    nombre:  carrera?.nombre  ?? '',
-    escuela: carrera?.escuela ?? '',
-    id:      carrera?.id      ?? '',
+    nombre:   carrera?.nombre   ?? '',
+    facultad: carrera?.facultad ?? carrera?.escuela ?? '',
+    id:       carrera?.id       ?? '',
   })
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
@@ -194,11 +309,12 @@ function CarreraForm({ carrera, onGuardar, onCancelar, cargando, error }) {
         />
       </div>
       <div>
-        <label className="block text-xs font-semibold text-gray-600 mb-1">Escuela (opcional)</label>
+        <label className="block text-xs font-semibold text-gray-600 mb-1">Facultad *</label>
         <input
-          value={form.escuela}
-          onChange={e => set('escuela', e.target.value)}
-          placeholder="ej: Escuela de Ciencias de la Vida"
+          value={form.facultad}
+          onChange={e => set('facultad', e.target.value)}
+          placeholder="ej: Facultad de Ingenierías Digitales y Tecnologías Emergentes"
+          required
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#003087]"
         />
       </div>
@@ -372,7 +488,7 @@ function UsuarioForm({ usuario, onGuardar, onCancelar, cargando, error }) {
   const [carreras, setCarreras]           = useState([])
   const [cargandoCarreras, setCargandoCarreras] = useState(false)
   const [mostrarNuevaCarrera, setMostrarNuevaCarrera] = useState(false)
-  const [nuevaCarrera, setNuevaCarrera]   = useState({ nombre: '', escuela: '' })
+  const [nuevaCarrera, setNuevaCarrera]   = useState({ nombre: '', facultad: '' })
   const [creandoCarrera, setCreandoCarrera] = useState(false)
   const [errorCarrera, setErrorCarrera]   = useState('')
 
@@ -412,14 +528,14 @@ function UsuarioForm({ usuario, onGuardar, onCancelar, cargando, error }) {
     try {
       const id = await crearCarrera({
         nombre:  nuevaCarrera.nombre.trim(),
-        escuela: nuevaCarrera.escuela.trim() || null,
+        facultad: nuevaCarrera.facultad.trim() || null,
       })
       // Refrescar lista y seleccionar la nueva carrera automáticamente
       const lista = await getCarreras()
       setCarreras(lista.filter(x => x.activo))
       set('carrera_id', id)
       setMostrarNuevaCarrera(false)
-      setNuevaCarrera({ nombre: '', escuela: '' })
+      setNuevaCarrera({ nombre: '', facultad: '' })
     } catch (err) {
       setErrorCarrera(err.message)
     } finally {
@@ -507,8 +623,8 @@ function UsuarioForm({ usuario, onGuardar, onCancelar, cargando, error }) {
               <div>
                 <label className="block text-xs text-gray-600 mb-1">Escuela (opcional)</label>
                 <input
-                  value={nuevaCarrera.escuela}
-                  onChange={e => setNuevaCarrera(f => ({ ...f, escuela: e.target.value }))}
+                  value={nuevaCarrera.facultad}
+                  onChange={e => setNuevaCarrera(f => ({ ...f, facultad: e.target.value }))}
                   placeholder="ej: Escuela de Ciencias de la Vida"
                   className={inputCls}
                 />

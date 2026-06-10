@@ -128,6 +128,33 @@ await check('Administrativo: home /mi-panel + banner', async () => {
   await page.getByText('Personal administrativo').waitFor()
 })
 
+// ── 8. Superadmin: carreras con facultad + jerarquía + gestión de usuarios ──
+await check('Superadmin: login → /sistema con 7 carreras', async () => {
+  await logout()
+  await login('TIC — Cueva (Superadmin)')
+  await page.waitForURL(/sistema/, { timeout: 8000 })
+  await page.getByText('7 carrera(s) registradas').waitFor()
+})
+await check('Carreras: facultades UIDE correctas', async () => {
+  await page.getByText('Facultad de Ingenierías Digitales y Tecnologías Emergentes').waitFor()
+  await page.getByText('Facultad de Jurisprudencia, Ciencias Sociales y Humanidades').waitFor()
+  await page.getByText('Facultad de Arquitectura, Diseño y Arte').waitFor()
+  await page.getByText('Facultad de Ciencias Médicas, de la Salud y la Vida').waitFor()
+  const bs = await page.getByText('Business School', { exact: false }).count()
+  if (bs < 3) throw new Error(`Business School aparece ${bs} veces (esperado 3)`)
+})
+await check('Carreras: jerarquía director → coordinador → docentes', async () => {
+  await page.getByText('Lorena Elizabeth Conde Zhingre').waitFor()   // director Sistemas
+  await page.getByText('Darío Javier Valarezo León').waitFor()       // coordinador Sistemas
+  await page.getByText('Docentes (2)').waitFor()                     // Palacios + Torres
+  await page.getByText('Sin director asignado').first().waitFor()    // carreras sin asignar
+})
+await check('Carreras: botón Agregar usuario abre modal con la carrera', async () => {
+  await page.getByRole('button', { name: '+ Agregar usuario' }).first().click()
+  await page.getByText(/Nuevo usuario — /).waitFor()
+  await page.keyboard.press('Escape')
+})
+
 await browser.close()
 const fails = resultados.filter(r => r[0] === 'FAIL').length
 console.log(`\n══ ${resultados.length} checks · ${resultados.length - fails} OK · ${fails} FAIL · ${((Date.now() - t0) / 1000).toFixed(1)}s ══`)

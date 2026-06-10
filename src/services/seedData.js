@@ -5,13 +5,13 @@
  */
 
 export const CARRERAS_SEED = [
-  { id: 'administracion-empresas',  nombre: 'Administración de Empresas',              escuela: null,                                        activo: true },
-  { id: 'arquitectura',             nombre: 'Arquitectura',                              escuela: null,                                        activo: true },
-  { id: 'derecho',                  nombre: 'Derecho',                                  escuela: null,                                        activo: true },
-  { id: 'sistemas-informacion',     nombre: 'Ingeniería en Sistemas de la Información',  escuela: 'Escuela de Tecnologías de la Información',  director_uid: 'uid_locondezh', coordinador_uid: 'uid_davalarezole', activo: true },
-  { id: 'psicologia-clinica',       nombre: 'Psicología Clínica',                       escuela: null,                                        activo: true },
-  { id: 'marketing',                nombre: 'Marketing',                                escuela: null,                                        activo: true },
-  { id: 'negocios-internacionales', nombre: 'Negocios Internacionales',                escuela: null,                                        activo: true },
+  { id: 'administracion-empresas',  nombre: 'Administración de Empresas',              facultad: 'Business School',                                        activo: true },
+  { id: 'arquitectura',             nombre: 'Arquitectura',                              facultad: 'Facultad de Arquitectura, Diseño y Arte',                                        activo: true },
+  { id: 'derecho',                  nombre: 'Derecho',                                  facultad: 'Facultad de Jurisprudencia, Ciencias Sociales y Humanidades',                                        activo: true },
+  { id: 'sistemas-informacion',     nombre: 'Ingeniería en Sistemas de la Información',  facultad: 'Facultad de Ingenierías Digitales y Tecnologías Emergentes',  director_uid: 'uid_locondezh', coordinador_uid: 'uid_davalarezole', activo: true },
+  { id: 'psicologia-clinica',       nombre: 'Psicología Clínica',                       facultad: 'Facultad de Ciencias Médicas, de la Salud y la Vida',                                        activo: true },
+  { id: 'marketing',                nombre: 'Marketing',                                facultad: 'Business School',                                        activo: true },
+  { id: 'negocios-internacionales', nombre: 'Negocios Internacionales',                facultad: 'Business School',                                        activo: true },
 ]
 
 export const USUARIOS_SEED = [
