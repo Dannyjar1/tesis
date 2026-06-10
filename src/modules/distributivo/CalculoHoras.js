@@ -20,7 +20,7 @@ export {
  * @param {Object} datos - Campos editables del formulario
  * @returns {Object} distributivo con todos los campos calculados
  */
-export function recalcularDistributivo(datos) {
+export async function recalcularDistributivo(datos) {
   const {
     horas_docencia_directa = 0,
     materias_asignadas = 0,

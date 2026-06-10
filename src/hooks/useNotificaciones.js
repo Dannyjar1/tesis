@@ -7,8 +7,8 @@ import { useAuth } from '../modules/auth/useAuth'
  */
 export function useNotificaciones() {
   const { user } = useAuth()
-  const [notificaciones, setNotificaciones] = useState([])
-  const [cargando, setCargando] = useState(false)
+  const [notificaciones, _setNotificaciones] = useState([])
+  const [cargando, _setCargando] = useState(false)
 
   useEffect(() => {
     if (!user) return

@@ -1,4 +1,4 @@
-import { CATEGORIA_LABELS, CATEGORIA_COLORES } from '../../utils/constants'
+import { CATEGORIA_COLORES } from '../../utils/constants'
 import { formatearHoras } from '../../utils/formatters'
 
 const CATEGORIAS = [

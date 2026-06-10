@@ -3,8 +3,7 @@
  * Operaciones CRUD en Firestore /usuarios y /carreras.
  */
 import {
-  collection, doc, getDocs, getDoc, setDoc, updateDoc, deleteDoc,
-  query, orderBy, where, Timestamp,
+  collection, doc, getDocs, getDoc, setDoc, updateDoc, query, orderBy, where, Timestamp,
 } from 'firebase/firestore'
 import { db } from './firebase'
 import { USUARIOS_SEED, CARRERAS_SEED } from './seedData'

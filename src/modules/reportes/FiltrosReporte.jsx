@@ -3,7 +3,7 @@
  * Sprint 5: conectar con Firestore para cargar opciones dinámicas.
  * Referencia: RF-018, RN-007.
  */
-export default function FiltrosReporte({ filtros, onChange }) {
+export default function FiltrosReporte({ _filtros, _onChange }) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
       <h3 className="text-sm font-semibold text-gray-700">Filtros del reporte</h3>

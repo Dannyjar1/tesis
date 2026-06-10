@@ -21,7 +21,7 @@ export default function EventoCard({ evento, onCorregir }) {
   } = evento
 
   const esProvisional = estado_clasificacion === 'provisional'
-  const esPendiente   = estado_clasificacion === 'pendiente'
+  const _esPendiente   = estado_clasificacion === 'pendiente'
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 px-4 py-3 hover:shadow-sm transition-shadow group">

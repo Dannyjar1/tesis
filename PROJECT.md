@@ -134,7 +134,7 @@ uide-distributivo-app/
 │   ├── 📁 components/                  # Componentes reutilizables globales
 │   │   ├── Navbar.jsx                  # Barra de navegación con rol del usuario
 │   │   ├── Sidebar.jsx                 # Menú lateral por rol
-│   │   ├── ProtectedRoute.jsx          # HOC para proteger rutas por rol
+│   │   ├── icons.jsx                   # Set compartido de íconos SVG (sin emojis en UI)
 │   │   ├── LoadingSpinner.jsx          # Indicador de carga
 │   │   ├── AlertBanner.jsx             # Banners de alerta de incumplimiento
 │   │   ├── Modal.jsx                   # Modal genérico con efecto Liquid Glass (fondo desenfocado + oscurecido)
@@ -411,7 +411,7 @@ uide-distributivo-app/
 | **Configuración del Sistema** | Panel de configuración de parámetros globales: umbral de alerta de cumplimiento, períodos de sincronización y configuración de notificaciones. | Administrador | `ConfiguracionSistema.jsx` |
 | **Notificaciones** | Bandeja de notificaciones institucionales con alertas de incumplimiento, confirmaciones de aprobación del distributivo y mensajes del sistema. | Todos | `NotificacionesPage.jsx`, `NotificacionItem.jsx` |
 
-> 📝 **Nota de implementación:** Todas las vistas deben implementar el componente `ProtectedRoute.jsx` que verifica el rol del usuario autenticado antes de renderizar el contenido. Las vistas no accesibles para el rol activo deben redirigir automáticamente al Dashboard o mostrar un mensaje de acceso denegado.
+> 📝 **Nota de implementación:** Todas las vistas deben protegerse con el componente `RoleGuard.jsx` (modulo auth), que verifica los roles del usuario autenticado (modelo multi-rol `roles[]`) antes de renderizar el contenido. Las vistas no accesibles para los roles activos redirigen automáticamente al home del rol principal. (El antiguo `ProtectedRoute.jsx` fue eliminado por duplicar esta responsabilidad.)
 
 ---
 
@@ -1714,6 +1714,7 @@ src/utils/constants.js               → helpers de rol
 | **Cambios v1.2.0** | Períodos independientes con historial (RN-020–022, RF-031–033), horario gráfico semanal (RF-028, RN-023–024, RNF-016–017), previsualización PDF obligatoria (RF-030, RN-025), Modales Liquid Glass (RF-035, §12.6), creación de distributivo en Modal (RF-029), descarga PDF por docente (RF-034), vistas nuevas (CalendarioDistributivo, HistorialPeriodos, PrevisualizacionPDF), Firestore subcolecciones por período, reglas Firestore actualizadas, Sprint 6 actualizado (HU-29 a HU-34) |
 | **Cambios v1.3.0** | Correcciones 1–6: MOD-09 renombrado a Mis Actividades/Kanban (RF-036, RN-026–027, §12.8), estados de período unificados a activo/finalizado/proximo (§12.9), subcolección /docentes añadida a COL-003, GestionDistributivoPage.jsx documentada en árbol de carpetas, servicios misActividadesService/periodoService/horarioService añadidos, Glosario actualizado (Kanban, Mis Actividades, Planet como componentes), §12.8 y §12.9 añadidas a decisiones técnicas |
 | **Cambios v1.4.0** | Corrección de roles y estructura organizacional: jerarquía de 4 niveles (admin/director/coordinador/docente), tabla de 7 carreras UIDE campus Loja, usuarios de prueba Ingeniería en Sistemas (5 usuarios seed), RF-002 actualizado, RN-008 con matriz de acceso por carrera, COL-001 /usuarios con tipo_contrato+carrera_id, COL-013 /carreras nueva colección con 7 documentos iniciales, reglas Firestore v1.4 con mismaCarrera(), HU-35 en Sprint 0, §12.10 plan de migración de sub-roles docente, Glosario con 8 términos nuevos |
+| **Cambios v1.5.0** | Requerimientos de instrumentos del 9-jun-2026: RF-037–045 y RNF-018–020 implementados; modelo multi-rol `roles[]` (COL-001, seed, guards, sidebar fusionado, §12.11); colecciones /planes_mejora, /matriz_productividad y /oficios; campo telefono_whatsapp + notificaciones WhatsApp Twilio (2 Cloud Functions programadas, functions/main.py); módulos /ayuda y /perfil; pipeline BETO (heurística + generar_dataset.py + entrenar.py); interpretación IA de correos → tareas (Claude API con fallback local); UI sin emojis → components/icons.jsx; code-splitting por ruta (bundle 3.27MB→860KB); ProtectedRoute.jsx eliminado (sustituido por RoleGuard); sección "Datos de validación — instrumentos aplicados"; tests 69/69 |
 
 ---
 

@@ -7,12 +7,12 @@ import { useState, useEffect } from 'react'
 import Modal from '../../components/Modal'
 import {
   getCarreras, crearCarrera, actualizarCarrera, toggleActivoCarrera,
-  getTodosUsuarios, guardarUsuario, cambiarRolUsuario, toggleActivoUsuario,
+  getTodosUsuarios, guardarUsuario, toggleActivoUsuario,
 } from '../../services/sistemaService'
 import {
   inicializarFirestore, inicializarPeriodoActivo, firestoreYaInicializado,
 } from '../../services/firestoreInitService'
-import { ROLES, ROL_LABELS, TIPO_CONTRATO, TIPO_CONTRATO_LABELS } from '../../utils/constants'
+import { ROLES, ROL_LABELS, TIPO_CONTRATO_LABELS } from '../../utils/constants'
 
 const TABS = [
   { id: 'carreras',  label: 'Carreras' },

@@ -60,7 +60,7 @@ export default function CalendarioDistributivo() {
   function getBloqueEnSlot(dia, hora) {
     return bloques.find(b => {
       const hI = parseInt(b.hora_inicio)
-      const hF = parseInt(b.hora_fin)
+      const _hF = parseInt(b.hora_fin)
       return b.dia === dia && hI === hora
     })
   }

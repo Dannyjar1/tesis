@@ -8,11 +8,11 @@ export function useReportes() {
   const [generando, setGenerando] = useState(false)
   const [error, setError] = useState(null)
 
-  async function generarPDF(filtros) {
+  async function generarPDF(_filtros) {
     setGenerando(true)
     setError(null)
     try {
-      // Sprint 5: await reportesService.generarReportePDF(filtros)
+      // Sprint 5: await reportesService.generarReportePDF(_filtros)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -20,7 +20,7 @@ export function useReportes() {
     }
   }
 
-  async function generarExcel(filtros) {
+  async function generarExcel(_filtros) {
     setGenerando(true)
     setError(null)
     try {

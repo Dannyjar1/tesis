@@ -16,7 +16,7 @@ Sandbox de desarrollo: whatsapp:+14155238886.
 """
 import os
 import logging
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import httpx

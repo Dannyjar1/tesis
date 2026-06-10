@@ -3,8 +3,7 @@
  * Estado canónico: 'activo' | 'finalizado' | 'proximo'
  */
 import {
-  collection, doc, getDoc, getDocs, setDoc, updateDoc,
-  query, orderBy, Timestamp, writeBatch,
+  collection, doc, getDoc, getDocs, setDoc, query, orderBy, Timestamp, writeBatch,
 } from 'firebase/firestore'
 import { db } from './firebase'
 

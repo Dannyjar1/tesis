@@ -4,11 +4,11 @@
  */
 import {
   collection, doc, getDoc, getDocs, setDoc, updateDoc,
-  query, where, orderBy, Timestamp, onSnapshot,
+  query, where, Timestamp, onSnapshot,
 } from 'firebase/firestore'
 import { db } from './firebase'
 import { validarCierreDistributivo } from '../utils/calculos'
-import { ESTADOS_DISTRIBUTIVO, TIPO_CONTRATO_HORAS } from '../utils/constants'
+import { ESTADOS_DISTRIBUTIVO } from '../utils/constants'
 import { USUARIOS_SEED } from './seedData'
 
 const LOCAL_KEY = 'uide_distributivos'

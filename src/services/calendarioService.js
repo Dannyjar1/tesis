@@ -4,7 +4,7 @@
  * RF-013, RF-014, RF-023 — PROJECT.md §6 MOD-03
  */
 import {
-  collection, doc, getDoc, getDocs, setDoc, updateDoc, writeBatch,
+  collection, doc, getDocs, writeBatch,
   query, where, orderBy, Timestamp,
 } from 'firebase/firestore'
 import { db } from './firebase'
@@ -196,7 +196,7 @@ export async function sincronizarCalendario(
   return { sincronizados: seed.length, fuente: 'mock' }
 }
 
-async function _guardarEventosFirestore(eventos, docenteUid, periodoId) {
+async function _guardarEventosFirestore(eventos, docenteUid, _periodoId) {
   if (!db) return
   try {
     const batch = writeBatch(db)

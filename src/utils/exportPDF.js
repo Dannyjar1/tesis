@@ -9,7 +9,6 @@
  */
 import pdfMakeLib    from 'pdfmake/build/pdfmake'
 import vfs           from 'pdfmake/build/vfs_fonts'
-import logoUideUrl    from '../assets/logo-uide.png'
 import templateUrl    from '../assets/NUEVO FORMATO INSTITUCIONAL_page-0001.jpg'
 import { TIPOS_CONTRATO } from './constants'
 

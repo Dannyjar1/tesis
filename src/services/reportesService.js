@@ -74,7 +74,7 @@ export async function generarReportePDFCarrera(filtros) {
  * @param {{ periodoId, generadoPorUid, periodo }} filtros
  */
 export async function generarReporteExcel(filtros) {
-  const { periodoId, generadoPorUid, periodo } = filtros
+  const { periodoId, generadoPorUid, periodo: _periodo } = filtros
   const XLSX = await import('xlsx')
   const docentes = await getDocentes()
   const distributivos = await getDistributivosPorPeriodo(periodoId)

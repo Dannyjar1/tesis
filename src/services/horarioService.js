@@ -3,7 +3,7 @@
  * Firestore /horario_semanal con fallback localStorage.
  */
 import {
-  collection, doc, getDoc, getDocs, setDoc, deleteDoc,
+  collection, doc, getDocs, setDoc, deleteDoc,
   query, where, Timestamp,
 } from 'firebase/firestore'
 import { db } from './firebase'

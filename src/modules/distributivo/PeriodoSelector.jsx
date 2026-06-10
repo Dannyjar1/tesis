@@ -6,7 +6,7 @@ import { PeriodoContext } from '../../context/PeriodoContext'
  * Sprint 1: cargar períodos desde Firestore /periodos_academicos.
  * Referencia: RF-012.
  */
-export default function PeriodoSelector({ onChange }) {
+export default function PeriodoSelector({ _onChange }) {
   const { periodoActivo } = useContext(PeriodoContext)
 
   return (

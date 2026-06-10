@@ -1,5 +1,6 @@
-export default function PaginaEnDesarrollo({ titulo, sprint, descripcion }) {
 import { IconHerramienta } from './icons'
+
+export default function PaginaEnDesarrollo({ titulo, sprint, descripcion }) {
   return (
     <div className="space-y-4">
       <div>

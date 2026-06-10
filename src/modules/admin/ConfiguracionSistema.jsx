@@ -5,7 +5,7 @@ import { UMBRAL_ALERTA_DEFAULT } from '../../utils/constants'
  * Sprint 1: leer y escribir en Firestore /configuracion (solo admin).
  * Referencia: RN-011, RN-016.
  */
-export default function ConfiguracionSistema({ config, onGuardar }) {
+export default function ConfiguracionSistema({ config, _onGuardar }) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
       <h3 className="text-base font-semibold text-gray-800">Configuración del sistema</h3>
