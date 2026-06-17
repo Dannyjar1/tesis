@@ -16,12 +16,10 @@ const DashboardPage            = lazy(() => import('../modules/dashboard/Dashboa
 const DistributivoPage         = lazy(() => import('../modules/distributivo/DistributivoPage'))
 const GestionDistributivoPage  = lazy(() => import('../modules/distributivo/GestionDistributivoPage'))
 const CalendarioDistributivo   = lazy(() => import('../modules/distributivo/CalendarioDistributivo'))
-const CalendarioPage           = lazy(() => import('../modules/calendario/CalendarioPage'))
 const ClasificacionPage        = lazy(() => import('../modules/ia/ClasificacionPage'))
 const ReportesPage             = lazy(() => import('../modules/reportes/ReportesPage'))
 const NotificacionesPage       = lazy(() => import('../modules/notificaciones/NotificacionesPage'))
 const AdminPage                = lazy(() => import('../modules/admin/AdminPage'))
-const MisActividadesPage       = lazy(() => import('../modules/misactividades/MisActividadesPage'))
 const AyudaPage                = lazy(() => import('../modules/ayuda/AyudaPage'))
 const PerfilPage               = lazy(() => import('../modules/perfil/PerfilPage'))
 const PersonalPage             = lazy(() => import('../modules/personal/PersonalPage'))
@@ -107,16 +105,8 @@ export default function AppRouter() {
         <Route path="/mi-distributivo" element={
           <ModuloGuard modulo="mi-distributivo"><DistributivoPage /></ModuloGuard>
         } />
-        <Route path="/calendario" element={
-          <ModuloGuard modulo="calendario"><CalendarioPage /></ModuloGuard>
-        } />
         <Route path="/ia" element={
           <ModuloGuard modulo="ia"><ClasificacionPage /></ModuloGuard>
-        } />
-        <Route path="/mis-actividades" element={
-          <ModuloGuard modulo="mis-actividades">
-            <MisActividadesPage />
-          </ModuloGuard>
         } />
         <Route path="/horario" element={
           <ModuloGuard modulo="horario">

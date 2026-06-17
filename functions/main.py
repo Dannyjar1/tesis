@@ -11,8 +11,6 @@ Funciones expuestas:
                   Para activar BETO: subir el modelo fine-tuned, definir
                   CLASIFICADOR_MODO=beto + RUTA_MODELO_BETO y descomentar
                   torch/transformers en requirements.txt (subir memoria a 2GiB).
-  - sync_outlook  POST → sincronización Outlook (MOD-03) — pendiente de
-                  credenciales Azure AD; responde 501 hasta la integración.
   - notificacion_semanal  scheduled lunes 08:00 (America/Guayaquil) →
                   resumen WhatsApp de la semana vía Twilio (RF-038)
   - notificacion_diaria   scheduled diario 10:00 → recordatorio WhatsApp de
@@ -51,25 +49,6 @@ def clasificar(req: https_fn.Request) -> https_fn.Response:
     from clasificacion.main import clasificar as handler
     body, status, headers = _normalizar(handler(req))
     return https_fn.Response(body, status=status, headers=headers)
-
-
-@https_fn.on_request(region=_REGION, cors=_CORS, memory=options.MemoryOption.MB_256)
-def sync_outlook(req: https_fn.Request) -> https_fn.Response:
-    """Sincroniza eventos Outlook del docente (MOD-03).
-
-    Bloqueada hasta recibir las credenciales del tenant Azure AD de la UIDE
-    (client_id + tenant_id). El frontend ya sincroniza directamente vía MSAL;
-    esta función cubrirá la sincronización programada cada 24h (HU-10).
-    """
-    import json
-    return https_fn.Response(
-        json.dumps({
-            "error": "No implementado: pendiente de credenciales Azure AD (tenant UIDE).",
-            "detalle": "La sincronización interactiva ya opera desde el frontend vía MSAL.",
-        }),
-        status=501,
-        headers={"Content-Type": "application/json"},
-    )
 
 
 @scheduler_fn.on_schedule(
