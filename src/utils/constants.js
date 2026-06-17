@@ -139,3 +139,59 @@ export const HORAS_MAXIMAS_TC = {
   investigacion:    { max: 16 },
   gestion:          { max: 12 },
 }
+
+// ── Actividades asignadas por el director (MOD-02 / PROJECT_BRIEF §5, §15) ─────
+// El director asigna actividades a los docentes; el docente las completa y
+// sube evidencia. NO es un tablero personal (ese módulo se eliminó).
+export const PRIORIDADES_ACTIVIDAD = {
+  URGENTE:   'urgente',
+  NORMAL:    'normal',
+  PENDIENTE: 'pendiente',
+}
+
+export const PRIORIDAD_ACTIVIDAD_LABELS = {
+  urgente:   'Urgente',
+  normal:    'Normal',
+  pendiente: 'Pendiente',
+}
+
+export const PRIORIDAD_ACTIVIDAD_COLORES = {
+  urgente:   'bg-red-100 text-red-800',
+  normal:    'bg-amber-100 text-amber-800',
+  pendiente: 'bg-gray-100 text-gray-700',
+}
+
+// Orden de prioridad para el listado (menor = primero).
+export const PRIORIDAD_ORDEN = { urgente: 0, normal: 1, pendiente: 2 }
+
+export const ESTADOS_ACTIVIDAD = {
+  PENDIENTE:   'pendiente',
+  EN_PROGRESO: 'en_progreso',
+  COMPLETADA:  'completada',
+  VENCIDA:     'vencida',
+}
+
+export const ESTADO_ACTIVIDAD_LABELS = {
+  pendiente:   'Pendiente',
+  en_progreso: 'En progreso',
+  completada:  'Completada',
+  vencida:     'Vencida',
+}
+
+export const ESTADO_ACTIVIDAD_COLORES = {
+  pendiente:   'bg-gray-100 text-gray-700',
+  en_progreso: 'bg-blue-100 text-blue-800',
+  completada:  'bg-green-100 text-green-800',
+  vencida:     'bg-red-200 text-red-900',
+}
+
+// Mapa categoría CES → campos de horas del distributivo. Se usa para la alerta
+// de coherencia (PROJECT_BRIEF §5.4 / RESTRUCTURE §3.3): si la categoría de la
+// actividad no tiene horas en el distributivo del docente, se avisa al asignar.
+export const CATEGORIA_A_HORAS_DISTRIBUTIVO = {
+  docencia:      ['horas_docencia_directa', 'horas_preparacion'],
+  investigacion: ['horas_investigacion'],
+  vinculacion:   ['horas_vinculacion'],
+  tutoria:       ['horas_tutoria'],
+  gestion:       ['horas_gestion'],
+}

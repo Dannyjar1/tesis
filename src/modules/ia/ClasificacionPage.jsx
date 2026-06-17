@@ -129,7 +129,7 @@ export default function ClasificacionPage() {
           <IconRobot className="h-10 w-10 mx-auto mb-3 text-gray-300" />
           <h2 className="text-base font-semibold text-gray-700">Sin eventos para clasificar</h2>
           <p className="text-gray-400 text-sm mt-1">
-            Primero sincroniza tu calendario Outlook en la sección <strong>Calendario</strong>.
+            Aún no hay eventos para clasificar en este período.
           </p>
         </div>
       )}

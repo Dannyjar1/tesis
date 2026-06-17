@@ -1,148 +1,296 @@
 /**
- * actividadesService.js — Actividades académicas confirmadas del docente.
- * Firestore /actividades con fallback localStorage.
- * Colección distinta de /tareas_todo (Kanban) — estas son actividades
- * confirmadas tras la clasificación IA del calendario.
+ * actividadesService.js — Actividades ASIGNADAS por el director al docente.
+ *
+ * Concepto (PROJECT_BRIEF §5, §10, §15 · RESTRUCTURE §3): el director crea y
+ * asigna actividades a un docente con categoría, prioridad y fechas; el docente
+ * las ve, actualiza su estado y sube evidencia. NO es un tablero personal: el
+ * docente no crea actividades por su cuenta.
+ *
+ * Firestore /actividades con fallback localStorage (mock). En mock se guarda la
+ * lista completa del período bajo una sola clave; las vistas filtran en cliente.
  */
 import {
   collection, doc, getDoc, getDocs, setDoc, updateDoc,
-  query, where, orderBy, onSnapshot, Timestamp,
+  query, where, onSnapshot, Timestamp,
 } from 'firebase/firestore'
 import { db } from './firebase'
+import { getDistributivo } from './distributivoService'
+import { crearNotificacion } from './notificacionesService'
+import { ESTADOS_ACTIVIDAD, CATEGORIA_A_HORAS_DISTRIBUTIVO, CATEGORIA_LABELS } from '../utils/constants'
 
 const COL = 'actividades'
-const LOCAL_KEY = (uid, periodo) => `uide_actividades_${uid}_${periodo}`
+const LOCAL_KEY = (periodo) => `uide_actividades_${periodo}`
 
-// ── Helpers localStorage ──────────────────────────────────────────────────────
+// ── Helpers localStorage (lista completa del período) ─────────────────────────
 
-function localCargar(uid, periodo) {
+function localCargar(periodo) {
   try {
-    const raw = localStorage.getItem(LOCAL_KEY(uid, periodo))
+    const raw = localStorage.getItem(LOCAL_KEY(periodo))
     return raw ? JSON.parse(raw) : []
   } catch { return [] }
 }
 
-function localGuardar(uid, periodo, lista) {
-  localStorage.setItem(LOCAL_KEY(uid, periodo), JSON.stringify(lista))
+function localGuardar(periodo, lista) {
+  localStorage.setItem(LOCAL_KEY(periodo), JSON.stringify(lista))
+}
+
+function aISO(v) {
+  return v?.toDate?.()?.toISOString() ?? v ?? null
 }
 
 function normalizar(data, id) {
   return {
     ...data,
     id: id ?? data.id,
-    fecha_actividad:
-      data.fecha_actividad?.toDate?.()?.toISOString() ?? data.fecha_actividad,
-    fecha_creacion:
-      data.fecha_creacion?.toDate?.()?.toISOString() ?? data.fecha_creacion,
+    fecha_inicio:     aISO(data.fecha_inicio),
+    fecha_limite:     aISO(data.fecha_limite),
+    fecha_completada: aISO(data.fecha_completada),
+    creada_en:        aISO(data.creada_en),
   }
 }
 
-// ── API pública ───────────────────────────────────────────────────────────────
+// ── Lógica de estado ──────────────────────────────────────────────────────────
 
-/** Devuelve actividades confirmadas del docente para un período. */
-export async function getActividades(docenteUid, periodoId) {
+/**
+ * Estado efectivo para mostrar: una actividad no completada cuya fecha límite
+ * ya pasó se considera "vencida" sin necesidad de un proceso programado.
+ * @returns {string} uno de ESTADOS_ACTIVIDAD
+ */
+export function estadoEfectivo(actividad) {
+  if (!actividad) return ESTADOS_ACTIVIDAD.PENDIENTE
+  if (actividad.estado === ESTADOS_ACTIVIDAD.COMPLETADA) return ESTADOS_ACTIVIDAD.COMPLETADA
+  if (actividad.estado === ESTADOS_ACTIVIDAD.VENCIDA) return ESTADOS_ACTIVIDAD.VENCIDA
+  if (actividad.fecha_limite && new Date(actividad.fecha_limite) < new Date()) {
+    return ESTADOS_ACTIVIDAD.VENCIDA
+  }
+  return actividad.estado ?? ESTADOS_ACTIVIDAD.PENDIENTE
+}
+
+// ── Lectura ─────────────────────────────────────────────────────────────────
+
+async function getTodasPeriodo(periodoId) {
   if (db) {
     try {
       const snap = await getDocs(
-        query(
-          collection(db, COL),
-          where('docente_uid', '==', docenteUid),
-          where('periodo_id',  '==', periodoId),
-          orderBy('fecha_actividad', 'asc'),
-        )
+        query(collection(db, COL), where('periodo_id', '==', periodoId))
       )
       const lista = snap.docs.map(d => normalizar(d.data(), d.id))
-      localGuardar(docenteUid, periodoId, lista)
+      localGuardar(periodoId, lista)
       return lista
     } catch (err) {
       console.warn('[actividadesService] Firestore no disponible:', err.code)
     }
   }
-  return localCargar(docenteUid, periodoId)
+  return localCargar(periodoId)
+}
+
+/** Actividades asignadas a un docente en el período (vista del docente). */
+export async function getActividadesDocente(docenteUid, periodoId) {
+  const todas = await getTodasPeriodo(periodoId)
+  return todas.filter(a => a.asignada_a_uid === docenteUid)
 }
 
 /**
- * Crea una actividad confirmada.
- * @param {{ docente_uid, periodo_id, titulo, categoria, horas, fecha_actividad, evento_id? }} actividad
+ * Actividades del período para el panel del director (todas o por carrera).
+ * @param {string} periodoId
+ * @param {string|null} carreraId — si se indica, filtra por carrera
  */
-export async function crearActividad(actividad) {
-  const id = `act_${actividad.docente_uid}_${Date.now()}`
+export async function getActividadesDirector(periodoId, carreraId = null) {
+  const todas = await getTodasPeriodo(periodoId)
+  return carreraId ? todas.filter(a => a.carrera_id === carreraId) : todas
+}
+
+/**
+ * Suscripción en tiempo real (onSnapshot en Firestore, una sola carga en mock).
+ * @param {{ periodoId: string, docenteUid?: string, carreraId?: string }} filtros
+ * @param {Function} callback — recibe la lista ya filtrada
+ * @returns {Function} unsubscribe
+ */
+export function suscribirseActividades({ periodoId, docenteUid = null, carreraId = null }, callback) {
+  const filtrar = (lista) => lista.filter(a =>
+    (!docenteUid || a.asignada_a_uid === docenteUid) &&
+    (!carreraId  || a.carrera_id === carreraId)
+  )
+
+  if (db) {
+    return onSnapshot(
+      query(collection(db, COL), where('periodo_id', '==', periodoId)),
+      snap => {
+        const lista = snap.docs.map(d => normalizar(d.data(), d.id))
+        localGuardar(periodoId, lista)
+        callback(filtrar(lista))
+      },
+      err => console.warn('[actividadesService] onSnapshot error:', err.code)
+    )
+  }
+  getTodasPeriodo(periodoId).then(lista => callback(filtrar(lista)))
+  return () => {}
+}
+
+// ── Coherencia distributivo ↔ actividad (PROJECT_BRIEF §5.4 / RESTRUCTURE §3.3)
+
+/**
+ * Verifica que el docente tenga horas de la categoría en su distributivo.
+ * No bloquea: devuelve una alerta para que el director confirme.
+ * @returns {Promise<{ alerta: boolean, mensaje?: string }>}
+ */
+export async function verificarCoherenciaDistributivo(docenteUid, categoria, periodoId) {
+  const distributivo = await getDistributivo(docenteUid, periodoId)
+  if (!distributivo) {
+    return { alerta: true, mensaje: 'El docente aún no tiene un distributivo en este período.' }
+  }
+  const campos = CATEGORIA_A_HORAS_DISTRIBUTIVO[categoria] ?? []
+  const horas = campos.reduce((sum, campo) => sum + (Number(distributivo[campo]) || 0), 0)
+  if (horas <= 0) {
+    return {
+      alerta: true,
+      mensaje: `El docente no tiene horas de "${CATEGORIA_LABELS[categoria] ?? categoria}" en su distributivo.`,
+    }
+  }
+  return { alerta: false }
+}
+
+// ── Escritura ─────────────────────────────────────────────────────────────────
+
+/**
+ * Crea (asigna) una actividad y genera la notificación in-app al docente.
+ * @param {{ titulo, descripcion?, categoria_ces, asignada_por_uid, asignada_por_nombre?,
+ *           asignada_a_uid, asignada_a_nombre?, carrera_id?, periodo_id,
+ *           prioridad, fecha_inicio?, fecha_limite }} datos
+ */
+export async function crearActividad(datos) {
+  const id = `act_${datos.asignada_a_uid}_${Date.now()}`
   const nueva = {
     id,
-    docente_uid:     actividad.docente_uid,
-    periodo_id:      actividad.periodo_id,
-    titulo:          actividad.titulo,
-    categoria:       actividad.categoria,
-    horas:           actividad.horas ?? 0,
-    fecha_actividad: actividad.fecha_actividad ?? new Date().toISOString(),
-    evento_id:       actividad.evento_id ?? null,
-    estado:          'confirmada',
-    notas:           actividad.notas ?? '',
+    titulo:             datos.titulo,
+    descripcion:        datos.descripcion ?? '',
+    categoria_ces:      datos.categoria_ces,
+    asignada_por_uid:   datos.asignada_por_uid,
+    asignada_por_nombre: datos.asignada_por_nombre ?? '',
+    asignada_a_uid:     datos.asignada_a_uid,
+    asignada_a_nombre:  datos.asignada_a_nombre ?? '',
+    carrera_id:         datos.carrera_id ?? null,
+    periodo_id:         datos.periodo_id,
+    prioridad:          datos.prioridad,
+    estado:             ESTADOS_ACTIVIDAD.PENDIENTE,
+    fecha_inicio:       datos.fecha_inicio ?? new Date().toISOString(),
+    fecha_limite:       datos.fecha_limite ?? null,
+    fecha_completada:   null,
+    evidencia_url:      null,
+    observacion:        null,
+    creada_en:          new Date().toISOString(),
   }
 
   if (db) {
     try {
       await setDoc(doc(db, COL, id), {
         ...nueva,
-        fecha_actividad: Timestamp.fromDate(new Date(nueva.fecha_actividad)),
-        fecha_creacion:  Timestamp.now(),
+        fecha_inicio: nueva.fecha_inicio ? Timestamp.fromDate(new Date(nueva.fecha_inicio)) : null,
+        fecha_limite: nueva.fecha_limite ? Timestamp.fromDate(new Date(nueva.fecha_limite)) : null,
+        creada_en:    Timestamp.now(),
       })
-      return nueva
     } catch (err) {
       console.warn('[actividadesService] Firestore error en crearActividad:', err.code)
+      guardarLocal(nueva)
     }
+  } else {
+    guardarLocal(nueva)
   }
 
-  const lista = localCargar(nueva.docente_uid, nueva.periodo_id)
-  lista.push({ ...nueva, fecha_creacion: new Date().toISOString() })
-  localGuardar(nueva.docente_uid, nueva.periodo_id, lista)
+  // Notificación in-app al docente (PROJECT_BRIEF §5.6)
+  await crearNotificacion({
+    destinatario_uid: nueva.asignada_a_uid,
+    tipo:             'nueva_actividad',
+    titulo:           'Nueva actividad asignada',
+    mensaje:          `${nueva.titulo}${nueva.fecha_limite ? ` · Vence: ${new Date(nueva.fecha_limite).toLocaleDateString('es-EC')}` : ''}`,
+  })
+
   return nueva
 }
 
-/** Actualiza una actividad existente. */
-export async function actualizarActividad(actividadId, cambios) {
+function guardarLocal(act) {
+  const lista = localCargar(act.periodo_id)
+  const idx = lista.findIndex(a => a.id === act.id)
+  if (idx === -1) lista.push(act)
+  else lista[idx] = act
+  localGuardar(act.periodo_id, lista)
+}
+
+/** Aplica cambios parciales a una actividad (Firestore o mock). */
+async function aplicarCambios(actividad, cambios) {
   if (db) {
     try {
-      const ref = doc(db, COL, actividadId)
+      const ref = doc(db, COL, actividad.id)
       const snap = await getDoc(ref)
-      if (!snap.exists()) throw new Error('Actividad no encontrada.')
-      await updateDoc(ref, { ...cambios, fecha_actualizacion: Timestamp.now() })
-      return normalizar({ ...snap.data(), ...cambios }, actividadId)
+      if (snap.exists()) {
+        const payload = { ...cambios }
+        if ('fecha_limite' in cambios && cambios.fecha_limite) {
+          payload.fecha_limite = Timestamp.fromDate(new Date(cambios.fecha_limite))
+        }
+        if ('fecha_completada' in cambios && cambios.fecha_completada) {
+          payload.fecha_completada = Timestamp.fromDate(new Date(cambios.fecha_completada))
+        }
+        await updateDoc(ref, payload)
+        return normalizar({ ...snap.data(), ...cambios }, actividad.id)
+      }
     } catch (err) {
-      if (!err.code) throw err
-      console.warn('[actividadesService] Firestore error en actualizarActividad:', err.code)
+      console.warn('[actividadesService] Firestore error al actualizar:', err.code)
     }
   }
-
-  // Fallback: necesita docente_uid y periodo_id en cambios o en el objeto
-  const uid = cambios.docente_uid
-  const periodo = cambios.periodo_id
-  if (!uid || !periodo) throw new Error('Se requiere docente_uid y periodo_id para actualizar en modo offline.')
-  const lista = localCargar(uid, periodo)
-  const idx = lista.findIndex(a => a.id === actividadId)
-  if (idx === -1) throw new Error('Actividad no encontrada.')
-  lista[idx] = { ...lista[idx], ...cambios, fecha_actualizacion: new Date().toISOString() }
-  localGuardar(uid, periodo, lista)
-  return lista[idx]
+  const actualizada = { ...actividad, ...cambios }
+  guardarLocal(actualizada)
+  return actualizada
 }
 
 /**
- * Suscripción en tiempo real a las actividades del docente.
- * @returns {Function} unsubscribe
+ * El docente avanza el estado de su actividad (pendiente → en_progreso →
+ * completada). Al completar registra la fecha.
  */
-export function suscribirseActividades(docenteUid, periodoId, callback) {
-  if (db) {
-    return onSnapshot(
-      query(
-        collection(db, COL),
-        where('docente_uid', '==', docenteUid),
-        where('periodo_id',  '==', periodoId),
-        orderBy('fecha_actividad', 'asc'),
-      ),
-      snap => callback(snap.docs.map(d => normalizar(d.data(), d.id))),
-      err => console.warn('[actividadesService] onSnapshot error:', err.code)
-    )
+export async function actualizarEstadoActividad(actividad, nuevoEstado) {
+  const cambios = { estado: nuevoEstado }
+  if (nuevoEstado === ESTADOS_ACTIVIDAD.COMPLETADA) {
+    cambios.fecha_completada = new Date().toISOString()
   }
-  getActividades(docenteUid, periodoId).then(callback)
-  return () => {}
+  return aplicarCambios(actividad, cambios)
+}
+
+/** Registra la evidencia (archivo/URL) y marca la actividad como completada. */
+export async function registrarEvidencia(actividad, evidenciaUrl) {
+  return aplicarCambios(actividad, {
+    evidencia_url:    evidenciaUrl,
+    estado:           ESTADOS_ACTIVIDAD.COMPLETADA,
+    fecha_completada: new Date().toISOString(),
+  })
+}
+
+/**
+ * El director amplía el plazo de una actividad con una observación obligatoria
+ * (PROJECT_BRIEF §5.4). La actividad vuelve a estado pendiente y notifica.
+ */
+export async function ampliarPlazo(actividad, nuevaFechaLimite, observacion) {
+  if (!observacion?.trim()) throw new Error('La observación es obligatoria para ampliar el plazo.')
+  const actualizada = await aplicarCambios(actividad, {
+    fecha_limite: nuevaFechaLimite,
+    observacion:  observacion.trim(),
+    estado:       ESTADOS_ACTIVIDAD.PENDIENTE,
+  })
+  await crearNotificacion({
+    destinatario_uid: actividad.asignada_a_uid,
+    tipo:             'plazo_ampliado',
+    titulo:           'Plazo de actividad ampliado',
+    mensaje:          `"${actividad.titulo}" — nuevo vencimiento: ${new Date(nuevaFechaLimite).toLocaleDateString('es-EC')}. ${observacion.trim()}`,
+  })
+  return actualizada
+}
+
+/** El director marca una actividad como vencida (PROJECT_BRIEF §15.4). */
+export async function marcarVencida(actividad) {
+  const actualizada = await aplicarCambios(actividad, { estado: ESTADOS_ACTIVIDAD.VENCIDA })
+  await crearNotificacion({
+    destinatario_uid: actividad.asignada_a_uid,
+    tipo:             'actividad_vencida',
+    titulo:           'Actividad marcada como vencida',
+    mensaje:          `"${actividad.titulo}" superó su fecha límite.`,
+  })
+  return actualizada
 }

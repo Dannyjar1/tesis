@@ -114,6 +114,31 @@ export async function getNotificaciones(destinatarioUid) {
 }
 
 /**
+ * Crea una notificación in-app para un destinatario (avisos de actividades,
+ * ampliación de plazo, etc.). En producción será addDoc a /notificaciones.
+ * @param {{ destinatario_uid: string, tipo: string, titulo: string,
+ *           mensaje: string, docente_uid_ref?: string }} datos
+ * @returns {Promise<Object>} la notificación creada
+ */
+export async function crearNotificacion(datos) {
+  if (!datos?.destinatario_uid) return null
+  const notif = {
+    id: `notif_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    destinatario_uid: datos.destinatario_uid,
+    tipo:             datos.tipo ?? 'sistema',
+    titulo:           datos.titulo ?? '',
+    mensaje:          datos.mensaje ?? '',
+    docente_uid_ref:  datos.docente_uid_ref ?? null,
+    leida:            false,
+    fecha_creacion:   new Date().toISOString(),
+  }
+  const lista = leer(datos.destinatario_uid)
+  lista.unshift(notif)
+  guardar(datos.destinatario_uid, lista)
+  return notif
+}
+
+/**
  * Marca una notificación como leída.
  * @param {string} destinatarioUid
  * @param {string} notificacionId

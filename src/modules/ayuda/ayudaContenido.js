@@ -5,7 +5,7 @@
  * Las preguntas se renderizan como acordeones (Acordeon.jsx) agrupados por sección.
  */
 import { ROLES } from '../../utils/constants'
-import { IconAjustes, IconCalendario, IconCarpeta, IconChispa, IconClipboard, IconCohete, IconDiana, IconDocumento, IconGlobo, IconGrafico, IconHerramienta, IconUsuario, IconUsuarios } from '../../components/icons'
+import { IconAjustes, IconCalendario, IconCarpeta, IconClipboard, IconCohete, IconDiana, IconDocumento, IconGlobo, IconGrafico, IconHerramienta, IconUsuario, IconUsuarios } from '../../components/icons'
 
 // Sección común visible para todos los roles autenticados.
 export const AYUDA_GENERAL = {
@@ -58,34 +58,18 @@ const DOCENTE = [
     ],
   },
   {
-    titulo: 'Calendario y actividades',
-    icono: IconCalendario,
+    titulo: 'Mis Actividades',
+    icono: IconClipboard,
     items: [
       {
-        pregunta: '¿Cómo conecto mi calendario de Outlook?',
+        pregunta: '¿Cómo veo las actividades que me asignaron?',
         respuesta:
-          'Entra a "Calendario" y pulsa "Conectar Outlook". Autorizas el acceso con tu propia cuenta @uide.edu.ec; el sistema solo lee tus eventos, nunca los modifica.',
+          'En "Mis Actividades" encuentras las tareas que el director te asignó, ordenadas por prioridad y fecha límite, con barras de progreso por categoría. Tú no creas actividades: solo actualizas su estado y subes la evidencia.',
       },
       {
-        pregunta: '¿Qué son las etiquetas DIST/* de Outlook?',
+        pregunta: '¿Cómo marco una actividad como completada?',
         respuesta:
-          'Son categorías que asignas a tus correos en Outlook (DIST/Docencia, DIST/Investigación, DIST/Vinculación, DIST/Gestión, DIST/Tutoría, DIST/TP-Horas). El sistema lee esos correos y registra automáticamente la actividad en la categoría que corresponde. Puedes etiquetar desde la app o directamente en Outlook, como prefieras.',
-      },
-      {
-        pregunta: '¿Cómo organizo mis tareas en el tablero Kanban?',
-        respuesta:
-          'En "Mis Actividades" arrastra cada tarjeta entre las columnas Por hacer, En progreso y Completadas. Al llegar a "Completadas" se registra automáticamente la fecha de finalización. La pestaña "Estadísticas" muestra tu progreso por categoría.',
-      },
-    ],
-  },
-  {
-    titulo: 'Clasificación con IA',
-    icono: IconChispa,
-    items: [
-      {
-        pregunta: 'La IA clasificó mal una actividad, ¿cómo la corrijo?',
-        respuesta:
-          'En "Clasificación IA" abre el evento y cambia la categoría asignada. Tu corrección se guarda como retroalimentación y ayuda a mejorar el modelo para futuras clasificaciones.',
+          'Usa "Iniciar" para pasarla a En progreso y luego "Marcar completada". También puedes pulsar "Subir evidencia" (URL o archivo): al guardar la evidencia, la actividad queda completada.',
       },
     ],
   },

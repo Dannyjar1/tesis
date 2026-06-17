@@ -20,6 +20,8 @@ const ClasificacionPage        = lazy(() => import('../modules/ia/ClasificacionP
 const ReportesPage             = lazy(() => import('../modules/reportes/ReportesPage'))
 const NotificacionesPage       = lazy(() => import('../modules/notificaciones/NotificacionesPage'))
 const AdminPage                = lazy(() => import('../modules/admin/AdminPage'))
+const ActividadesDirectorPage  = lazy(() => import('../modules/actividades/ActividadesDirectorPage'))
+const ActividadesDocentePage   = lazy(() => import('../modules/actividades/ActividadesDocentePage'))
 const AyudaPage                = lazy(() => import('../modules/ayuda/AyudaPage'))
 const PerfilPage               = lazy(() => import('../modules/perfil/PerfilPage'))
 const PersonalPage             = lazy(() => import('../modules/personal/PersonalPage'))
@@ -107,6 +109,12 @@ export default function AppRouter() {
         } />
         <Route path="/ia" element={
           <ModuloGuard modulo="ia"><ClasificacionPage /></ModuloGuard>
+        } />
+        <Route path="/actividades" element={
+          <ModuloGuard modulo="actividades"><ActividadesDirectorPage /></ModuloGuard>
+        } />
+        <Route path="/mis-actividades" element={
+          <ModuloGuard modulo="mis-actividades"><ActividadesDocentePage /></ModuloGuard>
         } />
         <Route path="/horario" element={
           <ModuloGuard modulo="horario">

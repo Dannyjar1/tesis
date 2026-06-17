@@ -41,49 +41,45 @@ export const ROLES_DEFAULT = [
   },
   {
     id: 'director', nombre: 'Director de Carrera', es_sistema: true, activo: true,
-    modulos: ['dashboard', 'distributivos', 'personal', 'mis-actividades', 'reportes', 'gestion-periodos', 'notificaciones'],
+    modulos: ['dashboard', 'distributivos', 'actividades', 'personal', 'reportes', 'gestion-periodos', 'notificaciones'],
     acciones: {
       dashboard:         ['visualizar', 'crear'],          // crear: planes de mejora
       distributivos:     ['visualizar', 'crear', 'editar', 'aprobar'],
+      actividades:       ['visualizar', 'crear', 'editar'], // asigna y da seguimiento
       personal:          ['visualizar', 'crear', 'editar'],
-      'mis-actividades': ['visualizar', 'crear', 'editar', 'eliminar'],
       reportes:          ['visualizar', 'exportar'],
       'gestion-periodos':['visualizar', 'crear', 'editar'],
     },
   },
   {
     id: 'coordinador', nombre: 'Coordinador Académico', es_sistema: true, activo: true,
-    modulos: ['dashboard', 'distributivos', 'personal', 'mis-actividades', 'reportes', 'notificaciones'],
+    modulos: ['dashboard', 'distributivos', 'actividades', 'personal', 'reportes', 'notificaciones'],
     acciones: {
       dashboard:         ['visualizar'],
       distributivos:     ['visualizar'],                    // sin aprobar (RN-008)
+      actividades:       ['visualizar'],                    // panel consolidado (lectura)
       personal:          ['visualizar'],
-      'mis-actividades': ['visualizar', 'crear', 'editar', 'eliminar'],
       reportes:          ['visualizar', 'exportar'],
     },
   },
   {
     id: 'docente', nombre: 'Docente', es_sistema: true, activo: true,
-    modulos: ['mi-distributivo', 'mis-actividades', 'horario', 'calendario', 'ia', 'notificaciones'],
+    modulos: ['mi-distributivo', 'mis-actividades', 'horario', 'notificaciones'],
     acciones: {
       'mi-distributivo': ['visualizar', 'exportar'],
-      'mis-actividades': ['visualizar', 'crear', 'editar', 'eliminar'],
+      'mis-actividades': ['visualizar', 'editar'],          // ve y completa lo asignado
       horario:           ['visualizar'],
-      calendario:        ['visualizar', 'editar'],
-      ia:                ['visualizar', 'editar'],
     },
   },
   {
     id: 'administrativo', nombre: 'Administrativo', es_sistema: true, activo: true,
-    modulos: ['mi-panel', 'mi-distributivo', 'mis-actividades', 'reportes', 'horario', 'calendario', 'ia', 'notificaciones'],
+    modulos: ['mi-panel', 'mi-distributivo', 'mis-actividades', 'reportes', 'horario', 'notificaciones'],
     acciones: {
       'mi-panel':        ['visualizar'],
       'mi-distributivo': ['visualizar', 'exportar'],
-      'mis-actividades': ['visualizar', 'crear', 'editar', 'eliminar'],
+      'mis-actividades': ['visualizar', 'editar'],
       reportes:          ['visualizar', 'exportar'],
       horario:           ['visualizar'],
-      calendario:        ['visualizar', 'editar'],
-      ia:                ['visualizar', 'editar'],
     },
   },
 ]

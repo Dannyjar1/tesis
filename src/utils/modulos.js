@@ -19,15 +19,17 @@ export const MODULOS = [
   // ── Gestión académica ──
   { id: 'dashboard',        label: 'Dashboard',        path: '/dashboard',            icon: IconGrafico,   acciones: ['visualizar'] },
   { id: 'distributivos',    label: 'Distributivos',    path: '/distributivo/gestion', icon: IconDocumento, acciones: ['visualizar', 'crear', 'editar', 'aprobar'] },
+  { id: 'actividades',      label: 'Actividades',      path: '/actividades',          icon: IconClipboard, acciones: ['visualizar', 'crear', 'editar'] },
   { id: 'personal',         label: 'Mi Personal',      path: '/personal',             icon: IconUsuarios,  acciones: ['visualizar', 'crear', 'editar'] },
   { id: 'reportes',         label: 'Reportes',         path: '/reportes',             icon: IconGrafico,   acciones: ['visualizar', 'exportar'] },
   { id: 'gestion-periodos', label: 'Períodos',         path: '/admin/periodos',       icon: IconCalendario, acciones: ['visualizar', 'crear', 'editar', 'administrar'] },
   // ── Personal (docente / administrativo) ──
   { id: 'mi-panel',         label: 'Mi Panel',         path: '/mi-panel',             icon: IconGrafico,   acciones: ['visualizar'] },
   { id: 'mi-distributivo',  label: 'Mi Distributivo',  path: '/mi-distributivo',      icon: IconDocumento, acciones: ['visualizar', 'exportar'] },
-  { id: 'mis-actividades',  label: 'Mis Actividades',  path: '/mis-actividades',      icon: IconClipboard, acciones: ['visualizar', 'crear', 'editar', 'eliminar'] },
+  { id: 'mis-actividades',  label: 'Mis Actividades',  path: '/mis-actividades',      icon: IconClipboard, acciones: ['visualizar', 'editar'] },
   { id: 'horario',          label: 'Mi Horario',       path: '/horario',              icon: IconReloj,     acciones: ['visualizar'] },
-  { id: 'calendario',       label: 'Calendario',       path: '/calendario',           icon: IconCalendario, acciones: ['visualizar', 'editar'] },
+  // 'ia' (Clasificación IA) queda parqueado: módulo y ruta se conservan (MOD-04),
+  // pero ningún rol lo otorga hasta reintegrar BETO a la asignación de actividades.
   { id: 'ia',               label: 'Clasificación IA', path: '/ia',                   icon: IconChispa,    acciones: ['visualizar', 'editar'] },
   // ── Administración (Prorrector) ──
   { id: 'admin-usuarios',   label: 'Usuarios',         path: '/admin/usuarios',       icon: IconUsuarios,  acciones: ['visualizar', 'crear', 'editar', 'administrar'] },
