@@ -42,13 +42,7 @@ service cloud.firestore {
     match /actividades/{actId} {
       allow read, write: if esInstitucional();
     }
-    match /tareas_todo/{tareaId} {
-      allow read, write: if esInstitucional();
-    }
     match /horario_semanal/{bloqueId} {
-      allow read, write: if esInstitucional();
-    }
-    match /eventos_calendario/{evtId} {
       allow read, write: if esInstitucional();
     }
     match /clasificaciones_ia/{cId} {
@@ -72,20 +66,10 @@ service cloud.firestore {
     match /configuracion/{configId} {
       allow read, write: if esInstitucional();
     }
-    match /planes_mejora/{planId} {
-      // RF-037: planes de mejora por incumplimiento — sin eliminación (trazabilidad)
-      allow read, create, update: if esInstitucional();
-      allow delete: if false;
-    }
-    match /matriz_productividad/{matrizId} {
-      // RF-043: pre-asignada desde Rectorado. La restricción "solo Admin edita"
-      // se aplica en la capa de aplicación (puedeEditarMatriz) hasta que los
-      // documentos /usuarios queden keyed por el UID real de Firebase Auth;
-      // entonces se trasladará aquí con get(/usuarios/$(request.auth.uid)).data.roles
-      allow read: if esInstitucional();
-      allow create, update: if esInstitucional();
-      allow delete: if false;
-    }
+
+    // Colecciones fuera de alcance del MVP (RESTRUCTURE §5) — NO se crean y
+    // quedan denegadas por la regla por defecto: eventos_calendario, tareas_todo,
+    // matriz_productividad, planes_mejora, oficios, roles_definicion.
 
     // Por defecto, todo lo demás queda bloqueado.
     match /{document=**} {
