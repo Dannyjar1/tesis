@@ -11,24 +11,11 @@ Funciones expuestas:
                   Para activar BETO: subir el modelo fine-tuned, definir
                   CLASIFICADOR_MODO=beto + RUTA_MODELO_BETO y descomentar
                   torch/transformers en requirements.txt (subir memoria a 2GiB).
-  - notificacion_semanal  scheduled lunes 08:00 (America/Guayaquil) →
-                  resumen WhatsApp de la semana vía Twilio (RF-038)
-  - notificacion_diaria   scheduled diario 10:00 → recordatorio WhatsApp de
-                  tareas que vencen hoy/mañana (lunes no dispara)
-
-Secrets requeridos (firebase functions:secrets:set):
-  TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN
-Variable opcional (functions/.env):
-  TWILIO_WHATSAPP_FROM  (default: sandbox whatsapp:+14155238886)
 """
 from firebase_admin import initialize_app
-from firebase_functions import https_fn, options, scheduler_fn
-from firebase_functions.params import SecretParam
+from firebase_functions import https_fn, options
 
 initialize_app()
-
-TWILIO_ACCOUNT_SID = SecretParam("TWILIO_ACCOUNT_SID")
-TWILIO_AUTH_TOKEN  = SecretParam("TWILIO_AUTH_TOKEN")
 
 # Región us-central1: la misma del proyecto Firestore (uide-distributivo-loja).
 _REGION = "us-central1"
@@ -49,47 +36,6 @@ def clasificar(req: https_fn.Request) -> https_fn.Response:
     from clasificacion.main import clasificar as handler
     body, status, headers = _normalizar(handler(req))
     return https_fn.Response(body, status=status, headers=headers)
-
-
-@scheduler_fn.on_schedule(
-    schedule="0 8 * * 1",                 # lunes 08:00
-    timezone=scheduler_fn.Timezone("America/Guayaquil"),
-    region=_REGION,
-    secrets=[TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN],
-)
-def notificacion_semanal(event: scheduler_fn.ScheduledEvent) -> None:
-    """Resumen semanal de actividades por WhatsApp (RF-038)."""
-    from firebase_admin import firestore
-    from notificaciones.whatsapp import ejecutar_notificacion
-    ejecutar_notificacion(
-        firestore.client(),
-        TWILIO_ACCOUNT_SID.value,
-        TWILIO_AUTH_TOKEN.value,
-        modo="semanal",
-    )
-
-
-@scheduler_fn.on_schedule(
-    schedule="0 10 * * *",                # todos los días 10:00
-    timezone=scheduler_fn.Timezone("America/Guayaquil"),
-    region=_REGION,
-    secrets=[TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN],
-)
-def notificacion_diaria(event: scheduler_fn.ScheduledEvent) -> None:
-    """Recordatorio diario de tareas que vencen hoy/mañana (RF-038).
-    Los lunes no dispara: el resumen semanal ya salió a las 08:00."""
-    from datetime import datetime
-    from zoneinfo import ZoneInfo
-    if datetime.now(ZoneInfo("America/Guayaquil")).weekday() == 0:  # lunes
-        return
-    from firebase_admin import firestore
-    from notificaciones.whatsapp import ejecutar_notificacion
-    ejecutar_notificacion(
-        firestore.client(),
-        TWILIO_ACCOUNT_SID.value,
-        TWILIO_AUTH_TOKEN.value,
-        modo="diaria",
-    )
 
 
 def _normalizar(resultado):

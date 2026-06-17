@@ -243,9 +243,9 @@ const ADMINISTRATIVO = [
           'Tu panel reúne tu distribución de actividades, tus reportes y tu horario. Funciona igual que el del personal docente para el seguimiento de tus actividades.',
       },
       {
-        pregunta: '¿Cómo registro y sigo mis actividades?',
+        pregunta: '¿Cómo sigo mis actividades?',
         respuesta:
-          'Usa "Mis Actividades" (tablero Kanban) para organizar tus tareas y "Calendario" para sincronizar tus eventos de Outlook.',
+          'Usa "Mis Actividades" para ver las actividades que el director te ha asignado, actualizar su estado y adjuntar evidencia.',
       },
     ],
   },
@@ -257,24 +257,9 @@ export const AYUDA_TUTORIALES = {
   icono: IconDiana,
   items: [
     {
-      pregunta: 'Tutorial: registrar mi número de WhatsApp para recibir avisos',
-      respuesta:
-        '1) Abre "Mi Perfil" en el menú lateral. 2) Escribe tu número en formato internacional (+593XXXXXXXXX). 3) Pulsa Guardar. Desde ese momento recibirás el resumen semanal (lunes 8:00) y el recordatorio diario (10:00) con tus tareas pendientes. Para dejar de recibirlos, borra el número y guarda.',
-    },
-    {
-      pregunta: 'Tutorial: convertir un correo en una tarea con IA',
-      respuesta:
-        '1) Entra a "Calendario" y cambia a la pestaña "Correos DIST/*". 2) Asigna la etiqueta DIST que corresponda a cada correo (o etiquétalos directamente en Outlook). 3) Pulsa "Crear tareas To Do con IA": el sistema interpreta el texto del correo, extrae título, fecha límite y categoría, y crea la tarea en tu tablero Mis Actividades.',
-    },
-    {
-      pregunta: 'Tutorial: registrar una actividad imprevista',
-      respuesta:
-        '1) En "Mis Actividades" pulsa crear actividad. 2) Marca la casilla "Actividad imprevista". 3) Indica la fecha de ejecución: debe ser con mínimo 2 semanas de anticipación, de lo contrario el sistema bloquea el registro. 4) Guarda: la actividad entra al tablero como "Por hacer".',
-    },
-    {
       pregunta: 'Tutorial: completar el flujo del distributivo',
       respuesta:
-        '1) Verifica que el docente tenga su Matriz de Productividad aprobada (la carga de investigación viene pre-asignada desde Rectorado y es de solo lectura). 2) El Director crea el distributivo desde "Distributivos" (modal). 3) El sistema calcula automáticamente tutoría, preparación, vinculación y titulación. 4) Director y docente confirman (validación cruzada) y el distributivo queda aprobado.',
+        '1) El Director crea el distributivo del docente desde "Distributivos" (modal). 2) El sistema calcula automáticamente tutoría, preparación, vinculación y titulación a partir de los datos base. 3) Director y docente confirman (validación cruzada) y el distributivo queda aprobado.',
     },
   ],
 }

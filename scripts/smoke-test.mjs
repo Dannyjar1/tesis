@@ -63,16 +63,10 @@ await check('Sidebar: entradas Mi Perfil y Ayuda', async () => {
   await page.getByRole('link', { name: 'Ayuda' }).waitFor()
 })
 
-// ── 4. /perfil: datos + campo WhatsApp con validación ──
-await check('RF-038 /perfil: campo WhatsApp valida formato', async () => {
+// ── 4. /perfil: datos institucionales ──
+await check('/perfil: datos institucionales del usuario', async () => {
   await page.goto(`${BASE}/perfil`)
-  await page.getByText('Notificaciones por WhatsApp').waitFor()
-  const input = page.locator('#telefono_whatsapp')
-  await input.fill('0991234567')
-  await page.getByText(/debe empezar con \+/).waitFor()
-  await input.fill('+593991234567')
-  await page.getByRole('button', { name: 'Guardar' }).click()
-  await page.getByText(/Número de WhatsApp guardado/).waitFor()
+  await page.getByText('Información institucional').waitFor()
 })
 
 // ── 5. /ayuda: secciones por rol + buscador + tutoriales ──
@@ -80,39 +74,15 @@ await check('RF-039 /ayuda: FAQ del rol director + tutoriales', async () => {
   await page.goto(`${BASE}/ayuda`)
   await page.getByText('Gestión de distributivos').waitFor()
   await page.getByText('Tutoriales paso a paso').waitFor()
-  await page.getByPlaceholder('Buscar en la ayuda…').fill('whatsapp')
-  await page.getByText(/registrar mi número de WhatsApp/i).waitFor()
+  await page.getByPlaceholder('Buscar en la ayuda…').fill('distributivo')
+  await page.getByText(/completar el flujo del distributivo/i).waitFor()
 })
 
-// ── 6. Docente: home, calendario con pestaña correos, IA ──
+// ── 6. Docente: home ──
 await check('Docente: login → /mi-distributivo', async () => {
   await logout()
   await login('Docente TC — Palacios')
   await page.waitForURL(/mi-distributivo/, { timeout: 8000 })
-})
-await check('RF-023 Calendario: toggle Agenda|Correos DIST/*', async () => {
-  await page.goto(`${BASE}/calendario`)
-  await page.getByRole('button', { name: /Correos DIST/ }).click()
-  await page.getByText(/correos con etiqueta DIST/).waitFor()
-})
-await check('RF-023 Correos mock listados + selector etiqueta', async () => {
-  await page.getByText('Acta de calificaciones primer parcial — Programación Web').waitFor()
-  await page.getByText('Modo demostración:').waitFor()
-})
-await check('IA: botón Crear tareas To Do con IA presente', async () => {
-  await page.getByRole('button', { name: /Crear tareas To Do con IA/ }).waitFor()
-})
-await check('RF-041 Mis Actividades: checkbox imprevista + validación 2 semanas', async () => {
-  await page.goto(`${BASE}/mis-actividades`)
-  await page.getByRole('button', { name: /Nueva/ }).first().click()
-  await page.getByText('Actividad imprevista').waitFor()
-  await page.getByPlaceholder(/Preparar material/).fill('Prueba imprevista smoke')
-  await page.getByRole('checkbox').check()
-  const manana = new Date(Date.now() + 86400000).toISOString().slice(0, 10)
-  await page.locator('input[type="date"]').fill(manana)
-  await page.getByRole('button', { name: /Agregar/ }).last().click()
-  await page.getByText(/mínimo 2 semanas de anticipación/).first().waitFor()
-  await page.keyboard.press('Escape')
 })
 
 // ── 7. Admin y Administrativo: banners por rol ──

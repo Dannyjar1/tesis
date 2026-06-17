@@ -1,11 +1,9 @@
 import { useState, useContext } from 'react'
 import { PeriodoContext } from '../../context/PeriodoContext'
-import { useAuth } from '../auth/useAuth'
 import { useGestionDistributivos } from '../../hooks/useDistributivo'
 import { usePermisos } from '../../hooks/usePermisos'
 import { ESTADO_COLORES, ESTADO_LABELS, ROLES, TIPO_CONTRATO_HORAS, TIPO_CONTRATO_LABELS, CARRERA_LABELS } from '../../utils/constants'
 import { formatearHoras } from '../../utils/formatters'
-import { puedeElaborarDistributivo, validarCargaCompartida } from '../../services/matrizProductividadService'
 import DistributivoForm from './DistributivoForm'
 import DistributivoTable from './DistributivoTable'
 import Modal from '../../components/Modal'
@@ -13,7 +11,6 @@ import LoadingSpinner from '../../components/LoadingSpinner'
 import AlertBanner from '../../components/AlertBanner'
 
 export default function GestionDistributivoPage() {
-  const { user } = useAuth()
   const { periodoActivo } = useContext(PeriodoContext)
   const { distributivos, docentes, cargando, error, crear, actualizar, aprobar } =
     useGestionDistributivos(periodoActivo?.id)
@@ -33,31 +30,6 @@ export default function GestionDistributivoPage() {
   }
 
   async function handleGuardarForm(datos) {
-    // RF-043: el distributivo solo se elabora con Matriz de Productividad aprobada
-    const gate = await puedeElaborarDistributivo(datos.docente_uid, periodoActivo?.id)
-    if (!gate.permitido) {
-      setAlerta({ tipo: 'error', msg: gate.motivo })
-      return
-    }
-
-    // RF-042: docentes compartidos — la suma de horas en todas las carreras
-    // no debe superar el límite del contrato (sin duplicar carga horaria)
-    const docente = docentes.find(d => d.uid === datos.docente_uid)
-    const horasContrato = TIPO_CONTRATO_HORAS[docente?.tipo_contrato] ?? null
-    if (horasContrato) {
-      const compartida = await validarCargaCompartida({
-        docenteUid:    datos.docente_uid,
-        periodoId:     periodoActivo?.id,
-        carreraActual: user?.carrera_id,
-        horasNuevas:   datos.total_horas ?? horasContrato,
-        horasContrato,
-      })
-      if (!compartida.valido) {
-        setAlerta({ tipo: 'error', msg: compartida.motivo })
-        return
-      }
-    }
-
     const existente = getDistributivoDeDocente(datos.docente_uid)
     if (existente) {
       await actualizar(existente.id, datos)

@@ -1,16 +1,10 @@
 /**
- * Tests de los servicios nuevos: perfil WhatsApp (RF-038), Matriz de
- * Productividad (RF-043), carga compartida (RF-042) y planes de mejora (RF-037).
+ * Tests de los servicios nuevos: validación de teléfono (perfilService) y
+ * planes de mejora (RF-037).
  * Corren en modo mock (sin Firebase): localStorage como almacenamiento.
  */
 import { describe, it, expect, beforeEach } from 'vitest'
 import { validarTelefonoWhatsapp } from '../../src/services/perfilService'
-import {
-  puedeElaborarDistributivo,
-  validarCargaCompartida,
-  puedeEditarMatriz,
-  getMatrizDocente,
-} from '../../src/services/matrizProductividadService'
 import { crearPlanMejora, getPlanesMejora } from '../../src/services/planesMejoraService'
 
 const PERIODO = '2026-TEST'
@@ -19,11 +13,11 @@ beforeEach(() => {
   localStorage.clear()
 })
 
-describe('validarTelefonoWhatsapp (RF-038)', () => {
+describe('validarTelefonoWhatsapp', () => {
   it('acepta formato internacional válido', () => {
     expect(validarTelefonoWhatsapp('+593991234567')).toBeNull()
   })
-  it('acepta vacío (campo opcional, sin notificaciones)', () => {
+  it('acepta vacío (campo opcional)', () => {
     expect(validarTelefonoWhatsapp('')).toBeNull()
     expect(validarTelefonoWhatsapp(null)).toBeNull()
   })
@@ -36,51 +30,6 @@ describe('validarTelefonoWhatsapp (RF-038)', () => {
   })
   it('rechaza espacios y guiones', () => {
     expect(validarTelefonoWhatsapp('+593 99 123 4567')).not.toBeNull()
-  })
-})
-
-describe('Matriz de Productividad (RF-043)', () => {
-  it('docente con matriz aprobada puede elaborar distributivo', async () => {
-    const gate = await puedeElaborarDistributivo('uid_mipalaciosmo', PERIODO)
-    expect(gate.permitido).toBe(true)
-  })
-
-  it('docente sin matriz NO puede elaborar distributivo', async () => {
-    const gate = await puedeElaborarDistributivo('uid_inexistente', PERIODO)
-    expect(gate.permitido).toBe(false)
-    expect(gate.motivo).toMatch(/Matriz de Productividad/)
-  })
-
-  it('la matriz llega pre-asignada desde Rectorado', async () => {
-    const m = await getMatrizDocente('uid_mipalaciosmo', PERIODO)
-    expect(m.origen).toBe('rectorado')
-    expect(m.horas_investigacion).toBeGreaterThan(0)
-  })
-
-  it('solo Admin puede editar la matriz (solo lectura para el resto)', () => {
-    expect(puedeEditarMatriz({ roles: ['admin'] })).toBe(true)
-    expect(puedeEditarMatriz({ roles: ['director'] })).toBe(false)
-    expect(puedeEditarMatriz({ roles: ['director', 'coordinador'] })).toBe(false)
-    expect(puedeEditarMatriz({ rol: 'admin' })).toBe(true) // compat rol string
-  })
-})
-
-describe('Docentes compartidos entre carreras (RF-042)', () => {
-  it('valida cuando la suma no supera el contrato', async () => {
-    const r = await validarCargaCompartida({
-      docenteUid: 'uid_x', periodoId: PERIODO, carreraActual: 'sistemas-informacion',
-      horasNuevas: 40, horasContrato: 40,
-    })
-    expect(r.valido).toBe(true)
-    expect(r.total).toBe(40)
-  })
-
-  it('sin horas en otras carreras (mock) permite la carga completa', async () => {
-    const r = await validarCargaCompartida({
-      docenteUid: 'uid_x', periodoId: PERIODO, carreraActual: 'derecho',
-      horasNuevas: 20, horasContrato: 20,
-    })
-    expect(r.valido).toBe(true)
   })
 })
 
