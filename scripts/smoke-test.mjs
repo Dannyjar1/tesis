@@ -39,7 +39,7 @@ await check('Login renderiza con panel DEV', async () => {
   await page.getByRole('button', { name: /Director — Sistemas/ }).waitFor()
 })
 
-// ── 2. Director: dashboard + RolBanner + planes de mejora ──
+// ── 2. Director: dashboard + RolBanner ──
 await check('Director: login → /dashboard', async () => {
   await login('Director — Sistemas')
   if (!page.url().includes('/dashboard')) throw new Error(`url=${page.url()}`)
@@ -47,14 +47,6 @@ await check('Director: login → /dashboard', async () => {
 await check('RF-040 RolBanner: rol y accesos rápidos', async () => {
   await page.getByText('Director de Carrera').first().waitFor()
   await page.getByRole('link', { name: 'Reportes' }).first().waitFor()
-})
-await check('RF-037 Panel planes de mejora visible', async () => {
-  await page.getByText('Planes de mejora (incumplimiento)').waitFor()
-})
-await check('RF-037 Modal registrar plan abre (Liquid Glass)', async () => {
-  await page.getByRole('button', { name: '+ Registrar plan' }).click()
-  await page.getByText('Plan de mejoras *').waitFor()
-  await page.keyboard.press('Escape')
 })
 
 // ── 3. Sidebar: Mi Perfil y Ayuda para todos ──

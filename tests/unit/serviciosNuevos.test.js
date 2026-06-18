@@ -1,17 +1,9 @@
 /**
- * Tests de los servicios nuevos: validación de teléfono (perfilService) y
- * planes de mejora (RF-037).
- * Corren en modo mock (sin Firebase): localStorage como almacenamiento.
+ * Tests de validación de teléfono (perfilService).
+ * Corren en modo mock (sin Firebase).
  */
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { validarTelefonoWhatsapp } from '../../src/services/perfilService'
-import { crearPlanMejora, getPlanesMejora } from '../../src/services/planesMejoraService'
-
-const PERIODO = '2026-TEST'
-
-beforeEach(() => {
-  localStorage.clear()
-})
 
 describe('validarTelefonoWhatsapp', () => {
   it('acepta formato internacional válido', () => {
@@ -30,33 +22,5 @@ describe('validarTelefonoWhatsapp', () => {
   })
   it('rechaza espacios y guiones', () => {
     expect(validarTelefonoWhatsapp('+593 99 123 4567')).not.toBeNull()
-  })
-})
-
-describe('Planes de mejora (RF-037)', () => {
-  const base = {
-    docente_uid: 'uid_doc', docente_nombre: 'Docente Prueba', periodo_id: PERIODO,
-    descripcion: 'Recuperar 4h de tutoría en 2 semanas',
-    fecha_compromiso: '2026-07-01', responsable_nombre: 'Directora de Carrera',
-  }
-
-  it('crea un plan con fecha y responsable (no solo notificación)', async () => {
-    const plan = await crearPlanMejora(base)
-    expect(plan.estado).toBe('abierto')
-    expect(plan.fecha_registro).toBeTruthy()
-    expect(plan.responsable_nombre).toBe('Directora de Carrera')
-  })
-
-  it('rechaza plan sin descripción, fecha o responsable', async () => {
-    await expect(crearPlanMejora({ ...base, descripcion: ' ' })).rejects.toThrow(/descripción/)
-    await expect(crearPlanMejora({ ...base, fecha_compromiso: '' })).rejects.toThrow(/fecha/)
-    await expect(crearPlanMejora({ ...base, responsable_nombre: '' })).rejects.toThrow(/responsable/)
-  })
-
-  it('los planes quedan consultables por período y docente', async () => {
-    await crearPlanMejora(base)
-    await crearPlanMejora({ ...base, docente_uid: 'uid_otro', docente_nombre: 'Otro' })
-    expect((await getPlanesMejora(PERIODO)).length).toBe(2)
-    expect((await getPlanesMejora(PERIODO, 'uid_doc')).length).toBe(1)
   })
 })

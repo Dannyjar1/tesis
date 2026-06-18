@@ -7,7 +7,6 @@ import { formatearFecha, haceCuanto } from '../../utils/formatters'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import DocenteCard from './DocenteCard'
 import RolBanner from './RolBanner'
-import PlanesMejoraPanel from './PlanesMejoraPanel'
 import CumplimientoChart from './CumplimientoChart'
 import AlertasPanel from './AlertasPanel'
 import LoadingSpinner from '../../components/LoadingSpinner'
@@ -113,9 +112,6 @@ export default function DashboardPage() {
         {/* Columna lateral */}
         <div className="space-y-4">
           <AlertasPanel alertas={alertas} />
-
-          {/* Planes de mejora por incumplimiento (RF-037) */}
-          <PlanesMejoraPanel docentes={docentes} />
 
           {/* Período activo */}
           <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
