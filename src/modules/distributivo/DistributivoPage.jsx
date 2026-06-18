@@ -2,7 +2,7 @@ import { useContext, useState } from 'react'
 import { PeriodoContext } from '../../context/PeriodoContext'
 import { useAuth } from '../auth/useAuth'
 import { useDistributivo } from '../../hooks/useDistributivo'
-import { ESTADO_COLORES, ESTADO_LABELS, TIPO_CONTRATO_HORAS, TIPO_CONTRATO_LABELS } from '../../utils/constants'
+import { ESTADO_COLORES, ESTADO_LABELS, ESTADOS_DISTRIBUTIVO, TIPO_CONTRATO_HORAS, TIPO_CONTRATO_LABELS } from '../../utils/constants'
 import { formatearFecha, formatearHoras } from '../../utils/formatters'
 import DistributivoTable from './DistributivoTable'
 import ResumenHoras from '../dashboard/ResumenHoras'
@@ -14,8 +14,27 @@ import { IconClipboard } from '../../components/icons'
 export default function DistributivoPage() {
   const { user } = useAuth()
   const { periodoActivo } = useContext(PeriodoContext)
-  const { distributivo, cargando, error } = useDistributivo(periodoActivo?.id)
+  const { distributivo, cargando, error, confirmar, observar } = useDistributivo(periodoActivo?.id)
   const [previsualizando, setPrevisualizando] = useState(false)
+  const [procesando, setProcesando]   = useState(false)
+  const [accionError, setAccionError] = useState(null)
+  const [mostrarObs, setMostrarObs]   = useState(false)
+  const [obsTexto, setObsTexto]       = useState('')
+
+  async function handleConfirmar() {
+    setProcesando(true); setAccionError(null)
+    try { await confirmar() }
+    catch (err) { setAccionError(err.message) }
+    finally { setProcesando(false) }
+  }
+
+  async function handleObservar() {
+    if (!obsTexto.trim()) { setAccionError('La observación es obligatoria.'); return }
+    setProcesando(true); setAccionError(null)
+    try { await observar(obsTexto); setMostrarObs(false); setObsTexto('') }
+    catch (err) { setAccionError(err.message) }
+    finally { setProcesando(false) }
+  }
 
   const horasContrato = distributivo
     ? (TIPO_CONTRATO_HORAS[distributivo.tipo_contrato] ?? 40)
@@ -95,14 +114,57 @@ export default function DistributivoPage() {
           </div>
 
           {/* Aprobación */}
-          {distributivo.estado === 'aprobado' && distributivo.fecha_aprobacion && (
+          {distributivo.estado === ESTADOS_DISTRIBUTIVO.APROBADO && distributivo.fecha_aprobacion && (
             <AlertBanner tipo="success"
-              mensaje={`Distributivo aprobado el ${formatearFecha(distributivo.fecha_aprobacion)}`} />
+              mensaje={`Distributivo aprobado el ${formatearFecha(distributivo.fecha_aprobacion)} — confirmado por director y docente.`} />
           )}
 
-          {distributivo.estado === 'borrador' && (
+          {/* Doble aprobación: el director aprobó, falta la confirmación del docente */}
+          {distributivo.estado === ESTADOS_DISTRIBUTIVO.EN_REVISION && (
+            <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 space-y-3">
+              <div>
+                <p className="text-sm font-semibold text-amber-900">Pendiente de tu confirmación</p>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  El Director de Carrera aprobó tu distributivo. Revísalo y confírmalo, o regístralo con una observación si algo no está correcto.
+                </p>
+              </div>
+              {accionError && <p className="text-xs text-red-700">{accionError}</p>}
+              {!mostrarObs ? (
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={handleConfirmar} disabled={procesando}
+                    className="px-4 py-2 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg transition disabled:opacity-60">
+                    {procesando ? 'Procesando…' : 'Confirmar distributivo'}
+                  </button>
+                  <button onClick={() => { setMostrarObs(true); setAccionError(null) }} disabled={procesando}
+                    className="px-4 py-2 text-sm font-semibold text-amber-800 border border-amber-300 rounded-lg hover:bg-amber-100 transition disabled:opacity-60">
+                    Observar
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <textarea rows={3} value={obsTexto} onChange={e => setObsTexto(e.target.value)}
+                    placeholder="Describe qué debe corregir el director…"
+                    className="w-full border border-amber-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                  <div className="flex justify-end gap-2">
+                    <button onClick={() => { setMostrarObs(false); setObsTexto(''); setAccionError(null) }}
+                      className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900">Cancelar</button>
+                    <button onClick={handleObservar} disabled={procesando}
+                      className="px-4 py-2 text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition disabled:opacity-60">
+                      {procesando ? 'Enviando…' : 'Enviar observación'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {distributivo.estado === ESTADOS_DISTRIBUTIVO.BORRADOR && (
             <AlertBanner tipo="info"
               mensaje="Tu distributivo está en borrador. El Director de Carrera lo revisará y aprobará." />
+          )}
+          {distributivo.estado === ESTADOS_DISTRIBUTIVO.BORRADOR && distributivo.observacion_docente && (
+            <AlertBanner tipo="warning"
+              mensaje={`Observación registrada: ${distributivo.observacion_docente}`} />
           )}
 
           {/* Layout de dos columnas en desktop */}

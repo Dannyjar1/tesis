@@ -106,6 +106,20 @@ export default function CalendarioDistributivo() {
     return sum + (parseInt(b.hora_fin) - parseInt(b.hora_inicio))
   }, 0)
 
+  // Alerta de concentración de tutorías (requerimiento Lorena): si todas las
+  // tutorías caen en un solo día y suman ≥2h, se avisa para repartirlas.
+  const alertaTutorias = useMemo(() => {
+    const tut = bloques.filter(b => b.tipo === 'tutoria')
+    if (tut.length < 2) return null
+    const dias = new Set(tut.map(b => b.dia))
+    const horas = tut.reduce((s, b) => s + (parseInt(b.hora_fin) - parseInt(b.hora_inicio)), 0)
+    if (dias.size === 1 && horas >= 2) {
+      const dia = DIAS.find(d => d.id === [...dias][0])?.label ?? [...dias][0]
+      return `Tienes ${horas}h de tutoría concentradas el ${dia}. Se recomienda repartir las tutorías en varios días.`
+    }
+    return null
+  }, [bloques])
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -130,6 +144,12 @@ export default function CalendarioDistributivo() {
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">
           {alerta}
           <button className="ml-3 text-red-400 hover:text-red-700" onClick={() => setAlerta('')}>×</button>
+        </div>
+      )}
+
+      {alertaTutorias && (
+        <div className="bg-amber-50 border border-amber-300 text-amber-800 text-sm px-4 py-3 rounded-xl">
+          ⚠️ {alertaTutorias}
         </div>
       )}
 
@@ -190,6 +210,9 @@ export default function CalendarioDistributivo() {
                               title="Clic para eliminar"
                             >
                               <p className="font-semibold leading-tight truncate text-[11px]">{bloque.materia}</p>
+                              {bloque.tipo === 'tutoria' && (
+                                <span className="inline-block text-[9px] font-bold uppercase tracking-wide bg-white/60 rounded px-1 mt-0.5">Tutoría</span>
+                              )}
                               {bloque.aula && (
                                 <p className="text-[10px] opacity-70 mt-0.5 truncate">Aula {bloque.aula}</p>
                               )}
@@ -242,6 +265,7 @@ function BloqueForm({ inicial, onGuardar, onCancelar, cargando, error, onClearEr
     hora_fin:    inicial?.hora_fin    ?? '09:00',
     materia:     '',
     aula:        '',
+    tipo:        'clase',
   })
   const [err, setErr] = useState('')
 
@@ -266,6 +290,15 @@ function BloqueForm({ inicial, onGuardar, onCancelar, cargando, error, onClearEr
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="block text-xs font-medium text-gray-700 mb-1">Tipo de bloque</label>
+        <select value={form.tipo} onChange={e => set('tipo', e.target.value)}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-uide-primary">
+          <option value="clase">Clase</option>
+          <option value="tutoria">Tutoría</option>
+        </select>
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-gray-700 mb-1">Día</label>

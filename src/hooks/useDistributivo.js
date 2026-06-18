@@ -6,6 +6,8 @@ import {
   crearDistributivo,
   actualizarDistributivo,
   aprobarDistributivo,
+  confirmarDistributivoDocente,
+  observarDistributivo,
   cambiarEstadoDistributivo,
   suscribirseDistributivo,
   getDocentes,
@@ -44,7 +46,22 @@ export function useDistributivo(periodoId) {
     }
   }, [user, periodoId])
 
-  return { distributivo, cargando, error, recargar }
+  // Segunda firma del flujo de doble aprobación (director + docente).
+  const confirmar = useCallback(async () => {
+    if (!distributivo) return
+    const actualizado = await confirmarDistributivoDocente(distributivo.id, user?.uid)
+    setDistributivo(actualizado)
+    return actualizado
+  }, [distributivo, user])
+
+  const observar = useCallback(async (observacion) => {
+    if (!distributivo) return
+    const actualizado = await observarDistributivo(distributivo.id, observacion)
+    setDistributivo(actualizado)
+    return actualizado
+  }, [distributivo])
+
+  return { distributivo, cargando, error, recargar, confirmar, observar }
 }
 
 /**

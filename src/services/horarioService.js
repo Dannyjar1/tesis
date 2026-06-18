@@ -51,6 +51,7 @@ export async function crearBloque(docenteUid, datos) {
     hora_fin:     datos.hora_fin,
     materia:      datos.materia,
     aula:         datos.aula ?? '',
+    tipo:         datos.tipo ?? 'clase',   // 'clase' | 'tutoria'
   }
 
   if (db) {

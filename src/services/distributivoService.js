@@ -190,7 +190,10 @@ export async function actualizarDistributivo(distributivoId, cambios) {
 }
 
 /**
- * Aprueba un distributivo validado. Verifica suma de horas (RN-014).
+ * Aprobación del director: valida la suma de horas (RN-014) y deja el
+ * distributivo EN REVISIÓN, a la espera de la confirmación del docente.
+ * La aprobación NO es definitiva hasta que el docente confirma (doble
+ * aprobación director + docente). Si el docente observa, vuelve a borrador.
  * @param {string} distributivoId
  * @param {string} aprobadoPorUid — UID del director
  * @param {number} horasContrato — 40 (TC) | 20 (MT)
@@ -205,9 +208,10 @@ export async function aprobarDistributivo(distributivoId, aprobadoPorUid, horasC
       const validacion = validarCierreDistributivo(dist, horasContrato)
       if (!validacion.valido) throw new Error(validacion.mensaje)
       const cambios = {
-        estado: ESTADOS_DISTRIBUTIVO.APROBADO,
+        estado: ESTADOS_DISTRIBUTIVO.EN_REVISION,
         aprobado_por: aprobadoPorUid,
         fecha_aprobacion: Timestamp.now(),
+        observacion_docente: null,
         fecha_ultima_modificacion: Timestamp.now(),
       }
       await updateDoc(ref, cambios)
@@ -225,16 +229,95 @@ export async function aprobarDistributivo(distributivoId, aprobadoPorUid, horasC
   const dist = lista[idx]
   const validacion = validarCierreDistributivo(dist, horasContrato)
   if (!validacion.valido) throw new Error(validacion.mensaje)
-  const aprobado = {
+  const enRevision = {
     ...dist,
-    estado: ESTADOS_DISTRIBUTIVO.APROBADO,
+    estado: ESTADOS_DISTRIBUTIVO.EN_REVISION,
     aprobado_por: aprobadoPorUid,
     fecha_aprobacion: new Date().toISOString(),
+    observacion_docente: null,
     fecha_ultima_modificacion: new Date().toISOString(),
   }
-  lista[idx] = aprobado
+  lista[idx] = enRevision
   localGuardar(lista)
-  return aprobado
+  return enRevision
+}
+
+/**
+ * Confirmación del docente (segunda firma). Solo válida si el director ya
+ * aprobó (estado EN_REVISIÓN). Deja el distributivo APROBADO definitivamente.
+ * @param {string} distributivoId
+ * @param {string} docenteUid — UID del docente que confirma
+ */
+export async function confirmarDistributivoDocente(distributivoId, docenteUid) {
+  const sello = {
+    estado: ESTADOS_DISTRIBUTIVO.APROBADO,
+    confirmado_por_docente: docenteUid,
+  }
+  if (db) {
+    try {
+      const ref = doc(db, COL, distributivoId)
+      const snap = await getDoc(ref)
+      if (!snap.exists()) throw new Error('Distributivo no encontrado.')
+      const dist = snap.data()
+      if (dist.estado !== ESTADOS_DISTRIBUTIVO.EN_REVISION) {
+        throw new Error('El distributivo no está pendiente de tu confirmación.')
+      }
+      const cambios = { ...sello, fecha_confirmacion_docente: Timestamp.now(), fecha_ultima_modificacion: Timestamp.now() }
+      await updateDoc(ref, cambios)
+      return normalizar({ ...dist, ...cambios }, distributivoId)
+    } catch (err) {
+      if (!err.code) throw err
+      console.warn('[distributivoService] Firestore error en confirmarDistributivoDocente:', err.code)
+    }
+  }
+
+  await new Promise(r => setTimeout(r, 200))
+  const lista = localCargar()
+  const idx = lista.findIndex(d => d.id === distributivoId)
+  if (idx === -1) throw new Error('Distributivo no encontrado.')
+  if (lista[idx].estado !== ESTADOS_DISTRIBUTIVO.EN_REVISION) {
+    throw new Error('El distributivo no está pendiente de tu confirmación.')
+  }
+  lista[idx] = { ...lista[idx], ...sello, fecha_confirmacion_docente: new Date().toISOString(), fecha_ultima_modificacion: new Date().toISOString() }
+  localGuardar(lista)
+  return lista[idx]
+}
+
+/**
+ * Observación del docente: rechaza la propuesta del director y devuelve el
+ * distributivo a BORRADOR con la observación registrada (vuelve a revisión).
+ * @param {string} distributivoId
+ * @param {string} observacion — motivo (obligatorio)
+ */
+export async function observarDistributivo(distributivoId, observacion) {
+  if (!observacion?.trim()) throw new Error('La observación es obligatoria.')
+  const cambiosBase = {
+    estado: ESTADOS_DISTRIBUTIVO.BORRADOR,
+    observacion_docente: observacion.trim(),
+    aprobado_por: null,
+    fecha_aprobacion: null,
+  }
+  if (db) {
+    try {
+      const ref = doc(db, COL, distributivoId)
+      const snap = await getDoc(ref)
+      if (!snap.exists()) throw new Error('Distributivo no encontrado.')
+      const cambios = { ...cambiosBase, fecha_ultima_modificacion: Timestamp.now() }
+      await updateDoc(ref, cambios)
+      return normalizar({ ...snap.data(), ...cambios }, distributivoId)
+    } catch (err) {
+      if (!err.code) throw err
+      console.warn('[distributivoService] Firestore error en observarDistributivo:', err.code)
+    }
+  }
+
+  await new Promise(r => setTimeout(r, 200))
+  const lista = localCargar()
+  const idx = lista.findIndex(d => d.id === distributivoId)
+  if (idx === -1) throw new Error('Distributivo no encontrado.')
+  lista[idx] = { ...lista[idx], ...cambiosBase, fecha_ultima_modificacion: new Date().toISOString() }
+  localGuardar(lista)
+  return lista[idx]
 }
 
 /** Cambia el estado del distributivo según el flujo permitido (RN-002). */
@@ -269,10 +352,17 @@ export async function cambiarEstadoDistributivo(distributivoId, nuevoEstado) {
 export function suscribirseDistributivo(docenteUid, periodoId, callback) {
   if (db) {
     const id = `${docenteUid}_${periodoId}`
+    // Consistente con el resto del servicio: si Firestore está inalcanzable
+    // (modo mock/offline) cae a localStorage en lugar de devolver null.
+    const fallback = () => getDistributivo(docenteUid, periodoId).then(callback)
     return onSnapshot(
       doc(db, COL, id),
-      snap => callback(snap.exists() ? normalizar(snap.data(), snap.id) : null),
-      err => console.warn('[distributivoService] onSnapshot error:', err.code)
+      snap => {
+        if (snap.exists()) callback(normalizar(snap.data(), snap.id))
+        else if (snap.metadata?.fromCache) fallback()   // offline, sin dato del servidor
+        else callback(null)
+      },
+      err => { console.warn('[distributivoService] onSnapshot error:', err.code); fallback() }
     )
   }
   getDistributivo(docenteUid, periodoId).then(callback)

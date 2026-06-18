@@ -47,7 +47,7 @@ export default function GestionDistributivoPage() {
     try {
       const horasContrato = TIPO_CONTRATO_HORAS[docente.tipo_contrato] ?? 40
       await aprobar(dist.id, horasContrato)
-      setAlerta({ tipo: 'success', msg: `Distributivo de ${docente.nombre_completo} aprobado correctamente.` })
+      setAlerta({ tipo: 'success', msg: `Distributivo de ${docente.nombre_completo} aprobado y enviado a su confirmación.` })
     } catch (err) {
       setAlerta({ tipo: 'error', msg: err.message })
     } finally {

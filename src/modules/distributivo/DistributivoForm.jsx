@@ -5,6 +5,8 @@ import {
   calcularHorasPC,
   calcularHorasPPP,
   calcularHorasTitulacion,
+  calcularHorasGraduados,
+  calcularHorasCoordinacion,
   validarCierreDistributivo,
 } from '../../utils/calculos'
 import { validarDistributivo } from '../../utils/validaciones'
@@ -17,9 +19,12 @@ const CAMPO_DEFAULT = {
   horas_investigacion: '',
   estudiantes_pc: '',
   estudiantes_ppp: '',
+  nro_graduados: '',
   proyectos_director: '',
   proyectos_tribunal: '',
   horas_gestion: '',
+  coordinacion_ppp: false,
+  coordinacion_pc: false,
   horas_reduccion_cargo: '',
 }
 
@@ -29,10 +34,14 @@ function calcularTodo(campos, horasContrato) {
   const docencia = num(campos.horas_docencia_directa)
   const preparacion = calcularHorasPreparacion(docencia)
   const tutoria = calcularHorasTutoria(num(campos.materias_asignadas))
-  const vinculacion = calcularHorasPC(num(campos.estudiantes_pc)) + calcularHorasPPP(num(campos.estudiantes_ppp))
+  // Vinculación = Prácticas Comunitarias + Pre-Profesionales + seguimiento a graduados.
+  const graduados = calcularHorasGraduados(num(campos.nro_graduados))
+  const vinculacion = calcularHorasPC(num(campos.estudiantes_pc)) + calcularHorasPPP(num(campos.estudiantes_ppp)) + graduados
   const titulacion = calcularHorasTitulacion(num(campos.proyectos_director), num(campos.proyectos_tribunal))
   const investigacion = num(campos.horas_investigacion)
-  const gestion = num(campos.horas_gestion)
+  // Gestión = horas declaradas + coordinación PPP/PC (3h fijas c/u).
+  const coordinacion = calcularHorasCoordinacion(campos.coordinacion_ppp, campos.coordinacion_pc)
+  const gestion = num(campos.horas_gestion) + coordinacion
   const reduccion = num(campos.horas_reduccion_cargo)
 
   const dist = {
@@ -47,11 +56,14 @@ function calcularTodo(campos, horasContrato) {
   }
 
   const validacion = validarCierreDistributivo(dist, horasContrato)
-  return { ...dist, validacion }
+  return { ...dist, graduados, coordinacion, validacion }
 }
 
 export default function DistributivoForm({ docente, periodoId, distributivoExistente, onGuardar, onCancelar }) {
-  const horasContrato = TIPOS_CONTRATO[docente?.tipo_contrato]?.horas ?? 40
+  // horasRequeridas: null para TP/Honorario (sin tope fijo) → no se bloquea el
+  // cierre exacto. horasContrato: valor para la barra de progreso.
+  const horasRequeridas = TIPOS_CONTRATO[docente?.tipo_contrato]?.horas ?? null
+  const horasContrato = horasRequeridas ?? 40
 
   const [campos, setCampos] = useState(() => {
     if (distributivoExistente) {
@@ -61,9 +73,14 @@ export default function DistributivoForm({ docente, periodoId, distributivoExist
         horas_investigacion: String(distributivoExistente.horas_investigacion ?? ''),
         estudiantes_pc: String(distributivoExistente.estudiantes_pc ?? ''),
         estudiantes_ppp: String(distributivoExistente.estudiantes_ppp ?? ''),
+        nro_graduados: String(distributivoExistente.nro_graduados ?? ''),
         proyectos_director: String(distributivoExistente.proyectos_director ?? ''),
         proyectos_tribunal: String(distributivoExistente.proyectos_tribunal ?? ''),
-        horas_gestion: String(distributivoExistente.horas_gestion ?? ''),
+        // horas_gestion_base = valor tecleado sin la coordinación (que se
+        // suma al bucket al guardar). Fallback al bucket para registros viejos.
+        horas_gestion: String(distributivoExistente.horas_gestion_base ?? distributivoExistente.horas_gestion ?? ''),
+        coordinacion_ppp: Boolean(distributivoExistente.coordinacion_ppp),
+        coordinacion_pc: Boolean(distributivoExistente.coordinacion_pc),
         horas_reduccion_cargo: String(distributivoExistente.horas_reduccion_cargo ?? ''),
       }
     }
@@ -98,23 +115,36 @@ export default function DistributivoForm({ docente, periodoId, distributivoExist
       return
     }
 
+    // Bloqueo de cierre exacto (RN-014 · requerimiento Lorena): para TC/MT el
+    // total debe ser EXACTAMENTE 40h/20h. TP/Honorario (horasRequeridas null)
+    // no tienen tope fijo, no se bloquean.
+    if (horasRequeridas != null && !validacion.valido) {
+      setErrorForm(validacion.mensaje)
+      return
+    }
+
     setGuardando(true)
     setErrorForm('')
     try {
+      const { graduados, coordinacion, validacion: _v, ...bucketHoras } = calculado
       await onGuardar({
         docente_uid: docente.uid,
         periodo_id: periodoId,
         tipo_contrato: docente.tipo_contrato,
-        ...calculado,
+        ...bucketHoras,
         materias_asignadas: num(campos.materias_asignadas),
         estudiantes_pc: num(campos.estudiantes_pc),
         estudiantes_ppp: num(campos.estudiantes_ppp),
+        nro_graduados: num(campos.nro_graduados),
         proyectos_director: num(campos.proyectos_director),
         proyectos_tribunal: num(campos.proyectos_tribunal),
-        total_horas: calculado.horas_docencia_directa + calculado.horas_preparacion +
-          calculado.horas_tutoria + calculado.horas_investigacion +
-          calculado.horas_vinculacion + calculado.horas_titulacion +
-          calculado.horas_gestion + calculado.horas_reduccion_cargo,
+        horas_gestion_base: num(campos.horas_gestion),
+        coordinacion_ppp: campos.coordinacion_ppp,
+        coordinacion_pc: campos.coordinacion_pc,
+        total_horas: bucketHoras.horas_docencia_directa + bucketHoras.horas_preparacion +
+          bucketHoras.horas_tutoria + bucketHoras.horas_investigacion +
+          bucketHoras.horas_vinculacion + bucketHoras.horas_titulacion +
+          bucketHoras.horas_gestion + bucketHoras.horas_reduccion_cargo,
       })
     } catch (err) {
       setErrorForm(err.message)
@@ -161,8 +191,11 @@ export default function DistributivoForm({ docente, periodoId, distributivoExist
         <CampoInput label="Estudiantes en Prácticas Pre-Profesionales (PPP)"
           campo="estudiantes_ppp" valor={campos.estudiantes_ppp} onChange={set}
           hint="1h por cada 15 estudiantes" />
+        <CampoInput label="Graduados en seguimiento"
+          campo="nro_graduados" valor={campos.nro_graduados} onChange={set}
+          hint="1h por cada 80 graduados" />
         <CampoCalculado label="Horas vinculación" valor={calculado.horas_vinculacion}
-          formula={`PC: ${calcularHorasPC(num(campos.estudiantes_pc))}h + PPP: ${calcularHorasPPP(num(campos.estudiantes_ppp))}h`} />
+          formula={`PC: ${calcularHorasPC(num(campos.estudiantes_pc))}h + PPP: ${calcularHorasPPP(num(campos.estudiantes_ppp))}h + Graduados: ${calculado.graduados}h`} />
       </Seccion>
 
       {/* Titulación */}
@@ -182,6 +215,14 @@ export default function DistributivoForm({ docente, periodoId, distributivoExist
         <CampoInput label="Horas gestión institucional" campo="horas_gestion"
           valor={campos.horas_gestion} onChange={set}
           hint={`Máx ${docente?.tipo_contrato === 'TC' ? 12 : 6}h. Comités, coordinación, dirección`} />
+        <CampoCheck label="Coordinación de Prácticas Pre-Profesionales (PPP)"
+          campo="coordinacion_ppp" valor={campos.coordinacion_ppp} onChange={set} hint="+3h fijas" />
+        <CampoCheck label="Coordinación de Prácticas Comunitarias (PC)"
+          campo="coordinacion_pc" valor={campos.coordinacion_pc} onChange={set} hint="+3h fijas" />
+        {calculado.coordinacion > 0 && (
+          <CampoCalculado label="Horas coordinación (incluidas en gestión)" valor={calculado.coordinacion}
+            formula="3h por cada coordinación activa" />
+        )}
         <CampoInput label="Reducción por cargo directivo" campo="horas_reduccion_cargo"
           valor={campos.horas_reduccion_cargo} onChange={set}
           hint="Solo si aplica cargo directivo (Decano, Coordinador DGI, etc.)" />
@@ -219,8 +260,9 @@ export default function DistributivoForm({ docente, periodoId, distributivoExist
         </button>
         <button
           onClick={handleGuardar}
-          disabled={guardando}
-          className="px-4 py-2 text-sm font-semibold text-white bg-uide-primary hover:bg-uide-dark rounded-lg transition disabled:opacity-60"
+          disabled={guardando || (horasRequeridas != null && !validacion.valido)}
+          title={horasRequeridas != null && !validacion.valido ? validacion.mensaje : undefined}
+          className="px-4 py-2 text-sm font-semibold text-white bg-uide-primary hover:bg-uide-dark rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {guardando ? 'Guardando...' : distributivoExistente ? 'Actualizar borrador' : 'Crear distributivo'}
         </button>
@@ -254,6 +296,23 @@ function CampoInput({ label, campo, valor, onChange, hint }) {
         className="w-20 px-2 py-1.5 border border-gray-300 rounded-lg text-sm text-right focus:outline-none focus:ring-2 focus:ring-uide-secondary"
       />
     </div>
+  )
+}
+
+function CampoCheck({ label, campo, valor, onChange, hint }) {
+  return (
+    <label className="flex items-center justify-between gap-3 cursor-pointer">
+      <div className="flex-1 min-w-0">
+        <span className="block text-sm text-gray-700">{label}</span>
+        {hint && <p className="text-xs text-gray-400">{hint}</p>}
+      </div>
+      <input
+        type="checkbox"
+        checked={valor}
+        onChange={e => onChange(campo, e.target.checked)}
+        className="w-4 h-4 rounded border-gray-300 text-uide-primary focus:ring-uide-secondary"
+      />
+    </label>
   )
 }
 
