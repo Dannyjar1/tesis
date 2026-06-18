@@ -13,13 +13,13 @@ const ACTIVO = { id: '2026-A-RBAC', nombre: 'test', estado: 'activo', fecha_inic
 
 beforeEach(() => localStorage.clear())
 
-describe('Taxonomía RBAC: tipos base y cargos', () => {
-  it('docente y administrativo son tipos base; los cargos son asignables', () => {
-    expect(TIPOS_BASE_USUARIO).toEqual(['docente', 'administrativo'])
+describe('Taxonomía RBAC: tipo base y cargos', () => {
+  it('docente es el tipo base; los cargos son asignables', () => {
+    expect(TIPOS_BASE_USUARIO).toEqual(['docente'])
     expect(CARGOS_INSTITUCIONALES).toContain('coordinador')
     expect(CARGOS_INSTITUCIONALES).toContain('director')
-    expect(CARGOS_INSTITUCIONALES).toContain('admin')       // Prorrector
     expect(CARGOS_INSTITUCIONALES).toContain('superadmin')  // Administrador del Sistema
+    expect(CARGOS_INSTITUCIONALES).not.toContain('admin')   // Pro-Rector eliminado
   })
 })
 
@@ -47,17 +47,17 @@ describe('Asignación de roles múltiples (guardarUsuario)', () => {
   it('llamadas legadas con rol string se normalizan a roles[]', async () => {
     await guardarUsuario('uid_legacy', {
       nombre_completo: 'Legado', email: 'legacy@uide.edu.ec',
-      rol: 'administrativo', activo: true,
+      rol: 'coordinador', activo: true,
     })
     const u = (await getTodosUsuarios()).find(x => x.uid === 'uid_legacy')
-    expect(u.roles).toEqual(['administrativo'])
+    expect(u.roles).toEqual(['coordinador'])
   })
 })
 
 describe('Rol principal y visibilidad de módulos (normalización)', () => {
-  it('el prorrector que también es docente conserva ambos accesos', () => {
-    const p = normalizarRolesPerfil({ roles: ['docente', 'admin'] })
-    expect(p.rol).toBe('admin')            // home y banner: Pro-Rector
+  it('el director que también es docente conserva ambos accesos', () => {
+    const p = normalizarRolesPerfil({ roles: ['docente', 'director'] })
+    expect(p.rol).toBe('director')         // home y banner: Director de Carrera
     expect(p.roles).toContain('docente')   // módulos docentes visibles (menú fusionado)
   })
 

@@ -1,20 +1,18 @@
-// ── Roles del sistema (5 niveles) ────────────────────────────────────────────
+// ── Roles del sistema (4 niveles, fijos) ─────────────────────────────────────
+// Modelo simplificado a solicitud de Lorena: superadmin (TIC) + los 3 roles
+// académicos. Sin roles dinámicos/configurables: los permisos son fijos por rol.
 export const ROLES = {
-  SUPERADMIN:     'superadmin',   // TIC — administra el sistema: carreras, usuarios, roles
-  ADMIN:          'admin',        // Pro-Rector — autoridad académica global
-  DIRECTOR:       'director',     // Director de Carrera
-  COORDINADOR:    'coordinador',  // Coordinador Académico
-  DOCENTE:        'docente',      // Docente (TC / MT / TP / Honorario)
-  ADMINISTRATIVO: 'administrativo',
+  SUPERADMIN:  'superadmin',   // TIC — administra el sistema: carreras, usuarios, períodos
+  DIRECTOR:    'director',      // Director de Carrera
+  COORDINADOR: 'coordinador',   // Coordinador Académico
+  DOCENTE:     'docente',       // Docente (TC / MT / TP / Honorario)
 }
 
 export const ROL_LABELS = {
-  superadmin:     'TIC — Administrador del Sistema',
-  admin:          'Pro-Rector',
-  director:       'Director de Carrera',
-  coordinador:    'Coordinador Académico',
-  docente:        'Docente',
-  administrativo: 'Administrativo',
+  superadmin:  'TIC — Administrador del Sistema',
+  director:    'Director de Carrera',
+  coordinador: 'Coordinador Académico',
+  docente:     'Docente',
 }
 
 export const CARGO_LABELS = {
@@ -23,14 +21,11 @@ export const CARGO_LABELS = {
   bienestar_universitario:   'Bienestar Universitario',
 }
 
-// ── Modelo RBAC: tipos base + cargos institucionales (roles múltiples) ────────
-// Un usuario tiene un TIPO BASE (docente o administrativo) y puede acumular
-// CARGOS institucionales sobre él (Coordinador de Carrera, Director,
-// Prorrector, Administrador del Sistema u otros futuros).
-// Regla institucional: todo cargo lo ejerce un docente — los únicos usuarios
-// que no necesariamente son docentes son los administrativos.
-export const TIPOS_BASE_USUARIO = [ROLES.DOCENTE, ROLES.ADMINISTRATIVO]
-export const CARGOS_INSTITUCIONALES = [ROLES.COORDINADOR, ROLES.DIRECTOR, ROLES.ADMIN, ROLES.SUPERADMIN]
+// ── Modelo RBAC: tipo base (docente) + cargos institucionales ─────────────────
+// Regla institucional: todo cargo lo ejerce un docente. El tipo base es docente
+// y sobre él se acumulan cargos (Coordinador, Director, Administrador TIC).
+export const TIPOS_BASE_USUARIO = [ROLES.DOCENTE]
+export const CARGOS_INSTITUCIONALES = [ROLES.COORDINADOR, ROLES.DIRECTOR, ROLES.SUPERADMIN]
 
 // ── Tipos de contrato (atributo del docente, no del rol) ─────────────────────
 export const TIPO_CONTRATO = {

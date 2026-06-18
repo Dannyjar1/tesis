@@ -6,31 +6,25 @@ import { ROLES, ROL_LABELS } from '../../utils/constants'
 import { getAuthLog, clearAuthLog } from '../../services/authDebug'
 
 const HOME_POR_ROL = {
-  [ROLES.SUPERADMIN]:     '/sistema',
-  [ROLES.ADMIN]:          '/dashboard',
-  [ROLES.DIRECTOR]:       '/dashboard',
-  [ROLES.COORDINADOR]:    '/dashboard',
-  [ROLES.ADMINISTRATIVO]: '/mi-panel',
-  [ROLES.DOCENTE]:        '/mi-distributivo',
+  [ROLES.SUPERADMIN]:  '/sistema',
+  [ROLES.DIRECTOR]:    '/dashboard',
+  [ROLES.COORDINADOR]: '/dashboard',
+  [ROLES.DOCENTE]:     '/mi-distributivo',
 }
 
 const CUENTAS_PRUEBA = [
   { email: 'hcueva@uide.edu.ec',       password: '1234', etiqueta: 'TIC — Cueva (Superadmin)',       rol: 'superadmin' },
-  { email: 'paruizag@uide.edu.ec',     password: '1234', etiqueta: 'Admin — Pro-Rector Ruiz',        rol: 'admin' },
   { email: 'locondezh@uide.edu.ec',    password: '1234', etiqueta: 'Director — Sistemas',            rol: 'director' },
   { email: 'davalarezole@uide.edu.ec', password: '1234', etiqueta: 'Coordinador — Sistemas',         rol: 'coordinador' },
   { email: 'mipalaciosmo@uide.edu.ec', password: '1234', etiqueta: 'Docente TC — Palacios',          rol: 'docente' },
   { email: 'yetorresbe@uide.edu.ec',   password: '1234', etiqueta: 'Docente MT — Torres',            rol: 'docente' },
-  { email: 'dajaramillogu@uide.edu.ec',password: '1234', etiqueta: 'Administrativo — Jaramillo',     rol: 'administrativo' },
 ]
 
 const ROL_BADGE = {
   superadmin:     'bg-red-100 text-red-800',
-  admin:          'bg-[#003087]/10 text-[#003087]',
   director:       'bg-blue-100 text-blue-700',
   coordinador:    'bg-purple-100 text-purple-700',
   docente:        'bg-green-100 text-green-700',
-  administrativo: 'bg-orange-100 text-orange-700',
 }
 
 function MicrosoftIcon() {

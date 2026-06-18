@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { CARRERA_LABELS, ROL_LABELS } from '../../utils/constants'
-import { IconAcademico, IconCarpeta, IconClipboard, IconGlobo, IconHerramienta, IconLibro } from '../../components/icons'
+import { IconAcademico, IconClipboard, IconHerramienta, IconLibro } from '../../components/icons'
 
 /**
  * RolBanner — Diferenciación visual del panel por rol y área (RF-040).
@@ -12,15 +12,12 @@ import { IconAcademico, IconCarpeta, IconClipboard, IconGlobo, IconHerramienta, 
 // se da por el ícono, la etiqueta y los accesos rápidos de cada rol.
 const ESTILOS_ROL = {
   superadmin: { icono: IconHerramienta, alcance: 'Administración técnica del sistema' },
-  admin:      { icono: IconGlobo, alcance: 'Alcance global — todas las carreras' },
   director:   { icono: IconAcademico, alcance: null }, // carrera
   coordinador:{ icono: IconClipboard, alcance: null }, // carrera
   docente:    { icono: IconLibro, alcance: null },
-  administrativo: { icono: IconCarpeta, alcance: 'Personal administrativo' },
 }
 
 const ACCESOS_ROL = {
-  admin:       [['/reportes', 'Reportes'], ['/admin/usuarios', 'Usuarios'], ['/admin/periodos', 'Períodos']],
   director:    [['/reportes', 'Reportes'], ['/distributivo/gestion', 'Distributivos'], ['/personal', 'Mi Personal']],
   coordinador: [['/reportes', 'Reportes'], ['/distributivo/gestion', 'Distributivos']],
 }

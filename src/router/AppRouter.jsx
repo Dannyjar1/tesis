@@ -25,7 +25,6 @@ const ActividadesDocentePage   = lazy(() => import('../modules/actividades/Activ
 const AyudaPage                = lazy(() => import('../modules/ayuda/AyudaPage'))
 const PerfilPage               = lazy(() => import('../modules/perfil/PerfilPage'))
 const PersonalPage             = lazy(() => import('../modules/personal/PersonalPage'))
-const AdministrativoDashboard  = lazy(() => import('../modules/administrativo/AdministrativoDashboard'))
 
 function AuthLayout() {
   const { user, loading } = useAuth()
@@ -66,12 +65,10 @@ function AuthLayout() {
 }
 
 const HOME_MAP = {
-  [ROLES.SUPERADMIN]:     '/sistema',
-  [ROLES.ADMIN]:          '/dashboard',
-  [ROLES.DIRECTOR]:       '/dashboard',
-  [ROLES.COORDINADOR]:    '/dashboard',
-  [ROLES.DOCENTE]:        '/mi-distributivo',
-  [ROLES.ADMINISTRATIVO]: '/mi-panel',
+  [ROLES.SUPERADMIN]:  '/sistema',
+  [ROLES.DIRECTOR]:    '/dashboard',
+  [ROLES.COORDINADOR]: '/dashboard',
+  [ROLES.DOCENTE]:     '/mi-distributivo',
 }
 
 function RootRedirect() {
@@ -90,7 +87,7 @@ export default function AppRouter() {
       <Route element={<AuthLayout />}>
         {/* Superadmin — TIC */}
         <Route path="/sistema" element={
-          <ModuloGuard modulo={['sistema-carreras', 'sistema-periodos', 'sistema-usuarios', 'sistema-roles', 'sistema-seed']}><SistemaPage /></ModuloGuard>
+          <ModuloGuard modulo={['sistema-carreras', 'sistema-periodos', 'sistema-usuarios', 'sistema-seed']}><SistemaPage /></ModuloGuard>
         } />
 
         {/* Dashboard — gestión */}
@@ -125,13 +122,6 @@ export default function AppRouter() {
           <ModuloGuard modulo="reportes"><ReportesPage /></ModuloGuard>
         } />
 
-        {/* Panel administrativo */}
-        <Route path="/mi-panel" element={
-          <ModuloGuard modulo="mi-panel">
-            <AdministrativoDashboard />
-          </ModuloGuard>
-        } />
-
         {/* Personal — director (rw) y coordinador (ro) */}
         <Route path="/personal" element={
           <ModuloGuard modulo="personal">
@@ -144,13 +134,7 @@ export default function AppRouter() {
         <Route path="/ayuda" element={<AyudaPage />} />
         <Route path="/perfil" element={<PerfilPage />} />
 
-        {/* Admin */}
-        <Route path="/admin" element={
-          <ModuloGuard modulo="admin-usuarios"><AdminPage seccion="panel" /></ModuloGuard>
-        } />
-        <Route path="/admin/usuarios" element={
-          <ModuloGuard modulo="admin-usuarios"><AdminPage seccion="usuarios" /></ModuloGuard>
-        } />
+        {/* Administración del sistema (TIC) */}
         <Route path="/admin/configuracion" element={
           <ModuloGuard modulo="configuracion"><AdminPage seccion="configuracion" /></ModuloGuard>
         } />

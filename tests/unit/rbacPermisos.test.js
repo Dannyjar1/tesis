@@ -1,15 +1,25 @@
 /**
- * Tests del RBAC dinámico: definiciones de rol como datos, permisos
- * acumulativos por suma de roles, roles personalizados y activación.
+ * Tests del RBAC fijo: 4 roles con permisos fijos por código y permisos
+ * acumulativos por suma de roles (multi-rol). Ya no hay roles dinámicos.
  */
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import {
-  ROLES_DEFAULT, getDefinicionesSync, getDefiniciones,
-  guardarRol, toggleActivoRol, computarPermisos,
+  ROLES_DEFAULT, getDefinicionesSync, computarPermisos,
 } from '../../src/services/rolesService'
 import { MODULOS, MODULO_POR_ID } from '../../src/utils/modulos'
 
-beforeEach(() => localStorage.clear())
+describe('Modelo de 4 roles fijos', () => {
+  it('solo existen superadmin, director, coordinador y docente', () => {
+    const ids = getDefinicionesSync().map(r => r.id).sort()
+    expect(ids).toEqual(['coordinador', 'director', 'docente', 'superadmin'])
+  })
+
+  it('no quedan los roles admin ni administrativo', () => {
+    const ids = ROLES_DEFAULT.map(r => r.id)
+    expect(ids).not.toContain('admin')
+    expect(ids).not.toContain('administrativo')
+  })
+})
 
 describe('Permisos acumulativos (suma de roles)', () => {
   it('docente solo ve sus módulos personales', () => {
@@ -43,49 +53,18 @@ describe('Permisos acumulativos (suma de roles)', () => {
     expect(acciones['reportes'].has('exportar')).toBe(true)
     expect(acciones['distributivos'].has('aprobar')).toBe(true)
   })
-})
 
-describe('Roles personalizados (sin modificar código)', () => {
-  it('el superadmin crea un rol nuevo con módulos y acciones propios', async () => {
-    const id = await guardarRol({
-      nombre: 'Auditor CACES',
-      modulos: ['reportes', 'auditoria'],
-      acciones: { reportes: ['visualizar', 'exportar'], auditoria: ['visualizar'] },
-    })
-    expect(id).toBe('auditor_caces')
-    const defs = await getDefiniciones()
-    const rol = defs.find(r => r.id === 'auditor_caces')
-    expect(rol.es_sistema).toBe(false)
-    expect(rol.modulos).toContain('auditoria')
-  })
-
-  it('un docente con el rol personalizado suma sus módulos', async () => {
-    await guardarRol({ nombre: 'Auditor CACES', modulos: ['auditoria'], acciones: { auditoria: ['visualizar'] } })
-    const defs = getDefinicionesSync()
-    const { modulos } = computarPermisos(['docente', 'auditor_caces'], defs)
-    expect(modulos.has('mi-distributivo')).toBe(true)
+  it('el superadmin administra el sistema (carreras, usuarios, auditoría, configuración)', () => {
+    const { modulos } = computarPermisos(['superadmin'], ROLES_DEFAULT)
+    expect(modulos.has('sistema-carreras')).toBe(true)
+    expect(modulos.has('sistema-usuarios')).toBe(true)
     expect(modulos.has('auditoria')).toBe(true)
-  })
-
-  it('un rol desactivado deja de aportar permisos', async () => {
-    await guardarRol({ nombre: 'Auditor CACES', modulos: ['auditoria'], acciones: {} })
-    await toggleActivoRol('auditor_caces', false)
-    const defs = getDefinicionesSync()
-    const { modulos } = computarPermisos(['docente', 'auditor_caces'], defs)
-    expect(modulos.has('auditoria')).toBe(false)
-  })
-
-  it('los roles de sistema admiten ajustar sus módulos', async () => {
-    await guardarRol({ id: 'coordinador', nombre: 'Coordinador Académico', modulos: ['dashboard'], acciones: { dashboard: ['visualizar'] } })
-    const defs = getDefinicionesSync()
-    const coord = defs.find(r => r.id === 'coordinador')
-    expect(coord.es_sistema).toBe(true)
-    expect(coord.modulos).toEqual(['dashboard'])
+    expect(modulos.has('configuracion')).toBe(true)
   })
 })
 
 describe('Registro de módulos', () => {
-  it('todos los módulos referenciados por los roles de sistema existen', () => {
+  it('todos los módulos referenciados por los roles existen', () => {
     for (const rol of ROLES_DEFAULT) {
       for (const m of rol.modulos) {
         expect(MODULO_POR_ID[m], `módulo ${m} del rol ${rol.id}`).toBeDefined()

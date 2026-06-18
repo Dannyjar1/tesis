@@ -7,7 +7,6 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Modal from '../../components/Modal'
 import PeriodosAdmin from '../admin/PeriodosAdmin'
-import GestionRoles from './GestionRoles'
 import { getDefinicionesSync } from '../../services/rolesService'
 import {
   getCarreras, crearCarrera, actualizarCarrera, toggleActivoCarrera,
@@ -23,8 +22,7 @@ import {
 const TABS = [
   { id: 'carreras',  label: 'Carreras' },
   { id: 'periodos',  label: 'Períodos Académicos' },
-  { id: 'usuarios',  label: 'Usuarios y Roles' },
-  { id: 'roles',     label: 'Roles y Permisos' },
+  { id: 'usuarios',  label: 'Usuarios' },
   { id: 'seed',      label: 'Inicialización del Sistema' },
 ]
 
@@ -62,8 +60,6 @@ export default function SistemaPage() {
           historial inmutable, copia de estructura — control total del TIC */}
       {tab === 'periodos' && <PeriodosAdmin />}
       {tab === 'usuarios' && <GestionUsuarios />}
-      {/* RBAC dinámico: crear/modificar roles, módulos y acciones (sin código) */}
-      {tab === 'roles'    && <GestionRoles />}
       {tab === 'seed'     && <PanelSeed />}
     </div>
   )
@@ -133,10 +129,9 @@ function GestionCarreras() {
     const de = (rol) => usuarios.filter(u =>
       u.carrera_id === carreraId && (u.roles ?? [u.rol]).includes(rol))
     return {
-      directores:      de(ROLES.DIRECTOR),
-      coordinadores:   de(ROLES.COORDINADOR),
-      docentes:        de(ROLES.DOCENTE),
-      administrativos: de(ROLES.ADMINISTRATIVO),
+      directores:    de(ROLES.DIRECTOR),
+      coordinadores: de(ROLES.COORDINADOR),
+      docentes:      de(ROLES.DOCENTE),
     }
   }
 
@@ -211,16 +206,6 @@ function GestionCarreras() {
                     mostrarContrato
                     sangria doble
                   />
-                  {j.administrativos.length > 0 && (
-                    <NivelJerarquico
-                      etiqueta={`Administrativos (${j.administrativos.length})`}
-                      usuarios={j.administrativos}
-                      color="bg-amber-100 text-amber-800"
-                      vacio=""
-                      onEditar={u => setModalUsuario({ carrera: c, usuario: u })}
-                      sangria doble
-                    />
-                  )}
                 </div>
               </div>
             )
@@ -395,7 +380,7 @@ function GestionUsuarios() {
   // RBAC: el filtro considera TODOS los roles del usuario (multi-rol)
   const rolesDe = (u) => u.roles ?? (u.rol ? [u.rol] : [])
   const filtrados = filtroRol === 'todos' ? usuarios : usuarios.filter(u => rolesDe(u).includes(filtroRol))
-  const rolesDisponibles = [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.DIRECTOR, ROLES.COORDINADOR, ROLES.DOCENTE, ROLES.ADMINISTRATIVO]
+  const rolesDisponibles = [ROLES.SUPERADMIN, ROLES.DIRECTOR, ROLES.COORDINADOR, ROLES.DOCENTE]
 
   return (
     <div className="space-y-4">
@@ -447,7 +432,6 @@ function GestionUsuarios() {
                       {rolesDe(u).map(r => (
                         <span key={r} className={`text-xs px-2 py-1 rounded-full font-medium ${
                           r === 'superadmin' ? 'bg-red-100 text-red-700' :
-                          r === 'admin'      ? 'bg-[#003087]/10 text-[#003087]' :
                           r === 'director'   ? 'bg-blue-100 text-blue-700' :
                           r === 'coordinador'? 'bg-purple-100 text-purple-700' :
                                                'bg-gray-100 text-gray-600'
@@ -498,7 +482,7 @@ function GestionUsuarios() {
 }
 
 // Jerarquía para derivar el rol principal a partir de roles[] (RBAC)
-const JERARQUIA = [ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.DIRECTOR, ROLES.COORDINADOR, ROLES.DOCENTE, ROLES.ADMINISTRATIVO]
+const JERARQUIA = [ROLES.SUPERADMIN, ROLES.DIRECTOR, ROLES.COORDINADOR, ROLES.DOCENTE]
 
 function UsuarioForm({ usuario, onGuardar, onCancelar, cargando, error }) {
   const [form, setForm] = useState({

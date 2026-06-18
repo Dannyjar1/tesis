@@ -77,19 +77,6 @@ await check('Docente: login → /mi-distributivo', async () => {
   await page.waitForURL(/mi-distributivo/, { timeout: 8000 })
 })
 
-// ── 7. Admin y Administrativo: banners por rol ──
-await check('Admin: RolBanner alcance global', async () => {
-  await logout()
-  await login('Admin — Pro-Rector Ruiz')
-  await page.getByText('Alcance global — todas las carreras').waitFor()
-})
-await check('Administrativo: home /mi-panel + banner', async () => {
-  await logout()
-  await login('Administrativo — Jaramillo')
-  await page.waitForURL(/mi-panel/, { timeout: 8000 })
-  await page.getByText('Personal administrativo').waitFor()
-})
-
 // ── 8. Superadmin: carreras con facultad + jerarquía + gestión de usuarios ──
 await check('Superadmin: login → /sistema con 7 carreras', async () => {
   await logout()
@@ -118,7 +105,7 @@ await check('Carreras: botón Agregar usuario abre modal con la carrera', async 
 })
 
 await check('RBAC: selección múltiple de roles con docente automático', async () => {
-  await page.getByRole('link', { name: 'Usuarios y Roles' }).click()
+  await page.getByRole('link', { name: 'Usuarios', exact: true }).click()
   const fila = page.getByRole('row', { name: /Valarezo/ })
   await fila.getByRole('button', { name: 'Editar' }).click()
   await page.getByText('Cargos institucionales (selección múltiple)').waitFor()
@@ -143,37 +130,6 @@ await check('Superadmin: pestaña Períodos Académicos con estructura completa'
   await page.getByRole('button', { name: 'Estructura' }).first().click()
   await page.getByText('Coordinador / responsable del período').waitFor()   // asignaciones
   await page.keyboard.press('Escape')
-})
-
-// ── 8b. RBAC dinámico: roles como datos (crear rol → asignar → menú) ──
-await check('RBAC dinámico: crear rol personalizado con módulos y acciones', async () => {
-  await page.getByRole('link', { name: 'Roles y Permisos' }).click()
-  await page.getByRole('button', { name: '+ Nuevo rol' }).click()
-  await page.getByPlaceholder('ej: Auditor CACES').fill('Auditor CACES')
-  await page.getByRole('checkbox', { name: /Reportes \/reportes/ }).check()
-  await page.getByRole('checkbox', { name: /Auditoría/ }).check()
-  await page.getByRole('button', { name: 'Guardar rol' }).click()
-  await page.getByRole('row', { name: /Auditor CACES/ }).getByText('Personalizado').waitFor()
-})
-await check('RBAC dinámico: el rol nuevo es asignable como cargo a usuarios', async () => {
-  await page.getByRole('link', { name: 'Usuarios y Roles' }).click()
-  await page.getByRole('row', { name: /Palacios/ }).getByRole('button', { name: 'Editar' }).click()
-  await page.getByRole('checkbox', { name: 'Auditor CACES' }).waitFor()
-  await page.keyboard.press('Escape')
-})
-await check('RBAC dinámico: menú y rutas se construyen con la suma de roles', async () => {
-  // Docente + rol personalizado → ve sus módulos docentes Y los del nuevo rol
-  await page.evaluate(() => {
-    const s = JSON.parse(localStorage.getItem('uide_session'))
-    s.roles = ['docente', 'auditor_caces']
-    localStorage.setItem('uide_session', JSON.stringify(s))
-  })
-  await page.goto(`${BASE}/mi-distributivo`, { waitUntil: 'domcontentloaded' })
-  await page.getByRole('link', { name: 'Mi Distributivo' }).waitFor()   // módulo docente
-  await page.getByRole('link', { name: 'Auditoría' }).waitFor()         // módulo del rol creado
-  await page.goto(`${BASE}/admin/auditoria`, { waitUntil: 'domcontentloaded' })
-  await page.waitForTimeout(600)
-  if (!page.url().includes('/admin/auditoria')) throw new Error(`ruta denegada: ${page.url()}`)
 })
 
 // ── 9. Multi-rol: superadmin vinculado también como docente ──

@@ -30,7 +30,7 @@ describe('authService (mock) — flujo de autenticación', () => {
   })
 
   it('logout limpia la sesión', async () => {
-    await loginMock('paruizag@uide.edu.ec', '1234')
+    await loginMock('hcueva@uide.edu.ec', '1234')
     await logout()
     expect(getCurrentUser()).toBeNull()
   })
@@ -38,12 +38,10 @@ describe('authService (mock) — flujo de autenticación', () => {
   it('todos los roles mock son accesibles', async () => {
     const cuentas = [
       ['hcueva@uide.edu.ec',        'superadmin'],
-      ['paruizag@uide.edu.ec',      'admin'],
       ['locondezh@uide.edu.ec',     'director'],
       ['davalarezole@uide.edu.ec',  'coordinador'],
       ['mipalaciosmo@uide.edu.ec',  'docente'],
       ['yetorresbe@uide.edu.ec',    'docente'],
-      ['dajaramillogu@uide.edu.ec', 'administrativo'],
     ]
     for (const [email, rolEsperado] of cuentas) {
       const user = await loginMock(email, '1234')

@@ -3,11 +3,10 @@ import { useAuth } from './useAuth'
 import { ROLES } from '../../utils/constants'
 
 const HOME_POR_ROL = {
-  [ROLES.ADMIN]:          '/dashboard',
-  [ROLES.DIRECTOR]:       '/dashboard',
-  [ROLES.COORDINADOR]:    '/dashboard',
-  [ROLES.ADMINISTRATIVO]: '/mi-panel',
-  [ROLES.DOCENTE]:        '/mi-distributivo',
+  [ROLES.SUPERADMIN]:  '/sistema',
+  [ROLES.DIRECTOR]:    '/dashboard',
+  [ROLES.COORDINADOR]: '/dashboard',
+  [ROLES.DOCENTE]:     '/mi-distributivo',
 }
 
 /**

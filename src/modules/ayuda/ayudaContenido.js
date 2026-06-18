@@ -5,7 +5,7 @@
  * Las preguntas se renderizan como acordeones (Acordeon.jsx) agrupados por sección.
  */
 import { ROLES } from '../../utils/constants'
-import { IconAjustes, IconCalendario, IconCarpeta, IconClipboard, IconCohete, IconDiana, IconDocumento, IconGlobo, IconGrafico, IconHerramienta, IconUsuario, IconUsuarios } from '../../components/icons'
+import { IconCalendario, IconClipboard, IconCohete, IconDiana, IconDocumento, IconGrafico, IconHerramienta, IconUsuario, IconUsuarios } from '../../components/icons'
 
 // Sección común visible para todos los roles autenticados.
 export const AYUDA_GENERAL = {
@@ -156,26 +156,20 @@ const DIRECTOR = [
   },
 ]
 
-const ADMIN = [
+const SUPERADMIN = [
   {
-    titulo: 'Visión global',
-    icono: IconGlobo,
+    titulo: 'Administración del sistema (TIC)',
+    icono: IconHerramienta,
     items: [
       {
-        pregunta: '¿Cuál es mi alcance como Pro-Rector (Admin)?',
+        pregunta: '¿Qué gestiono desde el panel de sistema?',
         respuesta:
-          'Tienes acceso global: todas las carreras, todos los períodos y la configuración general del sistema. Puedes consultar el cumplimiento institucional sin restricción de carrera.',
+          'Administras las carreras del campus, los usuarios y sus roles, y la inicialización de datos semilla (seed). Es la configuración técnica base sobre la que operan los demás roles.',
       },
-    ],
-  },
-  {
-    titulo: 'Usuarios y configuración',
-    icono: IconAjustes,
-    items: [
       {
-        pregunta: '¿Cómo administro las cuentas de usuario?',
+        pregunta: '¿Cómo cargo los datos iniciales (seed)?',
         respuesta:
-          'En "Usuarios" puedes crear, editar, activar o desactivar cuentas y asignar el rol correspondiente a cada persona.',
+          'En la pestaña de inicialización del panel de sistema puedes cargar las carreras y los usuarios de prueba en Firestore para dejar el sistema operativo desde el primer despliegue.',
       },
       {
         pregunta: '¿Cómo cambio el umbral de alerta de cumplimiento?',
@@ -197,44 +191,6 @@ const ADMIN = [
   },
 ]
 
-const SUPERADMIN = [
-  {
-    titulo: 'Administración del sistema (TIC)',
-    icono: IconHerramienta,
-    items: [
-      {
-        pregunta: '¿Qué gestiono desde el panel de sistema?',
-        respuesta:
-          'Administras las carreras del campus, los usuarios y sus roles, y la inicialización de datos semilla (seed). Es la configuración técnica base sobre la que operan los demás roles.',
-      },
-      {
-        pregunta: '¿Cómo cargo los datos iniciales (seed)?',
-        respuesta:
-          'En la pestaña de inicialización del panel de sistema puedes cargar las carreras y los usuarios de prueba en Firestore para dejar el sistema operativo desde el primer despliegue.',
-      },
-    ],
-  },
-]
-
-const ADMINISTRATIVO = [
-  {
-    titulo: 'Mi panel',
-    icono: IconCarpeta,
-    items: [
-      {
-        pregunta: '¿Qué encuentro en mi panel?',
-        respuesta:
-          'Tu panel reúne tu distribución de actividades, tus reportes y tu horario. Funciona igual que el del personal docente para el seguimiento de tus actividades.',
-      },
-      {
-        pregunta: '¿Cómo sigo mis actividades?',
-        respuesta:
-          'Usa "Mis Actividades" para ver las actividades que el director te ha asignado, actualizar su estado y adjuntar evidencia.',
-      },
-    ],
-  },
-]
-
 // Tutoriales paso a paso — visibles para todos los roles (igual que AYUDA_GENERAL).
 export const AYUDA_TUTORIALES = {
   titulo: 'Tutoriales paso a paso',
@@ -251,10 +207,8 @@ export const AYUDA_TUTORIALES = {
 // Mapa rol → secciones de ayuda. Los roles sin contenido propio caen a la
 // sección general únicamente (se resuelve en AyudaPage).
 export const AYUDA_POR_ROL = {
-  [ROLES.SUPERADMIN]:     SUPERADMIN,
-  [ROLES.ADMIN]:          ADMIN,
-  [ROLES.DIRECTOR]:       DIRECTOR,
-  [ROLES.COORDINADOR]:    COORDINADOR,
-  [ROLES.DOCENTE]:        DOCENTE,
-  [ROLES.ADMINISTRATIVO]: ADMINISTRATIVO,
+  [ROLES.SUPERADMIN]:  SUPERADMIN,
+  [ROLES.DIRECTOR]:    DIRECTOR,
+  [ROLES.COORDINADOR]: COORDINADOR,
+  [ROLES.DOCENTE]:     DOCENTE,
 }

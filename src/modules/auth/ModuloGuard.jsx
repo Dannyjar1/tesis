@@ -4,12 +4,10 @@ import { usePermisos } from '../../hooks/usePermisos'
 import { MODULOS } from '../../utils/modulos'
 
 const HOME_POR_ROL = {
-  superadmin:     '/sistema',
-  admin:          '/dashboard',
-  director:       '/dashboard',
-  coordinador:    '/dashboard',
-  docente:        '/mi-distributivo',
-  administrativo: '/mi-panel',
+  superadmin:  '/sistema',
+  director:    '/dashboard',
+  coordinador: '/dashboard',
+  docente:     '/mi-distributivo',
 }
 
 /**

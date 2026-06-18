@@ -37,7 +37,7 @@ provider.setCustomParameters({ tenant: 'common', prompt: 'select_account' })
 // normalización garantiza AMBOS campos en el perfil de sesión:
 //   roles → array para checks roles.includes('x')
 //   rol   → rol principal (mayor jerarquía) para menú, home y etiquetas UI.
-const JERARQUIA_ROLES = ['superadmin', 'admin', 'director', 'coordinador', 'docente', 'administrativo']
+const JERARQUIA_ROLES = ['superadmin', 'director', 'coordinador', 'docente']
 
 export function normalizarRolesPerfil(perfil) {
   if (!perfil) return perfil

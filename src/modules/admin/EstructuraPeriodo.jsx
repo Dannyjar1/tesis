@@ -47,7 +47,6 @@ export default function EstructuraPeriodo({ periodo, periodos }) {
   const participa = !!estructura[carreraSel]
 
   const docentes        = usuarios.filter(u => (u.roles ?? [u.rol]).includes(ROLES.DOCENTE))
-  const administrativos = usuarios.filter(u => (u.roles ?? [u.rol]).includes(ROLES.ADMINISTRATIVO))
   const elegiblesCoord  = usuarios.filter(u =>
     (u.roles ?? [u.rol]).some(r => [ROLES.COORDINADOR, ROLES.DIRECTOR, ROLES.DOCENTE].includes(r)))
 
@@ -189,15 +188,6 @@ export default function EstructuraPeriodo({ periodo, periodos }) {
             seleccionados={asig.docentes_uid ?? []}
             deshabilitado={esHistorial || guardando}
             onToggle={uid => guardar({ docentes_uid: toggleUid(asig.docentes_uid ?? [], uid) })}
-          />
-
-          {/* Administrativos del período */}
-          <ListaAsignacion
-            titulo={`Administrativos asignados (${(asig.administrativos_uid ?? []).length})`}
-            usuarios={administrativos}
-            seleccionados={asig.administrativos_uid ?? []}
-            deshabilitado={esHistorial || guardando}
-            onToggle={uid => guardar({ administrativos_uid: toggleUid(asig.administrativos_uid ?? [], uid) })}
           />
 
           {/* Indicadores del período */}
