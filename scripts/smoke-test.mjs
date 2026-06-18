@@ -5,7 +5,7 @@
  */
 import { chromium } from '@playwright/test'
 
-const BASE = 'http://localhost:5173'
+const BASE = process.env.SMOKE_BASE ?? 'http://localhost:5173'
 const resultados = []
 let browser, page
 
