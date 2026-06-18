@@ -93,9 +93,11 @@ await check('Carreras: facultades UIDE correctas', async () => {
   if (bs < 3) throw new Error(`Business School aparece ${bs} veces (esperado 3)`)
 })
 await check('Carreras: jerarquía director → coordinador → docentes', async () => {
-  await page.getByText('Lorena Elizabeth Conde Zhingre').waitFor()   // director Sistemas
-  await page.getByText('Darío Javier Valarezo León').waitFor()       // coordinador Sistemas
-  await page.getByText('Docentes (2)').waitFor()                     // Palacios + Torres
+  // Conde y Valarezo aparecen 2 veces (su cargo + como docentes) → .first()
+  await page.getByText('Lorena Elizabeth Conde Zhingre').first().waitFor()   // director Sistemas
+  await page.getByText('Darío Javier Valarezo León').first().waitFor()       // coordinador Sistemas
+  // Director y coordinador también son docentes → 4 docentes en Sistemas
+  await page.getByText('Docentes (4)').waitFor()                     // Conde + Valarezo + Palacios + Torres
   await page.getByText('Sin director asignado').first().waitFor()    // carreras sin asignar
 })
 await check('Carreras: botón Agregar usuario abre modal con la carrera', async () => {
@@ -120,7 +122,7 @@ await check('RBAC: selección múltiple de roles con docente automático', async
 })
 await check('RBAC: la jerarquía de la carrera refleja el multi-rol', async () => {
   await page.getByRole('button', { name: 'Carreras', exact: true }).click()
-  await page.getByText('Docentes (3)').waitFor()   // Valarezo ahora también cuenta como docente
+  await page.getByText('Docentes (4)').waitFor()   // Conde, Valarezo, Palacios, Torres
 })
 
 await check('Superadmin: pestaña Períodos Académicos con estructura completa', async () => {

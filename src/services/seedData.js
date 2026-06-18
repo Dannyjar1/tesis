@@ -35,7 +35,9 @@ export const USUARIOS_SEED = [
     nombre_completo: 'Lorena Elizabeth Conde Zhingre',
     email:           'locondezh@uide.edu.ec',
     password:        '1234',
-    rol:             'director', roles: ['director'],
+    // Todo cargo lo ejerce un docente: el director también es docente y tiene
+    // su propio distributivo y actividades.
+    rol:             'director', roles: ['docente', 'director'],
     tipo_contrato:   'tiempo_completo',
     carrera_id:      'sistemas-informacion',
     activo:          true,
@@ -47,7 +49,8 @@ export const USUARIOS_SEED = [
     nombre_completo: 'Darío Javier Valarezo León',
     email:           'davalarezole@uide.edu.ec',
     password:        '1234',
-    rol:             'coordinador', roles: ['coordinador'],
+    // El coordinador también es docente (tiene su distributivo y actividades).
+    rol:             'coordinador', roles: ['docente', 'coordinador'],
     tipo_contrato:   'tiempo_completo',
     carrera_id:      'sistemas-informacion',
     activo:          true,

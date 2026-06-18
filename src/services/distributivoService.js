@@ -374,14 +374,21 @@ export function suscribirseDistributivo(docenteUid, periodoId, callback) {
   return () => {}
 }
 
+/** ¿El usuario es docente? Considera el array roles[] (multi-rol), no solo el
+ *  rol principal: un director/coordinador también es docente. */
+function esDocente(u) {
+  return (u.roles ?? (u.rol ? [u.rol] : [])).includes('docente')
+}
+
 /**
  * Devuelve docentes de una carrera (o todos) desde Firestore /usuarios.
- * Fallback: USUARIOS_SEED filtrados por rol==='docente'.
+ * Incluye a quienes son docente + cargo (director/coordinador) porque todo
+ * cargo lo ejerce un docente. Fallback: USUARIOS_SEED.
  */
 export async function getDocentes(carreraId = null) {
   if (db) {
     try {
-      const condiciones = [where('rol', '==', 'docente'), where('activo', '==', true)]
+      const condiciones = [where('roles', 'array-contains', 'docente'), where('activo', '==', true)]
       if (carreraId) condiciones.push(where('carrera_id', '==', carreraId))
       const snap = await getDocs(query(collection(db, COL_USUARIOS), ...condiciones))
       return snap.docs.map(d => d.data())
@@ -389,13 +396,13 @@ export async function getDocentes(carreraId = null) {
       console.warn('[distributivoService] Firestore error en getDocentes:', err.code)
     }
   }
-  const docentes = USUARIOS_SEED.filter(u => u.rol === 'docente' && u.activo)
+  const docentes = USUARIOS_SEED.filter(u => esDocente(u) && u.activo)
   return carreraId ? docentes.filter(u => u.carrera_id === carreraId) : docentes
 }
 
 /** @deprecated Usar getDocentes(). Mantenido por compatibilidad. */
 export function getDocentesMock() {
-  return USUARIOS_SEED.filter(u => u.rol === 'docente' && u.activo)
+  return USUARIOS_SEED.filter(u => esDocente(u) && u.activo)
 }
 
 /** Reinicia datos mock (solo desarrollo/tests). */

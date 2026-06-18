@@ -54,6 +54,14 @@ describe('Permisos acumulativos (suma de roles)', () => {
     expect(acciones['distributivos'].has('aprobar')).toBe(true)
   })
 
+  it('un director/coordinador también es docente: ve la gestión Y sus vistas personales', () => {
+    const { modulos } = computarPermisos(['docente', 'director'], ROLES_DEFAULT)
+    expect(modulos.has('distributivos')).toBe(true)      // gestión (cargo)
+    expect(modulos.has('actividades')).toBe(true)        // gestión (cargo)
+    expect(modulos.has('mi-distributivo')).toBe(true)    // sus propias vistas (docente)
+    expect(modulos.has('mis-actividades')).toBe(true)
+  })
+
   it('el superadmin administra el sistema (carreras, usuarios, auditoría, configuración)', () => {
     const { modulos } = computarPermisos(['superadmin'], ROLES_DEFAULT)
     expect(modulos.has('sistema-carreras')).toBe(true)

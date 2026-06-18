@@ -33,6 +33,12 @@ await check('1. LOGIN director', async () => {
   await login('Director — Sistemas')
   if (!page.url().includes('/dashboard')) throw new Error(`url=${page.url()}`)
 })
+await check('1b. DIRECTOR (docente): ve y accede a Mis Actividades y Mi Distributivo', async () => {
+  await page.getByRole('link', { name: 'Mi Distributivo' }).waitFor()   // menú docente personal
+  await page.getByRole('link', { name: 'Mis Actividades' }).click()
+  await page.waitForURL(/mis-actividades/, { timeout: 8000 })
+  await page.getByRole('heading', { name: 'Mis Actividades' }).waitFor()
+})
 
 await check('2. DISTRIBUTIVO: gestión renderiza con tabla de docentes', async () => {
   await page.goto(`${BASE}/distributivo/gestion`, { waitUntil: 'domcontentloaded' })
