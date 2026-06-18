@@ -117,15 +117,36 @@ export function suscribirseActividades({ periodoId, docenteUid = null, carreraId
   )
 
   if (db) {
-    return onSnapshot(
+    // Garantía anti-cuelgue: si Firestore no responde (offline/conexión
+    // atascada) en 4s, resolvemos con localStorage para que la vista no se
+    // quede "cargando para siempre". El snapshot real, si llega, refresca.
+    let primerResultado = false
+    const safety = setTimeout(() => {
+      if (!primerResultado) {
+        primerResultado = true
+        callback(filtrar(localCargar(periodoId)))
+      }
+    }, 4000)
+
+    const unsub = onSnapshot(
       query(collection(db, COL), where('periodo_id', '==', periodoId)),
       snap => {
+        primerResultado = true
+        clearTimeout(safety)
         const lista = snap.docs.map(d => normalizar(d.data(), d.id))
-        localGuardar(periodoId, lista)
-        callback(filtrar(lista))
+        // No pisar localStorage con un resultado vacío de Firestore offline.
+        if (!snap.empty) localGuardar(periodoId, lista)
+        callback(filtrar(snap.empty ? localCargar(periodoId) : lista))
       },
-      err => console.warn('[actividadesService] onSnapshot error:', err.code)
+      // El error tampoco debe dejar la vista cargando: caemos a localStorage.
+      err => {
+        primerResultado = true
+        clearTimeout(safety)
+        console.warn('[actividadesService] onSnapshot error:', err.code)
+        callback(filtrar(localCargar(periodoId)))
+      }
     )
+    return () => { clearTimeout(safety); unsub() }
   }
   getTodasPeriodo(periodoId).then(lista => callback(filtrar(lista)))
   return () => {}

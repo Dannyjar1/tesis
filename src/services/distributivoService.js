@@ -355,15 +355,20 @@ export function suscribirseDistributivo(docenteUid, periodoId, callback) {
     // Consistente con el resto del servicio: si Firestore está inalcanzable
     // (modo mock/offline) cae a localStorage en lugar de devolver null.
     const fallback = () => getDistributivo(docenteUid, periodoId).then(callback)
-    return onSnapshot(
+    // Garantía anti-cuelgue: si Firestore no responde en 4s, resolvemos local.
+    let primerResultado = false
+    const safety = setTimeout(() => { if (!primerResultado) { primerResultado = true; fallback() } }, 4000)
+    const unsub = onSnapshot(
       doc(db, COL, id),
       snap => {
+        primerResultado = true; clearTimeout(safety)
         if (snap.exists()) callback(normalizar(snap.data(), snap.id))
         else if (snap.metadata?.fromCache) fallback()   // offline, sin dato del servidor
         else callback(null)
       },
-      err => { console.warn('[distributivoService] onSnapshot error:', err.code); fallback() }
+      err => { primerResultado = true; clearTimeout(safety); console.warn('[distributivoService] onSnapshot error:', err.code); fallback() }
     )
+    return () => { clearTimeout(safety); unsub() }
   }
   getDistributivo(docenteUid, periodoId).then(callback)
   return () => {}
