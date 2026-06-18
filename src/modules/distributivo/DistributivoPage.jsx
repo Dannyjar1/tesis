@@ -5,6 +5,7 @@ import { useDistributivo } from '../../hooks/useDistributivo'
 import { ESTADO_COLORES, ESTADO_LABELS, ESTADOS_DISTRIBUTIVO, TIPO_CONTRATO_HORAS, TIPO_CONTRATO_LABELS } from '../../utils/constants'
 import { formatearFecha, formatearHoras } from '../../utils/formatters'
 import DistributivoTable from './DistributivoTable'
+import CalendarioDistributivo from './CalendarioDistributivo'
 import ResumenHoras from '../dashboard/ResumenHoras'
 import PrevisualizacionPDF from '../reportes/PrevisualizacionPDF'
 import LoadingSpinner from '../../components/LoadingSpinner'
@@ -180,6 +181,11 @@ export default function DistributivoPage() {
           </div>
         </>
       )}
+
+      {/* Horario semanal — antes módulo /horario aparte, ahora sección del distributivo */}
+      <div className="border-t border-gray-200 pt-6">
+        <CalendarioDistributivo />
+      </div>
     </div>
   )
 }

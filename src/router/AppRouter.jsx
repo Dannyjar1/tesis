@@ -15,7 +15,6 @@ const SistemaPage              = lazy(() => import('../modules/sistema/SistemaPa
 const DashboardPage            = lazy(() => import('../modules/dashboard/DashboardPage'))
 const DistributivoPage         = lazy(() => import('../modules/distributivo/DistributivoPage'))
 const GestionDistributivoPage  = lazy(() => import('../modules/distributivo/GestionDistributivoPage'))
-const CalendarioDistributivo   = lazy(() => import('../modules/distributivo/CalendarioDistributivo'))
 const ClasificacionPage        = lazy(() => import('../modules/ia/ClasificacionPage'))
 const ReportesPage             = lazy(() => import('../modules/reportes/ReportesPage'))
 const NotificacionesPage       = lazy(() => import('../modules/notificaciones/NotificacionesPage'))
@@ -112,11 +111,6 @@ export default function AppRouter() {
         } />
         <Route path="/mis-actividades" element={
           <ModuloGuard modulo="mis-actividades"><ActividadesDocentePage /></ModuloGuard>
-        } />
-        <Route path="/horario" element={
-          <ModuloGuard modulo="horario">
-            <CalendarioDistributivo />
-          </ModuloGuard>
         } />
         <Route path="/reportes" element={
           <ModuloGuard modulo="reportes"><ReportesPage /></ModuloGuard>

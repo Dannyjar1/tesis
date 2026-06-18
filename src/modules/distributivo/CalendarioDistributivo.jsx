@@ -124,7 +124,7 @@ export default function CalendarioDistributivo() {
     <div className="flex flex-col gap-5">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900">Horario semanal</h1>
+          <h2 className="text-base font-semibold text-gray-800">Horario semanal</h2>
           <p className="text-gray-400 text-sm mt-0.5">
             Lunes a sábado · 07:00–22:00 · {horasDocencia}h docencia directa asignadas
           </p>

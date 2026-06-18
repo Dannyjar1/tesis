@@ -61,14 +61,14 @@ await check('3b. Docente confirma → distributivo Aprobado', async () => {
   await page.getByText(/confirmado por director y docente/i).waitFor({ timeout: 10000 })
 })
 
-// ── 4. Alerta de tutorías concentradas el mismo día ──
-await check('4. Horario: alerta si todas las tutorías son el mismo día', async () => {
+// ── 4. Alerta de tutorías concentradas el mismo día (ahora dentro de Mi Distributivo) ──
+await check('4. Horario en Mi Distributivo: alerta si todas las tutorías son el mismo día', async () => {
   const uid = await page.evaluate(() => JSON.parse(localStorage.getItem('uide_session'))?.uid)
   await page.evaluate((uid) => {
     const tut = (h1, h2) => ({ id: `t_${h1}`, docente_uid: uid, dia: 'lunes', hora_inicio: `${h1}:00`, hora_fin: `${h2}:00`, materia: 'Tutoría', aula: '', tipo: 'tutoria' })
     localStorage.setItem('uide_horario_semanal', JSON.stringify([tut('08', '09'), tut('09', '10')]))
   }, uid)
-  await page.goto(`${BASE}/horario`, { waitUntil: 'domcontentloaded' })
+  await page.goto(`${BASE}/mi-distributivo`, { waitUntil: 'domcontentloaded' })
   await page.getByText(/tutoría concentradas el Lunes/i).waitFor({ timeout: 8000 })
 })
 

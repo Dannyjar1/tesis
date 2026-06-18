@@ -9,7 +9,7 @@
  */
 import {
   IconCalendario, IconDocumento, IconGrafico, IconUsuarios, IconAjustes,
-  IconClipboard, IconCampana, IconChispa, IconReloj, IconBandeja,
+  IconClipboard, IconCampana, IconChispa, IconBandeja,
 } from '../components/icons'
 
 export const ACCIONES = ['visualizar', 'crear', 'editar', 'aprobar', 'eliminar', 'exportar', 'administrar']
@@ -26,7 +26,6 @@ export const MODULOS = [
   // ── Personal (docente) ──
   { id: 'mi-distributivo',  label: 'Mi Distributivo',  path: '/mi-distributivo',      icon: IconDocumento, acciones: ['visualizar', 'exportar'] },
   { id: 'mis-actividades',  label: 'Mis Actividades',  path: '/mis-actividades',      icon: IconClipboard, acciones: ['visualizar', 'editar'] },
-  { id: 'horario',          label: 'Mi Horario',       path: '/horario',              icon: IconReloj,     acciones: ['visualizar'] },
   // 'ia' (Clasificación IA) queda parqueado: módulo y ruta se conservan (MOD-04),
   // pero ningún rol lo otorga hasta reintegrar BETO a la asignación de actividades.
   { id: 'ia',               label: 'Clasificación IA', path: '/ia',                   icon: IconChispa,    acciones: ['visualizar', 'editar'] },

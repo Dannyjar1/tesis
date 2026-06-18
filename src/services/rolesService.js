@@ -49,11 +49,10 @@ export const ROLES_DEFAULT = [
   },
   {
     id: 'docente', nombre: 'Docente',
-    modulos: ['mi-distributivo', 'mis-actividades', 'horario', 'notificaciones'],
+    modulos: ['mi-distributivo', 'mis-actividades', 'notificaciones'],
     acciones: {
       'mi-distributivo': ['visualizar', 'exportar'],
       'mis-actividades': ['visualizar', 'editar'],   // ve y completa lo asignado
-      horario:           ['visualizar'],
     },
   },
 ]
