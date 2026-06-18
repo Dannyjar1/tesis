@@ -5,6 +5,7 @@ import {
   generarReportePDFIndividual,
   generarReportePDFCarrera,
   generarReporteExcel,
+  generarReporteSemestralActividades,
   getHistorialReportes,
 } from '../../services/reportesService'
 import { getDocentes } from '../../services/distributivoService'
@@ -76,6 +77,26 @@ export default function ReportesPage() {
         periodo:        periodoActivo,
       })
       setAlerta({ tipo: 'success', msg: 'Archivo Excel generado y descargado correctamente.' })
+      await recargarHistorial()
+    } catch (err) {
+      setAlerta({ tipo: 'error', msg: err.message })
+    } finally {
+      setGenerando(false)
+    }
+  }
+
+  async function handleGenerarSemestral() {
+    setAlerta(null)
+    setGenerando(true)
+    try {
+      const codigo = await generarReporteSemestralActividades({
+        periodoId:         periodoActivo?.id,
+        carreraId:         user?.carrera_id ?? null,
+        generadoPorUid:    user?.uid,
+        generadoPorNombre: user?.nombre_completo,
+        periodo:           periodoActivo,
+      })
+      setAlerta({ tipo: 'success', msg: `Reporte semestral de actividades generado. Código de verificación: ${codigo}` })
       await recargarHistorial()
     } catch (err) {
       setAlerta({ tipo: 'error', msg: err.message })
@@ -183,6 +204,21 @@ export default function ReportesPage() {
                 Descargar Excel
               </button>
             </div>
+
+            {/* Reporte semestral de cumplimiento de actividades (con evidencias) */}
+            <button
+              onClick={handleGenerarSemestral}
+              disabled={generando}
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-uide-primary border border-uide-primary/30 hover:bg-uide-light rounded-lg transition disabled:opacity-60"
+            >
+              {generando ? <LoadingSpinnerInline /> : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                </svg>
+              )}
+              Reporte semestral de actividades (cumplimiento + evidencias)
+            </button>
           </div>
 
           {/* Historial de reportes */}

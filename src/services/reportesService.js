@@ -3,9 +3,10 @@
  * Sprint Firebase: el historial de reportes se guardaría en Firestore /reportes.
  * Referencia: RF-018, RN-007, RN-017.
  */
-import { exportarDistributivoPDF, exportarReporteCarreraPDF } from '../utils/exportPDF'
+import { exportarDistributivoPDF, exportarReporteCarreraPDF, exportarReporteActividadesPDF } from '../utils/exportPDF'
 import { getDistributivosPorPeriodo, getDocentes } from './distributivoService'
-import { TIPOS_CONTRATO } from '../utils/constants'
+import { getActividadesDirector, estadoEfectivo } from './actividadesService'
+import { TIPOS_CONTRATO, CATEGORIA_LABELS, ESTADOS_ACTIVIDAD } from '../utils/constants'
 
 const KEY_HISTORIAL = (uid) => `uide_reportes_${uid}`
 
@@ -108,6 +109,55 @@ export async function generarReporteExcel(filtros) {
   const codigo = `XLSX-${periodoId}-${Date.now()}`
   registrarReporte(generadoPorUid, 'excel_carrera', periodoId, codigo)
   return codigo
+}
+
+/**
+ * Reporte semestral de cumplimiento de ACTIVIDADES por docente: actividades
+ * completadas vs asignadas por categoría CES, con evidencias adjuntas.
+ * Pensado para el cierre del semestre (RF-018).
+ * @param {{ periodoId, carreraId?, generadoPorUid, generadoPorNombre, periodo }} filtros
+ */
+export async function generarReporteSemestralActividades(filtros) {
+  const { periodoId, carreraId = null, generadoPorUid, generadoPorNombre, periodo } = filtros
+  const actividades = await getActividadesDirector(periodoId, carreraId)
+  if (actividades.length === 0) {
+    throw new Error('No hay actividades registradas en este período para reportar.')
+  }
+
+  // Agrupar por docente → categoría
+  const porDocente = new Map()
+  for (const a of actividades) {
+    const uid = a.asignada_a_uid
+    if (!porDocente.has(uid)) {
+      porDocente.set(uid, {
+        docente_nombre: a.asignada_a_nombre || uid,
+        categorias: new Map(),   // categoria → { asignadas, completadas }
+        evidencias: [],
+        totalAsignadas: 0,
+        totalCompletadas: 0,
+      })
+    }
+    const d = porDocente.get(uid)
+    const cat = CATEGORIA_LABELS[a.categoria_ces] ?? a.categoria_ces ?? 'Sin categoría'
+    const acc = d.categorias.get(cat) ?? { asignadas: 0, completadas: 0 }
+    acc.asignadas += 1
+    d.totalAsignadas += 1
+    const completada = estadoEfectivo(a) === ESTADOS_ACTIVIDAD.COMPLETADA
+    if (completada) { acc.completadas += 1; d.totalCompletadas += 1 }
+    d.categorias.set(cat, acc)
+    if (a.evidencia_url) d.evidencias.push({ titulo: a.titulo, categoria: cat, url: a.evidencia_url })
+  }
+
+  const docentesData = [...porDocente.values()]
+    .map(d => ({
+      ...d,
+      categorias: [...d.categorias.entries()].map(([categoria, v]) => ({ categoria, ...v })),
+    }))
+    .sort((a, b) => a.docente_nombre.localeCompare(b.docente_nombre))
+
+  const codigoVerif = await exportarReporteActividadesPDF(docentesData, periodo, generadoPorNombre)
+  registrarReporte(generadoPorUid, 'cumplimiento_actividades', periodoId, codigoVerif)
+  return codigoVerif
 }
 
 /**

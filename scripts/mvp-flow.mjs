@@ -72,6 +72,22 @@ await check('4c. REPORTE: Excel se genera/descarga', async () => {
   const r = await Promise.race([dl, okMsg])
   if (!r) throw new Error('sin descarga ni confirmación de Excel')
 })
+await check('4d. REPORTE: semestral de actividades (cumplimiento + evidencias)', async () => {
+  // Sembrar actividades del período para el reporte (1 completada con evidencia, 1 pendiente)
+  await page.evaluate(() => {
+    const acts = [
+      { id: 'a1', asignada_a_uid: 'uid_mipalaciosmo', asignada_a_nombre: 'Milton Palacios', categoria_ces: 'vinculacion', estado: 'completada', evidencia_url: 'https://ejemplo/evidencia.pdf', carrera_id: 'sistemas-informacion', periodo_id: '2026-A', titulo: 'Informe vinculación', fecha_limite: '2026-07-01' },
+      { id: 'a2', asignada_a_uid: 'uid_mipalaciosmo', asignada_a_nombre: 'Milton Palacios', categoria_ces: 'docencia', estado: 'pendiente', evidencia_url: null, carrera_id: 'sistemas-informacion', periodo_id: '2026-A', titulo: 'Plan analítico', fecha_limite: '2027-01-01' },
+    ]
+    localStorage.setItem('uide_actividades_2026-A', JSON.stringify(acts))
+  })
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  // Esperar a que el período activo cargue (el reporte usa periodoActivo.id)
+  await page.getByText('Reportes y Exportación').waitFor()
+  await page.waitForTimeout(1500)
+  await page.getByRole('button', { name: /Reporte semestral de actividades/ }).click()
+  await page.getByText(/Reporte semestral de actividades generado/i).waitFor({ timeout: 20000 })
+})
 
 // ════════ DOCENTE ════════
 await check('5. LOGIN docente → /mi-distributivo', async () => {

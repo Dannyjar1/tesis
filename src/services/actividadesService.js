@@ -74,9 +74,13 @@ async function getTodasPeriodo(periodoId) {
       const snap = await getDocs(
         query(collection(db, COL), where('periodo_id', '==', periodoId))
       )
-      const lista = snap.docs.map(d => normalizar(d.data(), d.id))
-      localGuardar(periodoId, lista)
-      return lista
+      // Solo confiamos en Firestore cuando devuelve datos. Un resultado vacío
+      // (sin servidor o caché offline) NO debe pisar el localStorage del modo mock.
+      if (!snap.empty) {
+        const lista = snap.docs.map(d => normalizar(d.data(), d.id))
+        localGuardar(periodoId, lista)
+        return lista
+      }
     } catch (err) {
       console.warn('[actividadesService] Firestore no disponible:', err.code)
     }

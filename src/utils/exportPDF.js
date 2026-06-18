@@ -477,6 +477,116 @@ export async function exportarReporteCarreraPDF(docentesData, periodo, generadoP
   return codigo
 }
 
+/**
+ * Reporte semestral de cumplimiento de ACTIVIDADES por docente: actividades
+ * completadas vs asignadas por categoría CES, con las evidencias adjuntas.
+ * @param {Object[]} docentesData — [{ docente_nombre, totalAsignadas, totalCompletadas,
+ *   categorias: [{ categoria, asignadas, completadas }], evidencias: [{ titulo, categoria, url }] }]
+ * @param {Object} periodo
+ * @param {string} generadoPorNombre
+ * @returns {Promise<string>} código de verificación
+ */
+export async function exportarReporteActividadesPDF(docentesData, periodo, generadoPorNombre) {
+  const codigo = codigoVerificacion(periodo?.id, 'ACTIVIDADES')
+
+  const [templateBase64, qrBase64] = await Promise.all([
+    urlABase64(templateUrl),
+    generarQR(`https://uide.edu.ec/verificar?codigo=${codigo}`),
+  ])
+  const ahora = new Date().toLocaleString('es-EC', { dateStyle: 'long', timeStyle: 'short' })
+
+  const totalAsig = docentesData.reduce((s, d) => s + d.totalAsignadas, 0)
+  const totalComp = docentesData.reduce((s, d) => s + d.totalCompletadas, 0)
+  const pctGlobal = totalAsig > 0 ? Math.round((totalComp / totalAsig) * 100) : 0
+
+  const bloquesDocente = docentesData.flatMap((d, idx) => {
+    const pct = d.totalAsignadas > 0 ? Math.round((d.totalCompletadas / d.totalAsignadas) * 100) : 0
+    const headerCat = [
+      { text: 'CATEGORÍA CES', style: 'thTabla' },
+      { text: 'ASIGNADAS',  style: 'thTabla', alignment: 'center' },
+      { text: 'COMPLETADAS', style: 'thTabla', alignment: 'center' },
+      { text: '% CUMPL.',   style: 'thTabla', alignment: 'center' },
+    ]
+    const filasCat = d.categorias.map((c, i) => {
+      const bg = i % 2 === 0 ? C.blanco : C.grisClaro
+      const p  = c.asignadas > 0 ? Math.round((c.completadas / c.asignadas) * 100) : 0
+      return [
+        { text: c.categoria, fontSize: 9, color: C.grisTexto, fillColor: bg, margin: [8, 5, 8, 5] },
+        { text: String(c.asignadas), fontSize: 9, alignment: 'center', fillColor: bg, margin: [8, 5, 8, 5] },
+        { text: String(c.completadas), fontSize: 9, alignment: 'center', fillColor: bg, margin: [8, 5, 8, 5] },
+        { text: `${p}%`, fontSize: 9, bold: true, alignment: 'center', color: p >= 80 ? C.verde : C.rojo, fillColor: bg, margin: [8, 5, 8, 5] },
+      ]
+    })
+
+    const evidencias = d.evidencias.length > 0
+      ? {
+          ul: d.evidencias.map(e => ({
+            text: [
+              { text: `${e.titulo} `, fontSize: 8, color: C.grisTexto },
+              { text: `(${e.categoria})`, fontSize: 7, color: C.grisSubtxt },
+              e.url ? { text: ` — ver evidencia`, fontSize: 8, color: C.vino, link: e.url, decoration: 'underline' } : { text: '' },
+            ],
+            margin: [0, 1, 0, 1],
+          })),
+          margin: [0, 4, 0, 0],
+        }
+      : { text: 'Sin evidencias adjuntas.', fontSize: 8, italics: true, color: C.grisSubtxt, margin: [0, 4, 0, 0] }
+
+    return [
+      idx > 0 ? separador(C.grisBorde, 0.5, [0, 6, 0, 10]) : { text: '' },
+      {
+        columns: [
+          { text: d.docente_nombre, fontSize: 10, bold: true, color: C.vinoOscuro },
+          { text: `${d.totalCompletadas}/${d.totalAsignadas} · ${pct}%`, fontSize: 9, bold: true, alignment: 'right', color: pct >= 80 ? C.verde : C.rojo },
+        ],
+        margin: [0, 0, 0, 6],
+      },
+      {
+        table: { headerRows: 1, widths: ['*', 70, 70, 60], body: [headerCat, ...filasCat] },
+        layout: {
+          hLineColor: () => C.grisBorde, vLineColor: () => C.grisBorde,
+          hLineWidth: (i, node) => (i === 0 || i === node.table.body.length) ? 0 : 0.5,
+          vLineWidth: () => 0.5,
+        },
+        margin: [0, 0, 0, 4],
+      },
+      { text: 'Evidencias:', fontSize: 8, bold: true, color: C.grisSubtxt, margin: [0, 2, 0, 0] },
+      evidencias,
+    ]
+  })
+
+  const docDef = {
+    pageSize: 'A4',
+    pageMargins: [55, 145, 55, 118],
+    background: templateBase64
+      ? (currentPage, pageSize) => ({ image: templateBase64, width: pageSize.width, height: pageSize.height, absolutePosition: { x: 0, y: 0 } })
+      : undefined,
+    content: [
+      { text: 'REPORTE SEMESTRAL DE CUMPLIMIENTO DE ACTIVIDADES', fontSize: 12, bold: true, color: C.vino, alignment: 'center', margin: [0, 0, 0, 3] },
+      { text: `Período: ${periodo?.nombre ?? '—'}   ·   ${ahora}`, fontSize: 7, color: C.grisSubtxt, alignment: 'center', margin: [0, 0, 0, 14] },
+      {
+        columns: [
+          kpiBox('Docentes',           String(docentesData.length), C.grisTexto),
+          kpiBox('Actividades asign.', String(totalAsig),           C.grisTexto),
+          kpiBox('Completadas',        String(totalComp),           C.verde),
+          kpiBox('Cumplimiento',       `${pctGlobal}%`,             pctGlobal >= 80 ? C.verde : C.rojo),
+        ],
+        columnGap: 10,
+        margin: [0, 0, 0, 16],
+      },
+      ...bloquesDocente,
+      separador(C.grisBorde, 0.5, [0, 6, 0, 10]),
+      bloqueAuditoriaCACES(codigo, generadoPorNombre, periodo?.nombre ?? '—', qrBase64),
+    ],
+    styles: STYLES,
+    defaultStyle: DEFAULT_STYLE,
+  }
+
+  const filename = `reporte_actividades_${periodo?.id ?? ''}.pdf`
+  await descargarBlob(docDef, filename)
+  return codigo
+}
+
 function kpiBox(label, valor, color) {
   return {
     table: {
