@@ -16,17 +16,29 @@ export default function EvidenciaModal({ actividad, onGuardar, onCerrar }) {
   const [guardando, setGuardando] = useState(false)
   const [error, setError]   = useState(null)
 
+  function leerArchivoComoDataURL(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader()
+      r.onload  = () => resolve(r.result)   // data:...;base64,... (se abre/previsualiza en el navegador)
+      r.onerror = () => reject(new Error('No se pudo leer el archivo.'))
+      r.readAsDataURL(file)
+    })
+  }
+
   async function handleGuardar(e) {
     e.preventDefault()
     setError(null)
-    const valor = tab === 'url' ? url.trim() : archivo?.name
-    if (!valor) {
-      setError(tab === 'url' ? 'Ingresa una URL válida.' : 'Selecciona un archivo.')
+    if (tab === 'url' && !url.trim()) { setError('Ingresa una URL válida.'); return }
+    if (tab === 'archivo' && !archivo) { setError('Selecciona un archivo.'); return }
+    // Límite razonable para localStorage en modo mock (~3MB en base64)
+    if (tab === 'archivo' && archivo.size > 3 * 1024 * 1024) {
+      setError('El archivo supera 3 MB. Usa una URL (Drive/OneDrive) para archivos grandes.')
       return
     }
     setGuardando(true)
     try {
-      await onGuardar(valor)
+      const valor = tab === 'url' ? url.trim() : await leerArchivoComoDataURL(archivo)
+      await onGuardar(valor, tab === 'archivo' ? archivo.name : null)
       onCerrar()
     } catch (err) {
       setError(err.message)

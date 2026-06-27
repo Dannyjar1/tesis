@@ -7,6 +7,7 @@ import { exportarDistributivoPDF, exportarReporteCarreraPDF, exportarReporteActi
 import { getDistributivosPorPeriodo, getDocentes } from './distributivoService'
 import { getActividadesDirector, estadoEfectivo } from './actividadesService'
 import { TIPOS_CONTRATO, CATEGORIA_LABELS, ESTADOS_ACTIVIDAD } from '../utils/constants'
+import { calcularTotales, normalizarDistributivo } from '../modules/distributivo/modeloDistributivo'
 
 const KEY_HISTORIAL = (uid) => `uide_reportes_${uid}`
 
@@ -83,6 +84,9 @@ export async function generarReporteExcel(filtros) {
   const filas = docentes.map(d => {
     const dist = distributivos.find(x => x.docente_uid === d.uid)
     const horasContrato = TIPOS_CONTRATO[d.tipo_contrato]?.horas ?? 40
+    // Totales por las 4 categorías oficiales (DOCENCIA incluye tutorías 1.2 y
+    // otras 1.3). Robusto para registros nuevos y migrados.
+    const t = dist ? calcularTotales(normalizarDistributivo(dist)) : null
     return {
       'Docente':             d.nombre_completo,
       'Tipo contrato':       d.tipo_contrato,
@@ -90,13 +94,10 @@ export async function generarReporteExcel(filtros) {
       'Horas asignadas':     dist?.total_horas ?? 0,
       'Cumplimiento (%)':    dist ? Math.round((dist.total_horas / horasContrato) * 100) : 0,
       'Estado':              dist?.estado ?? 'Sin asignar',
-      'Docencia directa':    dist?.horas_docencia_directa ?? 0,
-      'Preparación':         dist?.horas_preparacion ?? 0,
-      'Tutoría':             dist?.horas_tutoria ?? 0,
-      'Investigación':       dist?.horas_investigacion ?? 0,
-      'Vinculación':         dist?.horas_vinculacion ?? 0,
-      'Titulación':          dist?.horas_titulacion ?? 0,
-      'Gestión':             dist?.horas_gestion ?? 0,
+      [CATEGORIA_LABELS.docencia]:      t?.docencia ?? 0,
+      [CATEGORIA_LABELS.investigacion]: t?.investigacion ?? 0,
+      [CATEGORIA_LABELS.vinculacion]:   t?.vinculacion ?? 0,
+      [CATEGORIA_LABELS.gestion]:       t?.gestion ?? 0,
     }
   })
 
@@ -117,21 +118,16 @@ export async function generarReporteExcel(filtros) {
  * Pensado para el cierre del semestre (RF-018).
  * @param {{ periodoId, carreraId?, generadoPorUid, generadoPorNombre, periodo }} filtros
  */
-export async function generarReporteSemestralActividades(filtros) {
-  const { periodoId, carreraId = null, generadoPorUid, generadoPorNombre, periodo } = filtros
-  const actividades = await getActividadesDirector(periodoId, carreraId)
-  if (actividades.length === 0) {
-    throw new Error('No hay actividades registradas en este período para reportar.')
-  }
-
-  // Agrupar por docente → categoría
+/** Agrupa una lista de actividades por docente → categoría (función pura). */
+export function agruparPorDocente(actividades) {
   const porDocente = new Map()
   for (const a of actividades) {
     const uid = a.asignada_a_uid
     if (!porDocente.has(uid)) {
       porDocente.set(uid, {
+        docente_uid: uid,
         docente_nombre: a.asignada_a_nombre || uid,
-        categorias: new Map(),   // categoria → { asignadas, completadas }
+        categorias: new Map(),
         evidencias: [],
         totalAsignadas: 0,
         totalCompletadas: 0,
@@ -142,21 +138,56 @@ export async function generarReporteSemestralActividades(filtros) {
     const acc = d.categorias.get(cat) ?? { asignadas: 0, completadas: 0 }
     acc.asignadas += 1
     d.totalAsignadas += 1
-    const completada = estadoEfectivo(a) === ESTADOS_ACTIVIDAD.COMPLETADA
-    if (completada) { acc.completadas += 1; d.totalCompletadas += 1 }
+    if (estadoEfectivo(a) === ESTADOS_ACTIVIDAD.COMPLETADA) { acc.completadas += 1; d.totalCompletadas += 1 }
     d.categorias.set(cat, acc)
     if (a.evidencia_url) d.evidencias.push({ titulo: a.titulo, categoria: cat, url: a.evidencia_url })
   }
-
-  const docentesData = [...porDocente.values()]
-    .map(d => ({
-      ...d,
-      categorias: [...d.categorias.entries()].map(([categoria, v]) => ({ categoria, ...v })),
-    }))
+  return [...porDocente.values()]
+    .map(d => ({ ...d, categorias: [...d.categorias.entries()].map(([categoria, v]) => ({ categoria, ...v })) }))
     .sort((a, b) => a.docente_nombre.localeCompare(b.docente_nombre))
+}
 
-  const codigoVerif = await exportarReporteActividadesPDF(docentesData, periodo, generadoPorNombre)
+export async function generarReporteSemestralActividades(filtros) {
+  const { periodoId, carreraId = null, generadoPorUid, generadoPorNombre, periodo } = filtros
+  const actividades = await getActividadesDirector(periodoId, carreraId)
+  if (actividades.length === 0) {
+    throw new Error('No hay actividades registradas en este período para reportar.')
+  }
+  const codigoVerif = await exportarReporteActividadesPDF(agruparPorDocente(actividades), periodo, generadoPorNombre)
   registrarReporte(generadoPorUid, 'cumplimiento_actividades', periodoId, codigoVerif)
+  return codigoVerif
+}
+
+/**
+ * Reporte semestral con SELECCIÓN de actividades y PREVIA EDITABLE (D.1/D.2):
+ * el director elige qué actividades incluir y edita encabezado, observaciones
+ * y notas por docente antes de generar el PDF.
+ * @param {{ periodoId, periodo, generadoPorUid, generadoPorNombre,
+ *           actividades: object[], encabezado?, observaciones?, notasPorDocente? }} opts
+ */
+export async function generarReporteActividadesSeleccion(opts) {
+  const { periodoId, periodo, generadoPorUid, generadoPorNombre, actividades,
+          encabezado, observaciones, notasPorDocente = {} } = opts
+  if (!actividades?.length) throw new Error('Selecciona al menos una actividad para el reporte.')
+  const docentesData = agruparPorDocente(actividades).map(d => ({ ...d, nota: notasPorDocente[d.docente_uid] ?? '' }))
+  const codigoVerif = await exportarReporteActividadesPDF(docentesData, periodo, generadoPorNombre, { encabezado, observaciones })
+  registrarReporte(generadoPorUid, 'cumplimiento_actividades', periodoId, codigoVerif)
+  return codigoVerif
+}
+
+/**
+ * Reporte de cumplimiento PERSONAL del docente (D.3): solo sus actividades.
+ * @param {{ periodoId, periodo, docenteUid, docenteNombre, actividades: object[] }} opts
+ */
+export async function generarReportePersonalActividades(opts) {
+  const { periodoId, periodo, docenteUid, docenteNombre, actividades } = opts
+  const propias = (actividades ?? []).filter(a => a.asignada_a_uid === docenteUid)
+  if (propias.length === 0) throw new Error('No tienes actividades en este período para reportar.')
+  const codigoVerif = await exportarReporteActividadesPDF(
+    agruparPorDocente(propias), periodo, docenteNombre,
+    { encabezado: 'REPORTE PERSONAL DE CUMPLIMIENTO DE ACTIVIDADES' },
+  )
+  registrarReporte(docenteUid, 'cumplimiento_personal', periodoId, codigoVerif)
   return codigoVerif
 }
 

@@ -4,15 +4,17 @@ import { TIPO_CONTRATO, TIPO_CONTRATO_LABELS, ROLES } from '../../utils/constant
 const ROLES_ASIGNABLES = [
   { value: ROLES.DOCENTE,     label: 'Docente' },
   { value: ROLES.COORDINADOR, label: 'Coordinador Académico' },
+  { value: ROLES.DIRECTOR,    label: 'Director de Carrera' },
 ]
 
 export default function DocenteForm({ inicial = null, onGuardar, onCancelar, cargando }) {
   const [form, setForm] = useState({
-    nombre:        inicial?.nombre        ?? '',
-    apellido:      inicial?.apellido      ?? '',
-    email:         inicial?.email         ?? '',
-    rol:           inicial?.rol           ?? ROLES.DOCENTE,
-    tipo_contrato: inicial?.tipo_contrato ?? TIPO_CONTRATO.TIEMPO_COMPLETO,
+    nombre:           inicial?.nombre           ?? '',
+    apellido:         inicial?.apellido         ?? '',
+    email:            inicial?.email            ?? '',
+    titulo_academico: inicial?.titulo_academico ?? '',
+    rol:              inicial?.rol              ?? ROLES.DOCENTE,
+    tipo_contrato:    inicial?.tipo_contrato    ?? TIPO_CONTRATO.TIEMPO_COMPLETO,
   })
 
   function set(campo, valor) {
@@ -66,6 +68,17 @@ export default function DocenteForm({ inicial = null, onGuardar, onCancelar, car
         {form.email && !form.email.endsWith('@uide.edu.ec') && (
           <p className="text-xs text-red-500 mt-1">Debe terminar en @uide.edu.ec</p>
         )}
+      </div>
+
+      <div>
+        <label className="block text-xs font-semibold text-gray-600 mb-1">Título académico (opcional)</label>
+        <input
+          value={form.titulo_academico}
+          onChange={e => set('titulo_academico', e.target.value)}
+          placeholder="Ej. Mgs."
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-uide-secondary"
+        />
+        <p className="text-xs text-gray-400 mt-1">Se antepone al nombre en las firmas del PDF del distributivo.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3">

@@ -4,7 +4,8 @@
  */
 
 /**
- * Calcula horas de preparación de clases (60% de docencia directa).
+ * Calcula horas de "otras actividades de docencia" (subcategoría 1.3 dentro de
+ * DOCENCIA), estimadas como 60% de la docencia directa.
  * @param {number} horasDocenciaDirecta
  * @returns {number}
  * @see Art. 7 Reglamento CES 2021
@@ -14,7 +15,8 @@ export function calcularHorasPreparacion(horasDocenciaDirecta) {
 }
 
 /**
- * Calcula horas de tutoría según número de materias asignadas.
+ * Calcula horas de tutorías (subcategoría 1.2 dentro de DOCENCIA — ya no es una
+ * categoría propia) según el número de materias asignadas.
  * @param {number} materiasAsignadas
  * @returns {number}
  * @see Art. 7 Reglamento CES 2021
@@ -45,17 +47,6 @@ export function calcularHorasPC(estudiantesPC) {
  */
 export function calcularHorasPPP(estudiantesPPP) {
   return Math.floor(estudiantesPPP / 15)
-}
-
-/**
- * Calcula horas de titulación (1h como director + 2h como tribunal).
- * @param {number} proyectosDirector
- * @param {number} proyectosTribunal
- * @returns {number}
- * @see Art. 7 Reglamento CES 2021
- */
-export function calcularHorasTitulacion(proyectosDirector, proyectosTribunal) {
-  return proyectosDirector * 1 + proyectosTribunal * 2
 }
 
 /**
@@ -91,7 +82,6 @@ export function validarCierreDistributivo(distributivo, horasContrato) {
     (distributivo.horas_tutoria || 0) +
     (distributivo.horas_investigacion || 0) +
     (distributivo.horas_vinculacion || 0) +
-    (distributivo.horas_titulacion || 0) +
     (distributivo.horas_gestion || 0) +
     (distributivo.horas_reduccion_cargo || 0)
   ) * 100) / 100

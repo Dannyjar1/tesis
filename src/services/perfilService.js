@@ -55,3 +55,46 @@ export async function actualizarTelefonoWhatsapp(uid, telefono) {
 
   return valor
 }
+
+/**
+ * Guarda el título académico del usuario (ej. "Mgs.", "Ing.", "PhD.") en
+ * /usuarios/{uid} y en la sesión local. Campo libre y opcional: '' lo elimina.
+ * Se usa en el bloque de firmas del PDF del distributivo.
+ * @param {string} uid
+ * @param {string} titulo
+ * @returns {Promise<string>} el título normalizado guardado
+ */
+export async function actualizarTituloAcademico(uid, titulo) {
+  const valor = (titulo ?? '').trim()
+
+  if (db) {
+    try {
+      await updateDoc(doc(db, 'usuarios', uid), {
+        titulo_academico: valor,
+        actualizado_en:   Timestamp.now(),
+      })
+    } catch (err) {
+      console.warn('[perfilService] Firestore error:', err.code)
+    }
+  }
+
+  const raw = localStorage.getItem(SESSION_KEY)
+  if (raw) {
+    const session = JSON.parse(raw)
+    if (session.uid === uid) {
+      session.titulo_academico = valor
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session))
+    }
+  }
+
+  // Reflejar también en el overlay compartido de usuarios (misma fuente que
+  // lee getDocentes/gestión de personal), para que el título sea consistente
+  // en los PDF generados por el director y en los listados (modo mock).
+  try {
+    const overlay = JSON.parse(localStorage.getItem('uide_sistema_usuarios')) ?? {}
+    overlay[uid] = { ...(overlay[uid] ?? {}), titulo_academico: valor }
+    localStorage.setItem('uide_sistema_usuarios', JSON.stringify(overlay))
+  } catch { /* almacenamiento no disponible */ }
+
+  return valor
+}

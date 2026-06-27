@@ -41,3 +41,6 @@ coverage/
 # Firebase deploy cache
 .firebase/
 __pycache__/
+
+# Archivos de referencia sueltos en la raíz (no versionar)
+/2026-Distributivo-Docente-base.xlsx

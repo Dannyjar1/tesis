@@ -3,6 +3,8 @@
  * Sprint Firebase: reemplazar con onSnapshot de /notificaciones y FCM.
  * Colección destino: /notificaciones
  */
+import { getTodosUsuarios, guardarUsuario } from './sistemaService'
+import { ROL_LABELS } from '../utils/constants'
 
 const KEY = (uid) => `uide_notifs_${uid}`
 
@@ -129,6 +131,7 @@ export async function crearNotificacion(datos) {
     titulo:           datos.titulo ?? '',
     mensaje:          datos.mensaje ?? '',
     docente_uid_ref:  datos.docente_uid_ref ?? null,
+    solicitud:        datos.solicitud ?? null,   // payload para solicitudes accionables
     leida:            false,
     fecha_creacion:   new Date().toISOString(),
   }
@@ -175,4 +178,76 @@ export function suscribirseNotificaciones(destinatarioUid, callback) {
 
 export function resetNotificacionesMock(uid) {
   localStorage.removeItem(KEY(uid))
+}
+
+// ── Solicitud de cambio de rol (F.1–F.3) ──────────────────────────────────────
+
+/**
+ * El usuario solicita un cambio de rol desde Mi Perfil. Crea una notificación
+ * accionable dirigida al director de su carrera (F.1).
+ * @param {{ solicitanteUid, solicitanteNombre, carreraId, rolSolicitado, justificacion }} datos
+ */
+export async function solicitarCambioRol({ solicitanteUid, solicitanteNombre, carreraId, rolSolicitado, justificacion }) {
+  if (!rolSolicitado) throw new Error('Selecciona el rol que solicitas.')
+  if (!justificacion?.trim()) throw new Error('La justificación es obligatoria.')
+  const usuarios = await getTodosUsuarios()
+  const director = usuarios.find(u =>
+    (u.roles ?? [u.rol]).includes('director') && u.carrera_id === carreraId && u.activo !== false)
+  if (!director) throw new Error('No se encontró un director de carrera para dirigir la solicitud.')
+  if (director.uid === solicitanteUid) throw new Error('Ya eres director de esta carrera.')
+
+  return crearNotificacion({
+    destinatario_uid: director.uid,
+    tipo: 'solicitud_rol',
+    titulo: 'Solicitud de cambio de rol',
+    mensaje: `${solicitanteNombre} solicita el rol "${ROL_LABELS[rolSolicitado] ?? rolSolicitado}". Justificación: ${justificacion.trim()}`,
+    solicitud: {
+      solicitante_uid: solicitanteUid,
+      solicitante_nombre: solicitanteNombre,
+      rol_solicitado: rolSolicitado,
+      justificacion: justificacion.trim(),
+    },
+  })
+}
+
+function marcarResuelta(uid, id, resultado) {
+  const lista = leer(uid)
+  const idx = lista.findIndex(n => n.id === id)
+  if (idx >= 0) {
+    lista[idx] = { ...lista[idx], leida: true, resuelta: resultado }
+    guardar(uid, lista)
+  }
+}
+
+/**
+ * El director acepta o rechaza una solicitud de rol (F.2). Al aceptar, agrega el
+ * rol al array roles[] del usuario en /usuarios. En ambos casos notifica al
+ * solicitante el resultado (F.3) y marca la solicitud como resuelta.
+ * @param {Object} notif — la notificación tipo 'solicitud_rol'
+ * @param {boolean} aceptada
+ */
+export async function resolverSolicitudRol(notif, aceptada) {
+  const s = notif?.solicitud
+  if (!s) throw new Error('Solicitud inválida.')
+
+  if (aceptada) {
+    const usuarios = await getTodosUsuarios()
+    const u = usuarios.find(x => x.uid === s.solicitante_uid)
+    if (!u) throw new Error('Usuario solicitante no encontrado.')
+    const roles = Array.from(new Set([...(u.roles ?? (u.rol ? [u.rol] : [])), s.rol_solicitado]))
+    await guardarUsuario(u.uid, { ...u, roles })
+  }
+
+  const etiqueta = ROL_LABELS[s.rol_solicitado] ?? s.rol_solicitado
+  await crearNotificacion({
+    destinatario_uid: s.solicitante_uid,
+    tipo: aceptada ? 'solicitud_rol_aceptada' : 'solicitud_rol_rechazada',
+    titulo: aceptada ? 'Solicitud de rol aceptada' : 'Solicitud de rol rechazada',
+    mensaje: aceptada
+      ? `Tu solicitud del rol "${etiqueta}" fue aceptada. Se aplicará al iniciar sesión nuevamente.`
+      : `Tu solicitud del rol "${etiqueta}" fue rechazada por el director de carrera.`,
+  })
+
+  marcarResuelta(notif.destinatario_uid, notif.id, aceptada ? 'aceptada' : 'rechazada')
+  return { aceptada }
 }

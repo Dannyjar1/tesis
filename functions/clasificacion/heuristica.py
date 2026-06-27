@@ -31,12 +31,11 @@ PESOS = {
     "docencia": 8,
     "investigacion": 10,
     "vinculacion": 10,
-    "tutoria": 10,
     "gestion": 5,
 }
 
 # Categoría por defecto cuando ningún keyword coincide (RN: actividades
-# administrativas sin señal clara caen en gestión institucional).
+# administrativas sin señal clara caen en gestión académica).
 CATEGORIA_DEFAULT = "gestion"
 CONFIANZA_MINIMA = 0.58
 CONFIANZA_MAXIMA = 0.97

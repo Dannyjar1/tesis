@@ -51,11 +51,12 @@ const AUDITORIA_MOCK = [
   },
 ]
 
+// La administración del sistema (auditoría/configuración) la asume el superadmin
+// (TIC); los períodos los gestionan superadmin y director.
 const TABS = [
-  { id: 'auditoria',     label: 'Historial de auditoría',  roles: [ROLES.ADMIN, ROLES.DIRECTOR] },
-  { id: 'usuarios',      label: 'Usuarios y roles',         roles: [ROLES.ADMIN] },
-  { id: 'periodos',      label: 'Períodos académicos',      roles: [ROLES.ADMIN, ROLES.DIRECTOR] },
-  { id: 'configuracion', label: 'Configuración',            roles: [ROLES.ADMIN] },
+  { id: 'auditoria',     label: 'Historial de auditoría',  roles: [ROLES.SUPERADMIN] },
+  { id: 'periodos',      label: 'Períodos académicos',      roles: [ROLES.SUPERADMIN, ROLES.DIRECTOR] },
+  { id: 'configuracion', label: 'Configuración',            roles: [ROLES.SUPERADMIN] },
 ]
 
 function PanelFirebase() {

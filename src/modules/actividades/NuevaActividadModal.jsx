@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import Modal from '../../components/Modal'
 import AlertBanner from '../../components/AlertBanner'
-import { CATEGORIAS, CATEGORIA_LABELS, PRIORIDADES_ACTIVIDAD, PRIORIDAD_ACTIVIDAD_LABELS } from '../../utils/constants'
+import { CATEGORIAS, CATEGORIA_LABELS, SUBCATEGORIAS_POR_CATEGORIA, PRIORIDADES_ACTIVIDAD, PRIORIDAD_ACTIVIDAD_LABELS } from '../../utils/constants'
 import { crearActividad, verificarCoherenciaDistributivo } from '../../services/actividadesService'
 
 const VACIO = {
   asignada_a_uid: '', titulo: '', descripcion: '',
-  categoria_ces: CATEGORIAS.DOCENCIA, prioridad: PRIORIDADES_ACTIVIDAD.NORMAL,
+  categoria_ces: CATEGORIAS.DOCENCIA, subcategoria: '', prioridad: PRIORIDADES_ACTIVIDAD.NORMAL,
   fecha_inicio: '', fecha_limite: '',
 }
 
@@ -24,7 +24,13 @@ export default function NuevaActividadModal({ docentes = [], periodoId, asignada
   const [guardando, setGuardando] = useState(false)
 
   function set(campo, valor) {
-    setForm(f => ({ ...f, [campo]: valor }))
+    setForm(f => {
+      const next = { ...f, [campo]: valor }
+      // Cascada categoría → subcategoría: al cambiar la categoría se limpia la
+      // subcategoría para forzar una selección coherente con la nueva categoría.
+      if (campo === 'categoria_ces') next.subcategoria = ''
+      return next
+    })
     if (campo === 'asignada_a_uid' || campo === 'categoria_ces') setAlerta(null)
   }
 
@@ -36,6 +42,7 @@ export default function NuevaActividadModal({ docentes = [], periodoId, asignada
         titulo:              form.titulo.trim(),
         descripcion:         form.descripcion.trim(),
         categoria_ces:       form.categoria_ces,
+        subcategoria:        form.subcategoria || null,
         prioridad:           form.prioridad,
         asignada_por_uid:    asignadaPor?.uid,
         asignada_por_nombre: asignadaPor?.nombre_completo ?? '',
@@ -59,6 +66,7 @@ export default function NuevaActividadModal({ docentes = [], periodoId, asignada
     setError(null)
     if (!form.asignada_a_uid) return setError('Selecciona el docente.')
     if (!form.titulo.trim())  return setError('El título es obligatorio.')
+    if (!form.subcategoria)   return setError('Selecciona la subcategoría.')
     if (!form.fecha_limite)   return setError('Indica la fecha límite.')
 
     // Verificación de coherencia con el distributivo (no bloqueante).
@@ -96,21 +104,32 @@ export default function NuevaActividadModal({ docentes = [], periodoId, asignada
         </Campo>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Campo label="Categoría CES *">
+          <Campo label="Categoría *">
             <select value={form.categoria_ces} onChange={e => set('categoria_ces', e.target.value)} className={inputCls}>
               {Object.values(CATEGORIAS).map(c => (
                 <option key={c} value={c}>{CATEGORIA_LABELS[c]}</option>
               ))}
             </select>
           </Campo>
-          <Campo label="Prioridad *">
-            <select value={form.prioridad} onChange={e => set('prioridad', e.target.value)} className={inputCls}>
-              {Object.values(PRIORIDADES_ACTIVIDAD).map(p => (
-                <option key={p} value={p}>{PRIORIDAD_ACTIVIDAD_LABELS[p]}</option>
+          <Campo label="Subcategoría *">
+            {/* Depende de la categoría elegida (cascada). La IA no la predice aún:
+                el director/docente la selecciona manualmente. */}
+            <select value={form.subcategoria} onChange={e => set('subcategoria', e.target.value)} className={inputCls}>
+              <option value="">— Seleccionar —</option>
+              {(SUBCATEGORIAS_POR_CATEGORIA[form.categoria_ces] ?? []).map(s => (
+                <option key={s.codigo} value={s.codigo}>{s.codigo} {s.nombre}</option>
               ))}
             </select>
           </Campo>
         </div>
+
+        <Campo label="Prioridad *">
+          <select value={form.prioridad} onChange={e => set('prioridad', e.target.value)} className={inputCls}>
+            {Object.values(PRIORIDADES_ACTIVIDAD).map(p => (
+              <option key={p} value={p}>{PRIORIDAD_ACTIVIDAD_LABELS[p]}</option>
+            ))}
+          </select>
+        </Campo>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Campo label="Fecha de inicio">

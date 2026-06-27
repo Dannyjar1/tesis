@@ -31,25 +31,25 @@ const REGLAS = [
     peso: 10,
   },
   {
-    cat: CATEGORIAS.TUTORIA,
-    tokens: ['tutoría', 'tutoria', 'atención a estudiantes', 'atención estudiantes', 'consultas', 'oficina'],
-    peso: 10,
-  },
-  {
+    // DOCENCIA incluye la tutoría (subcategoría 1.2): sus tokens se fusionan aquí.
     cat: CATEGORIAS.DOCENCIA,
-    tokens: ['clase ', 'clases ', 'examen', 'parcial', 'módulo', 'titulación', 'tribunal', 'defensa', 'grupo a', 'grupo b', 'tema:'],
+    tokens: ['clase ', 'clases ', 'examen', 'parcial', 'módulo', 'grupo a', 'grupo b', 'tema:',
+             'tutoría', 'tutoria', 'atención a estudiantes', 'atención estudiantes', 'consultas', 'oficina'],
     peso: 8,
   },
   {
+    // GESTIÓN ACADÉMICA incluye la titulación (subcat. 4.9 Tutores, Lectores y
+    // Grados): tribunal / defensa de grado no es Docencia (Excel oficial).
     cat: CATEGORIAS.GESTION,
-    tokens: ['consejo', 'comité', 'planificación', 'reunión', 'período 2026', 'directivo', 'coordinación'],
+    tokens: ['consejo', 'comité', 'planificación', 'reunión', 'período 2026', 'directivo', 'coordinación',
+             'titulación', 'tribunal', 'defensa'],
     peso: 5,
   },
 ]
 
 function calcularConfianza(cat, puntuacion, totalPuntos) {
   const base = totalPuntos > 0 ? puntuacion / totalPuntos : 0.2
-  const ajuste = { docencia: 0.05, investigacion: 0.04, vinculacion: 0.03, tutoria: 0.06, gestion: 0.07 }
+  const ajuste = { docencia: 0.05, investigacion: 0.04, vinculacion: 0.03, gestion: 0.07 }
   return Math.min(0.97, Math.max(0.58, base + (ajuste[cat] ?? 0)))
 }
 

@@ -20,12 +20,49 @@ import { ESTADOS_ACTIVIDAD, CATEGORIA_A_HORAS_DISTRIBUTIVO, CATEGORIA_LABELS } f
 
 const COL = 'actividades'
 const LOCAL_KEY = (periodo) => `uide_actividades_${periodo}`
+// Al cambiar la versión se recargan las actividades semilla del período (para
+// que quien ya tenga localStorage viejo reciba el seed nuevo).
+const SEED_VERSION = '2026-06-18'
+
+const DIR = { uid: 'uid_locondezh', nombre: 'Lorena Conde Zhingre' }
+const iso = (y, m, d) => new Date(y, m - 1, d).toISOString()
+
+// Actividades semilla del período activo 2026-A (PROJECT_BRIEF C.3):
+// 6 a docentes de Sistemas con estados variados + 2 asignadas a Lorena (docente).
+const SEED_ACTIVIDADES = {
+  '2026-A': [
+    { id: 'act_seed_1', titulo: 'Elaborar artículo Q2', descripcion: 'Artículo para revista indexada.', categoria_ces: 'investigacion', subcategoria: '2.2', prioridad: 'urgente', estado: 'pendiente', asignada_a_uid: 'uid_mipalaciosmo', asignada_a_nombre: 'Milton Palacios Morocho', fecha_limite: iso(2026, 7, 20), evidencia_url: null },
+    { id: 'act_seed_2', titulo: 'Informe de prácticas comunitarias', descripcion: 'Consolidar avances del semestre.', categoria_ces: 'vinculacion', subcategoria: '3.1', prioridad: 'normal', estado: 'en_progreso', asignada_a_uid: 'uid_mipalaciosmo', asignada_a_nombre: 'Milton Palacios Morocho', fecha_limite: iso(2026, 7, 30), evidencia_url: null },
+    { id: 'act_seed_3', titulo: 'Subir notas parciales', descripcion: 'Registro de calificaciones del primer parcial.', categoria_ces: 'docencia', subcategoria: '1.1', prioridad: 'normal', estado: 'completada', asignada_a_uid: 'uid_mipalaciosmo', asignada_a_nombre: 'Milton Palacios Morocho', fecha_limite: iso(2026, 6, 10), fecha_completada: iso(2026, 6, 9), evidencia_url: 'https://drive.google.com/uide/notas-parciales.pdf' },
+    { id: 'act_seed_4', titulo: 'Plan de tutorías académicas', descripcion: 'Definir horario de tutorías repartido en la semana.', categoria_ces: 'docencia', subcategoria: '1.2', prioridad: 'normal', estado: 'pendiente', asignada_a_uid: 'uid_yetorresbe', asignada_a_nombre: 'Yeferson Torres Berru', fecha_limite: iso(2026, 7, 25), evidencia_url: null },
+    { id: 'act_seed_5', titulo: 'Actualizar sílabos', descripcion: 'Revisión de sílabos según malla vigente.', categoria_ces: 'gestion', subcategoria: '4.10', prioridad: 'normal', estado: 'en_progreso', asignada_a_uid: 'uid_yetorresbe', asignada_a_nombre: 'Yeferson Torres Berru', fecha_limite: iso(2026, 7, 28), evidencia_url: null },
+    { id: 'act_seed_6', titulo: 'Revisión de artículo de coautoría', descripcion: 'Pendiente desde el período anterior.', categoria_ces: 'investigacion', subcategoria: '2.2', prioridad: 'urgente', estado: 'pendiente', asignada_a_uid: 'uid_davalarezole', asignada_a_nombre: 'Darío Valarezo León', fecha_limite: iso(2026, 5, 1), evidencia_url: null },
+    // Asignadas A Lorena (su vista de docente)
+    { id: 'act_seed_7', titulo: 'Plan operativo de la carrera', descripcion: 'Documento POA de Ingeniería en Sistemas.', categoria_ces: 'gestion', subcategoria: '4.6', prioridad: 'normal', estado: 'pendiente', asignada_a_uid: 'uid_locondezh', asignada_a_nombre: 'Lorena Conde Zhingre', fecha_limite: iso(2026, 7, 30), evidencia_url: null },
+    { id: 'act_seed_8', titulo: 'Artículo conjunto CEDIA', descripcion: 'Investigación colaborativa interuniversitaria.', categoria_ces: 'investigacion', subcategoria: '2.2', prioridad: 'urgente', estado: 'en_progreso', asignada_a_uid: 'uid_locondezh', asignada_a_nombre: 'Lorena Conde Zhingre', fecha_limite: iso(2026, 7, 22), evidencia_url: null },
+  ].map(a => ({
+    descripcion: '', observacion: null, fecha_inicio: iso(2026, 5, 4), fecha_completada: null,
+    asignada_por_uid: DIR.uid, asignada_por_nombre: DIR.nombre,
+    carrera_id: 'sistemas-informacion', periodo_id: '2026-A', creada_en: iso(2026, 5, 4),
+    ...a,
+  })),
+}
 
 // ── Helpers localStorage (lista completa del período) ─────────────────────────
 
 function localCargar(periodo) {
   try {
+    const ver = localStorage.getItem(LOCAL_KEY(periodo) + '_ver')
     const raw = localStorage.getItem(LOCAL_KEY(periodo))
+    const tieneSeed = (SEED_ACTIVIDADES[periodo] ?? []).length > 0
+    // Datos vigentes: hay datos y (la versión coincide o el período no tiene seed propio).
+    if (raw && (ver === SEED_VERSION || !tieneSeed)) return JSON.parse(raw)
+    if (tieneSeed) {
+      const seed = SEED_ACTIVIDADES[periodo]
+      localGuardar(periodo, seed)
+      localStorage.setItem(LOCAL_KEY(periodo) + '_ver', SEED_VERSION)
+      return seed
+    }
     return raw ? JSON.parse(raw) : []
   } catch { return [] }
 }
@@ -190,6 +227,9 @@ export async function crearActividad(datos) {
     titulo:             datos.titulo,
     descripcion:        datos.descripcion ?? '',
     categoria_ces:      datos.categoria_ces,
+    // Subcategoría oficial (ej. "1.2", "3.3", "4.9"). Captura manual; opcional en
+    // el modelo de datos por compatibilidad con actividades antiguas (D2-bis).
+    subcategoria:       datos.subcategoria ?? null,
     asignada_por_uid:   datos.asignada_por_uid,
     asignada_por_nombre: datos.asignada_por_nombre ?? '',
     asignada_a_uid:     datos.asignada_a_uid,
@@ -280,12 +320,22 @@ export async function actualizarEstadoActividad(actividad, nuevoEstado) {
 }
 
 /** Registra la evidencia (archivo/URL) y marca la actividad como completada. */
-export async function registrarEvidencia(actividad, evidenciaUrl) {
+export async function registrarEvidencia(actividad, evidenciaUrl, evidenciaNombre = null) {
   return aplicarCambios(actividad, {
     evidencia_url:    evidenciaUrl,
+    evidencia_nombre: evidenciaNombre,
     estado:           ESTADOS_ACTIVIDAD.COMPLETADA,
     fecha_completada: new Date().toISOString(),
   })
+}
+
+/**
+ * Edita la evidencia (archivo/URL) SIN cambiar el estado de la actividad
+ * (PROJECT_BRIEF C.2): el docente puede agregar o corregir la evidencia
+ * después, en actividades en progreso o ya completadas.
+ */
+export async function editarEvidencia(actividad, evidenciaUrl, evidenciaNombre = null) {
+  return aplicarCambios(actividad, { evidencia_url: evidenciaUrl, evidencia_nombre: evidenciaNombre })
 }
 
 /**

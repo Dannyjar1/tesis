@@ -5,9 +5,9 @@ import {
   generarReportePDFIndividual,
   generarReportePDFCarrera,
   generarReporteExcel,
-  generarReporteSemestralActividades,
   getHistorialReportes,
 } from '../../services/reportesService'
+import ReporteSemestralModal from './ReporteSemestralModal'
 import { getDocentes } from '../../services/distributivoService'
 import { formatearFecha } from '../../utils/formatters'
 import AlertBanner from '../../components/AlertBanner'
@@ -28,6 +28,7 @@ export default function ReportesPage() {
   const [alerta, setAlerta]           = useState(null)
   const [historial, setHistorial]     = useState([])
   const [cargandoHist, setCargandoHist] = useState(true)
+  const [modalSemestral, setModalSemestral] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -85,24 +86,9 @@ export default function ReportesPage() {
     }
   }
 
-  async function handleGenerarSemestral() {
-    setAlerta(null)
-    setGenerando(true)
-    try {
-      const codigo = await generarReporteSemestralActividades({
-        periodoId:         periodoActivo?.id,
-        carreraId:         user?.carrera_id ?? null,
-        generadoPorUid:    user?.uid,
-        generadoPorNombre: user?.nombre_completo,
-        periodo:           periodoActivo,
-      })
-      setAlerta({ tipo: 'success', msg: `Reporte semestral de actividades generado. Código de verificación: ${codigo}` })
-      await recargarHistorial()
-    } catch (err) {
-      setAlerta({ tipo: 'error', msg: err.message })
-    } finally {
-      setGenerando(false)
-    }
+  async function handleSemestralGenerado(codigo) {
+    setAlerta({ tipo: 'success', msg: `Reporte semestral de actividades generado. Código de verificación: ${codigo}` })
+    await recargarHistorial()
   }
 
   return (
@@ -207,7 +193,7 @@ export default function ReportesPage() {
 
             {/* Reporte semestral de cumplimiento de actividades (con evidencias) */}
             <button
-              onClick={handleGenerarSemestral}
+              onClick={() => setModalSemestral(true)}
               disabled={generando}
               className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-uide-primary border border-uide-primary/30 hover:bg-uide-light rounded-lg transition disabled:opacity-60"
             >
@@ -298,6 +284,15 @@ export default function ReportesPage() {
           </div>
         </div>
       </div>
+
+      <ReporteSemestralModal
+        abierto={modalSemestral}
+        onCerrar={() => setModalSemestral(false)}
+        periodo={periodoActivo}
+        carreraId={user?.carrera_id ?? null}
+        user={user}
+        onGenerado={handleSemestralGenerado}
+      />
     </div>
   )
 }

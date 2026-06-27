@@ -314,18 +314,18 @@ uide-distributivo-app/
 | RF-001 | Autenticación Microsoft OAuth 2.0 | El sistema debe permitir el inicio de sesión exclusivamente mediante cuentas institucionales @uide.edu.ec a través del proveedor Microsoft Azure AD con flujo OAuth 2.0. | Alta | MOD-01 |
 | RF-002 | Gestión de roles de usuario | El sistema debe asignar y gestionar 4 niveles de rol: `admin` (Pro-Rector, acceso global), `director` (su carrera, aprueba distributivos), `coordinador` (su carrera, solo lectura en distributivos), `docente` (sus propios datos). El tipo de contrato (tiempo_completo/medio_tiempo/tiempo_parcial/honorario) es un atributo del usuario, no un rol separado. Cada director y coordinador está vinculado a exactamente una carrera mediante `carrera_id`. | Alta | MOD-01 |
 | RF-003 | Cierre de sesión seguro | El sistema debe permitir el cierre de sesión revocando el token de autenticación activo e invalidando la sesión en Firebase Authentication. | Alta | MOD-01 |
-| RF-004 | Creación del distributivo académico | El sistema debe permitir al Director crear el distributivo académico para cada docente por período, asignando actividades en las cinco categorías: docencia, investigación, vinculación, tutoría y gestión institucional. | Alta | MOD-02 |
+| RF-004 | Creación del distributivo académico | El sistema debe permitir al Director crear el distributivo académico para cada docente por período, asignando actividades en las cuatro categorías oficiales: DOCENCIA (incluye tutorías como subcategoría 1.2), INVESTIGACIÓN, VINCULACIÓN CON LA SOCIEDAD y GESTIÓN ACADÉMICA. | Alta | MOD-02 |
 | RF-005 | Edición del distributivo académico | El sistema debe permitir editar el distributivo en estado borrador. Una vez aprobado, solo el Director puede realizar modificaciones registradas en auditoría. | Alta | MOD-02 |
 | RF-006 | Visualización del distributivo por docente | Cada docente debe poder visualizar únicamente su propio distributivo activo del período vigente, con el desglose de horas por actividad y categoría. | Alta | MOD-02 |
 | RF-007 | Cálculo automático de horas de tutoría | El sistema debe calcular automáticamente las horas de tutoría según el número de materias: 1h para 1-2 materias, 2h para 3-4 materias, 3h para 5-6 materias, conforme al Reglamento CES 2021. | Alta | MOD-02 |
 | RF-008 | Cálculo automático de preparación de clases | El sistema debe calcular automáticamente las horas de preparación equivalentes al 60% de las horas de docencia directa asignadas al docente en el período. | Alta | MOD-02 |
 | RF-009 | Cálculo automático de horas de vinculación | El sistema debe calcular automáticamente las horas de vinculación: 1h por cada 10 estudiantes en prácticas comunitarias y 1h por cada 15 estudiantes en PPP. | Alta | MOD-02 |
-| RF-010 | Cálculo automático de horas de titulación | El sistema debe calcular automáticamente: 1h por proyecto como director de titulación y 2h por proyecto como tribunal de titulación. | Alta | MOD-02 |
+| RF-010 | Horas de titulación dentro de Gestión Académica | Las actividades de dirección/tribunal de titulación NO son un bloque propio: forman parte de GESTIÓN ACADÉMICA, subcategoría 4.9 (Tutores, Lectores y Grados). El director registra estas horas en ese bloque. | Alta | MOD-02 |
 | RF-011 | Validación de cierre del distributivo | El sistema debe validar que la suma total de horas de todas las actividades del distributivo sea exactamente igual a las horas del contrato (40h TC, 20h MT) antes de permitir su aprobación. | Alta | MOD-02 |
 | RF-012 | Gestión de períodos académicos | El sistema debe permitir crear, activar y cerrar períodos académicos con nombre personalizado, fecha de inicio y fecha de fin. Solo puede existir un período en estado activo simultáneamente. Cada período gestiona su propia lista de docentes, distributivos y actividades de forma completamente independiente de otros períodos. | Alta | MOD-02, MOD-08 |
 | RF-013 | Autorización individual de calendario | El sistema debe permitir al docente autorizar individualmente el acceso a su calendario Microsoft 365/Outlook mediante flujo OAuth 2.0 sin requerir permisos administrativos institucionales. | Alta | MOD-03 |
 | RF-014 | Sincronización automática de eventos Outlook | El sistema debe sincronizar automáticamente los eventos del calendario Outlook del docente (título, descripción, fecha, hora, duración) con el módulo de seguimiento de actividades mediante Microsoft Graph API. | Alta | MOD-03 |
-| RF-015 | Clasificación automática de actividades con IA | El sistema debe clasificar automáticamente cada evento sincronizado del calendario en una de las cinco categorías del distributivo utilizando el modelo BETO de procesamiento de lenguaje natural en español. | Alta | MOD-04 |
+| RF-015 | Clasificación automática de actividades con IA | El sistema debe clasificar automáticamente cada evento sincronizado del calendario en una de las cuatro categorías oficiales del distributivo utilizando el modelo BETO de procesamiento de lenguaje natural en español. | Alta | MOD-04 |
 | RF-016 | Corrección manual de clasificación IA | El sistema debe permitir al docente revisar y corregir manualmente la categoría asignada por la IA a cada evento, registrando la corrección en la colección de feedback para el reentrenamiento del modelo. | Media | MOD-04 |
 | RF-017 | Dashboard de cumplimiento en tiempo real | El sistema debe presentar un panel de control con indicadores en tiempo real: porcentaje de cumplimiento por docente, distribución de horas por categoría, alertas activas y estado del distributivo por carrera. | Alta | MOD-05 |
 | RF-018 | Generación de reportes exportables en PDF | El sistema debe generar reportes de cumplimiento del distributivo exportables en formato PDF con formato institucional UIDE que incluya: encabezado con logo UIDE y campus, datos del docente (nombre, tipo de contrato, carrera, período académico), tabla de actividades por categoría CES con horas, sección de firmas de validación cruzada (Directora + Docente) y código único de verificación para auditoría CACES (conforme RN-017). | Alta | MOD-06 |
@@ -333,9 +333,9 @@ uide-distributivo-app/
 | RF-020 | Administración de usuarios y roles | El sistema debe permitir al Administrador crear, editar, activar y desactivar cuentas de usuario, asignando el rol correspondiente según la categoría del personal. | Alta | MOD-08 |
 | RF-021 | Registro de auditoría de cambios | El sistema debe registrar automáticamente en la colección de auditoría cada modificación realizada al distributivo: quién realizó el cambio, qué campo se modificó, valor anterior y valor nuevo, con marca de tiempo. | Alta | MOD-08 |
 | RF-022 | Archivado de distributivos históricos | El sistema debe permitir archivar distributivos de períodos anteriores para consulta histórica sin posibilidad de eliminación permanente, garantizando la trazabilidad documental. | Media | MOD-02 |
-| RF-023 | Extracción de actividades desde etiquetas Outlook | El sistema debe leer los correos etiquetados por el docente en Outlook con la nomenclatura DIST/* (DIST/Docencia, DIST/Investigación, DIST/Vinculación, DIST/Gestión, DIST/Tutoría, DIST/TP-Horas) mediante Microsoft Graph API y registrar automáticamente las actividades correspondientes en Firestore. Esta funcionalidad reemplaza cualquier integración de Gmail. | Alta | MOD-03 |
+| RF-023 | Extracción de actividades desde etiquetas Outlook | El sistema debe leer los correos etiquetados por el docente en Outlook con la nomenclatura DIST/* (DIST/Docencia, DIST/Investigación, DIST/Vinculación, DIST/Gestión, DIST/TP-Horas) mediante Microsoft Graph API y registrar automáticamente las actividades correspondientes en Firestore. Esta funcionalidad reemplaza cualquier integración de Gmail. | Alta | MOD-03 |
 | RF-024 | Gestión de tareas en módulo To Do interno | El sistema debe ofrecer un módulo propio de gestión de tareas pendientes donde el docente cree, edite, complete y elimine tareas ligadas a sus actividades del distributivo. Cada tarea debe incluir: título, categoría CES, fecha límite y estado (pendiente/completada). Las tareas deben sincronizarse con la colección /actividades en Firestore. | Media | MOD-09 |
-| RF-025 | Vista de resumen visual por categoría en módulo Planet | El sistema debe presentar un módulo visual de resumen semanal (Planet) que muestre las horas acumuladas por cada categoría CES (Docencia, Investigación, Vinculación, Gestión, Tutoría) en formato de bloques visuales por semana. Es un módulo interno del sistema, no una integración externa. | Media | MOD-10 |
+| RF-025 | Vista de resumen visual por categoría en módulo Planet | El sistema debe presentar un módulo visual de resumen semanal (Planet) que muestre las horas acumuladas por cada categoría oficial (Docencia, Investigación, Vinculación con la Sociedad, Gestión Académica) en formato de bloques visuales por semana. Es un módulo interno del sistema, no una integración externa. | Media | MOD-10 |
 | RF-026 | Control de horas para docentes Tiempo Parcial | El sistema debe restringir el ingreso de horas para docentes TP a valores enteros con un máximo de 12 horas semanales sin autorización. Si el docente ingresa más de 12 horas, el sistema debe bloquear el guardado y activar un flujo de autorización en dos niveles: Nivel 1 (Directora de Carrera) y Nivel 2 (Autoridad Superior), donde el Nivel 2 solo se habilita si el Nivel 1 ya aprobó. | Alta | MOD-02 |
 | RF-027 | Validación cruzada del distributivo | El sistema debe implementar una validación cruzada donde el distributivo quede en estado "aprobado" únicamente cuando tanto la Directora de Carrera como el docente propietario hayan confirmado su revisión. Si cualquiera de los dos observa el distributivo, este regresa automáticamente a estado "en_revision". | Alta | MOD-02 |
 | RF-028 | Vista gráfica semanal del distributivo (horario) | El sistema debe presentar una vista de horario gráfico tipo calendario semanal (lunes a sábado, 07:00–22:00) donde se visualicen las actividades del docente distribuidas en bloques de tiempo. La franja 13:00–14:00 (almuerzo) debe estar bloqueada visualmente y no ser asignable. El director puede cambiar de docente; el docente ve solo el propio. | Alta | MOD-02 |
@@ -482,7 +482,7 @@ GET https://graph.microsoft.com/v1.0/me/messages
 ```plaintext
 1. Docente asigna manualmente una etiqueta DIST/* a un correo en Outlook
    Etiquetas válidas: DIST/Docencia, DIST/Investigación, DIST/Vinculación,
-                      DIST/Gestión, DIST/Tutoría, DIST/TP-Horas
+                      DIST/Gestión, DIST/TP-Horas
 2. Cloud Function (sync_outlook.py) consulta Graph API filtrando por categorías DIST/*
 3. Por cada correo etiquetado: extrae asunto, fecha de recepción y etiqueta
 4. Mapea la etiqueta a la categoría CES correspondiente
@@ -498,10 +498,10 @@ GET https://graph.microsoft.com/v1.0/me/messages
 
 | Campo | Detalle |
 |---|---|
-| **Responsabilidad** | Clasificar automáticamente cada evento del calendario en una de las cinco categorías del distributivo usando el modelo BETO |
+| **Responsabilidad** | Clasificar automáticamente cada evento del calendario en una de las cuatro categorías oficiales del distributivo usando el modelo BETO |
 | **Tecnología** | Python, Hugging Face Transformers, BETO (dccuchile/bert-base-spanish-wwm-cased), Firebase Cloud Functions |
 | **Entradas** | Texto del evento (título + descripción), token de la sesión del docente |
-| **Salidas** | Categoría predicha (docencia/investigación/vinculación/tutoría/gestión), probabilidad de confianza, estado provisional |
+| **Salidas** | Categoría predicha (docencia/investigación/vinculación/gestión), probabilidad de confianza, estado provisional |
 | **Dependencias** | MOD-03 (eventos sincronizados), colección `/clasificaciones_ia`, `/feedback` |
 
 **Pipeline de clasificación:**
@@ -525,7 +525,7 @@ def clasificar_evento(texto_evento):
     confianza = max(probabilidades)
     
     return {
-        "categoria": categoria,         # docencia, investigación, vinculación, tutoría, gestión
+        "categoria": categoria,         # docencia, investigación, vinculación, gestión (4 oficiales)
         "confianza": confianza,         # 0.0 a 1.0
         "estado": "provisional"         # requiere confirmación del docente
     }
@@ -571,8 +571,7 @@ def clasificar_evento(texto_evento):
 │  Docencia             │ ...       │ XXh     │
 │  Investigación        │ ...       │ XXh     │
 │  Vinculación          │ ...       │ XXh     │
-│  Tutoría              │ ...       │ XXh     │
-│  Gestión Institucional│ ...       │ XXh     │
+│  Gestión Académica    │ ...       │ XXh     │
 │  TOTAL                │           │ 40h     │
 ├─────────────────────────────────────────────┤
 │  VALIDACIÓN CRUZADA                         │
@@ -643,12 +642,12 @@ def clasificar_evento(texto_evento):
 **Descripción visual:**
 ```plaintext
 Semana del 26 May al 1 Jun 2026
-┌──────────────┬──────────────┬──────────────┬──────────────┬──────────────┐
-│  Docencia    │Investigación │ Vinculación  │   Gestión    │   Tutoría    │
-│   18h / 18h  │   4h / 4h    │   2h / 2h    │  0.2h / 0.2h │   2h / 2h   │
-│  ██████████  │  ████        │  ██          │  ░           │  ██          │
-│    100%      │   100%       │   100%       │    10%       │   100%       │
-└──────────────┴──────────────┴──────────────┴──────────────┴──────────────┘
+┌──────────────┬──────────────┬──────────────┬──────────────┐
+│  Docencia    │Investigación │ Vinculación  │   Gestión    │
+│   20h / 20h  │   4h / 4h    │   2h / 2h    │  0.2h / 0.2h │
+│  ██████████  │  ████        │  ██          │  ░           │
+│    100%      │   100%       │   100%       │    10%       │
+└──────────────┴──────────────┴──────────────┴──────────────┘
 Total semana: 26.2h / 40h (65.5%)
 ```
 
@@ -668,7 +667,7 @@ El distributivo sigue un flujo de estados estricto y unidireccional: `borrador` 
 La carga horaria total asignada no puede superar ni ser inferior al total de horas del contrato del docente según el Reglamento CES 2021 Art. 6: TC = 40h, MT = 20h, TP = según contrato. El sistema bloquea la aprobación si la suma difiere del total contractual.
 
 ### RN-004: Categorías de actividades válidas
-Toda actividad registrada o clasificada en el sistema debe pertenecer exclusivamente a una de las cinco categorías reconocidas por el CES: Docencia, Investigación, Vinculación con la Sociedad, Tutoría y Gestión Institucional.
+Toda actividad registrada o clasificada en el sistema debe pertenecer exclusivamente a una de las cuatro categorías oficiales del distributivo (Excel UIDE): DOCENCIA, INVESTIGACIÓN, VINCULACIÓN CON LA SOCIEDAD y GESTIÓN ACADÉMICA. La tutoría no es una categoría: es la subcategoría 1.2 dentro de DOCENCIA.
 
 ### RN-005: Consentimiento individual para sincronización de calendario
 La sincronización del calendario Outlook solo puede activarse mediante autorización explícita del docente propietario de la cuenta. Ningún Administrador o Coordinador puede conectar el calendario de otro usuario sin su consentimiento registrado.
@@ -784,7 +783,7 @@ La vista "Estadísticas" del módulo Mis Actividades se alimenta del mismo estad
 | **Preparación de clases y tutorías** | Calculado automáticamente (60% docencia) | Proporcional | No puede superar el total de horas de docencia directa |
 | **Investigación** | Máximo 16h/semana | Proporcional | Requiere proyecto de investigación aprobado |
 | **Vinculación con la sociedad** | Según estudiantes en prácticas | Proporcional | Calculado por número de estudiantes |
-| **Gestión institucional** | Máximo 12h/semana | Proporcional | Incluye coordinación, comités, dirección |
+| **Gestión Académica** | Máximo 12h/semana | Proporcional | Incluye coordinación, comités, dirección |
 
 ### 8.3 Fórmulas de Cálculo Implementadas en el Sistema
 
@@ -830,17 +829,13 @@ Ejemplo:
   horas_PPP = ENTERO(30 / 15) = 2h/semana
 ```
 
-#### Fórmula 5: Horas de titulación
+#### Fórmula 5: Titulación → Gestión Académica (subcategoría 4.9)
 
 ```plaintext
-horas_director_titulacion   = proyectos_como_director × 1h
-horas_tribunal_titulacion   = proyectos_como_tribunal × 2h
-horas_titulacion_total      = horas_director + horas_tribunal
-
-Ejemplo:
-  proyectos_como_director  = 3
-  proyectos_como_tribunal  = 2
-  horas_titulacion_total   = (3 × 1) + (2 × 2) = 7h/semana
+La titulación (dirección / tribunal / grados) NO es un bloque ni una fórmula
+independiente: corresponde a GESTIÓN ACADÉMICA, subcategoría 4.9 (Tutores,
+Lectores y Grados). El director registra estas horas manualmente dentro del
+bloque de Gestión Académica.
 ```
 
 #### Fórmula 6: Coordinador de PPP / PC
@@ -879,7 +874,6 @@ function validarCierreDistributivo(distributivo, tipoContrato, horasContrato) {
         distributivo.horas_tutoria +
         distributivo.horas_investigacion +
         distributivo.horas_vinculacion +
-        distributivo.horas_titulacion +
         distributivo.horas_gestion +
         distributivo.horas_reduccion_cargo;
 
@@ -902,7 +896,7 @@ function validarCierreDistributivo(distributivo, tipoContrato, horasContrato) {
 | Cargo | Reducción semanal | Fuente |
 |---|---|---|
 | Coordinador de investigación (facultad/sede) | Hasta 6 horas | DGI institucional |
-| Director o secretario de comité de bioética | Hasta 6 horas | Gestión institucional |
+| Director o secretario de comité de bioética | Hasta 6 horas | Gestión Académica |
 | Gestión de revista, laboratorio o CEDIA | Incluido en gestión | DGI institucional |
 | Cargo directivo (Decano, Vicerrector, etc.) | Según tabla institucional UIDE | Tabla de reducciones UIDE |
 
@@ -1040,8 +1034,8 @@ Núcleo del sistema. Contiene el distributivo de cada docente por período.
 | `horas_tutoria` | number | Calculado según número de materias | Sí | `2` |
 | `horas_investigacion` | number | Horas asignadas a investigación | Sí | `4` |
 | `horas_vinculacion` | number | Calculado: PC + PPP | Sí | `2` |
-| `horas_titulacion` | number | Calculado: director + tribunal | Sí | `3` |
-| `horas_gestion` | number | Horas de gestión institucional | Sí | `0.2` |
+| `horas_titulacion` | number | Legacy: integrado en Gestión Académica (subcat. 4.9) | No | `0` |
+| `horas_gestion` | number | Horas de Gestión Académica | Sí | `0.2` |
 | `horas_reduccion_cargo` | number | Reducción por cargo directivo si aplica | No | `0` |
 | `total_horas` | number | Suma total validada | Sí | `40` |
 | `aprobado_por` | string | UID del director que aprobó | No | `"director_uid_abc"` |
@@ -1172,7 +1166,8 @@ Tareas pendientes del docente ligadas al módulo To Do interno (MOD-09).
 | `id` | string | ID único de la tarea | Sí | `"todo_abc123"` |
 | `docente_uid` | string | UID del docente propietario | Sí | `"abc123xyz"` |
 | `titulo` | string | Título descriptivo de la tarea | Sí | `"Subir notas parciales"` |
-| `categoria_ces` | string | Categoría CES asociada | Sí | `"docencia"`, `"investigacion"`, `"vinculacion"`, `"tutoria"`, `"gestion"` |
+| `categoria_ces` | string | Categoría oficial asociada (4 valores) | Sí | `"docencia"`, `"investigacion"`, `"vinculacion"`, `"gestion"` |
+| `subcategoria` | string | Subcategoría oficial (ej. `"1.2"`, `"3.3"`, `"4.9"`) | No (manual) | `"1.2"` |
 | `fecha_limite` | timestamp | Fecha límite para completar la tarea | Sí | `Timestamp(2026, 6, 15)` |
 | `estado` | string | Estado actual de la tarea | Sí | `"pendiente"`, `"completada"` |
 | `actividad_id_ref` | string | Referencia opcional a una actividad en /actividades | No | `"act_abc123"` |
@@ -1722,7 +1717,7 @@ La visualización de módulos, menús y funcionalidades NO depende de listas cod
 
 | Término | Definición |
 |---|---|
-| **Distributivo académico** | Documento institucional que planifica y asigna la carga horaria semanal del docente universitario en las cinco categorías de actividades reconocidas por el CES: docencia, investigación, vinculación, tutoría y gestión. Debe sumar exactamente las horas del contrato del docente. |
+| **Distributivo académico** | Documento institucional que planifica y asigna la carga horaria semanal del docente universitario en las cuatro categorías oficiales: Docencia, Investigación, Vinculación con la Sociedad y Gestión Académica. Debe sumar exactamente las horas del contrato del docente. |
 | **Matriz de productividad** | Herramienta complementaria al distributivo que registra el cumplimiento real de las actividades planificadas del docente, utilizada como evidencia en los procesos de evaluación y acreditación institucional. |
 | **BETO** | Modelo de lenguaje basado en la arquitectura BERT, preentrenado en corpus en español por el Departamento de Ciencias de la Computación de la Universidad de Chile (dccuchile). Sus siglas corresponden a "BERT en español". Es el modelo NLP utilizado en este sistema para clasificar actividades docentes. |
 | **NLP (Natural Language Processing)** | Procesamiento de Lenguaje Natural (PLN). Subdisciplina de la inteligencia artificial que permite a los sistemas computacionales comprender, interpretar y generar texto en lenguaje humano mediante algoritmos y modelos lingüísticos. |
@@ -1746,7 +1741,7 @@ La visualización de módulos, menús y funcionalidades NO depende de listas cod
 | **Fine-tuning** | Proceso de ajuste fino de un modelo de lenguaje preentrenado (como BETO) con datos específicos del dominio (eventos de calendario de docentes UIDE) para mejorar su rendimiento en la tarea de clasificación de actividades académicas. |
 | **Firestore Rules** | Sistema de reglas declarativas de seguridad de Firestore que controla quién puede leer o escribir cada documento de la base de datos, implementando el control de acceso basado en roles a nivel de base de datos. |
 | **F1-score** | Métrica de evaluación de modelos de clasificación que representa la media armónica entre Precision y Recall. Es especialmente útil cuando las clases están desbalanceadas. Umbral mínimo requerido en este proyecto: F1 ≥ 0.80. |
-| **Etiqueta Outlook (DIST/*)** | Categoría asignada manualmente por el docente a un correo en Microsoft Outlook usando la nomenclatura DIST/ seguida de la categoría CES: DIST/Docencia, DIST/Investigación, DIST/Vinculación, DIST/Gestión, DIST/Tutoría, DIST/TP-Horas. El sistema lee estas etiquetas mediante Microsoft Graph API y registra automáticamente las actividades correspondientes en Firestore. No se usa Gmail en ninguna parte del sistema. |
+| **Etiqueta Outlook (DIST/*)** | Categoría asignada manualmente por el docente a un correo en Microsoft Outlook usando la nomenclatura DIST/ seguida de la categoría: DIST/Docencia, DIST/Investigación, DIST/Vinculación, DIST/Gestión, DIST/TP-Horas. El sistema lee estas etiquetas mediante Microsoft Graph API y registra automáticamente las actividades correspondientes en Firestore. No se usa Gmail en ninguna parte del sistema. |
 | **Validación cruzada del distributivo** | Mecanismo de aprobación en dos pasos definido en RN-019: el distributivo académico solo alcanza estado "aprobado" cuando tanto la Directora de Carrera como el docente propietario han confirmado su revisión de forma independiente. Si cualquiera observa, el distributivo regresa a "en_revision". |
 | **Módulo Mis Actividades** | Módulo interno del sistema (MOD-09) que permite al docente y a roles de gestión organizar actividades personales en un tablero Kanban de tres columnas: "Por hacer", "En progreso" y "Completadas". Incluye una vista de Estadísticas integrada con progreso por categoría CES y gráfico semanal, alimentada del mismo estado que el tablero (sin fetch adicional). Los formularios se abren en Modal con Liquid Glass. Reemplaza al antiguo módulo To Do. |
 | **Kanban** | Metodología visual de gestión de trabajo que organiza tareas en columnas que representan su estado de avance. En este sistema, el tablero Kanban del módulo Mis Actividades usa drag & drop nativo del navegador para mover actividades entre las columnas "Por hacer", "En progreso" y "Completadas". |

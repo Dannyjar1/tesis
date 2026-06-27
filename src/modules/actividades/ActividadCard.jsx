@@ -21,9 +21,10 @@ const SIGUIENTE_ESTADO = {
  * @param {(act) => void} [props.onSubirEvidencia]
  * @param {(act) => void} [props.onAmpliarPlazo]
  */
-export default function ActividadCard({ actividad, modo, onCambiarEstado, onSubirEvidencia, onAmpliarPlazo }) {
+export default function ActividadCard({ actividad, modo, onCambiarEstado, onSubirEvidencia, onEditarEvidencia, onAmpliarPlazo }) {
   const estado = estadoEfectivo(actividad)
   const completada = estado === ESTADOS_ACTIVIDAD.COMPLETADA
+  const enProgreso = estado === ESTADOS_ACTIVIDAD.EN_PROGRESO
   const siguiente = SIGUIENTE_ESTADO[actividad.estado]
 
   return (
@@ -61,18 +62,19 @@ export default function ActividadCard({ actividad, modo, onCambiarEstado, onSubi
               href={actividad.evidencia_url}
               target="_blank"
               rel="noopener noreferrer"
+              download={actividad.evidencia_nombre || undefined}
               className="inline-block text-[11px] text-uide-secondary hover:underline mt-1.5 break-all"
             >
-              Evidencia adjunta ✓
+              {actividad.evidencia_nombre ? `Evidencia: ${actividad.evidencia_nombre} ✓` : 'Evidencia adjunta ✓'}
             </a>
           )}
         </div>
       </div>
 
       {/* Acciones del docente */}
-      {modo === 'docente' && !completada && (
+      {modo === 'docente' && (
         <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs">
-          {siguiente && (
+          {!completada && siguiente && (
             <button
               onClick={() => onCambiarEstado?.(actividad, siguiente)}
               className="text-uide-secondary hover:underline font-medium"
@@ -80,12 +82,23 @@ export default function ActividadCard({ actividad, modo, onCambiarEstado, onSubi
               {siguiente === ESTADOS_ACTIVIDAD.EN_PROGRESO ? 'Iniciar' : 'Marcar completada'}
             </button>
           )}
-          <button
-            onClick={() => onSubirEvidencia?.(actividad)}
-            className="text-uide-secondary hover:underline"
-          >
-            Subir evidencia
-          </button>
+          {!completada && (
+            <button
+              onClick={() => onSubirEvidencia?.(actividad)}
+              className="text-uide-secondary hover:underline"
+            >
+              Subir evidencia
+            </button>
+          )}
+          {/* Editar evidencia sin cambiar el estado (C.2): en progreso o completada */}
+          {(completada || enProgreso) && (
+            <button
+              onClick={() => onEditarEvidencia?.(actividad)}
+              className="text-uide-secondary hover:underline"
+            >
+              {actividad.evidencia_url ? 'Editar evidencia' : 'Agregar evidencia'}
+            </button>
+          )}
         </div>
       )}
 

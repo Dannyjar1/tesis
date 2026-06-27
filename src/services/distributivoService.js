@@ -7,48 +7,118 @@ import {
   query, where, Timestamp, onSnapshot,
 } from 'firebase/firestore'
 import { db } from './firebase'
-import { validarCierreDistributivo } from '../utils/calculos'
 import { ESTADOS_DISTRIBUTIVO } from '../utils/constants'
 import { USUARIOS_SEED } from './seedData'
+import { construirDistributivoDoc, normalizarDistributivo } from '../modules/distributivo/modeloDistributivo'
 
 const LOCAL_KEY = 'uide_distributivos'
 const COL = 'distributivos'
 const COL_USUARIOS = 'usuarios'
+// Versión del seed: al cambiarla se fuerza una recarga de los datos semilla,
+// para que quien ya tenga localStorage viejo reciba los nuevos distributivos.
+// 2026-06-24: nueva estructura oficial de 4 bloques (plantilla UIDE).
+const SEED_VERSION = '2026-06-24'
 
+// Distributivos semilla con la estructura oficial de 4 bloques (plantilla UIDE),
+// para los docentes de Ingeniería en Sistemas, con estados variados para demo
+// (borrador, en_revisión, aprobado). Se construyen con construirDistributivoDoc
+// para que incluyan tanto los campos nuevos como los derivados (compatibilidad).
 const SEED_LOCAL = [
-  {
-    id: 'uid_mipalaciosmo_2026-A',
-    docente_uid: 'uid_mipalaciosmo',
-    periodo_id: '2026-A',
-    tipo_contrato: 'tiempo_completo',
-    estado: ESTADOS_DISTRIBUTIVO.BORRADOR,
-    horas_docencia_directa: 18,
-    horas_preparacion: 10.8,
-    horas_tutoria: 2,
-    horas_investigacion: 4,
-    horas_vinculacion: 3,
-    horas_titulacion: 1,
-    horas_gestion: 1.2,
-    horas_reduccion_cargo: 0,
-    total_horas: 40,
-    materias_asignadas: 4,
-    estudiantes_pc: 20,
-    estudiantes_ppp: 15,
-    proyectos_director: 1,
-    proyectos_tribunal: 0,
-    aprobado_por: null,
-    fecha_aprobacion: null,
-    fecha_ultima_modificacion: new Date().toISOString(),
-  },
+  // Palacios (docente TC) — borrador (40h)
+  construirDistributivoDoc(
+    {
+      asignaturas: [
+        { dia: 'lunes',     materia: 'Base de Datos',          inicio: '08:00', fin: '10:00' },
+        { dia: 'martes',    materia: 'Estructura de Datos',    inicio: '15:00', fin: '18:00' },
+        { dia: 'miercoles', materia: 'Programación Avanzada',  inicio: '08:00', fin: '11:00' },
+        { dia: 'jueves',    materia: 'Arquitectura de Computadoras', inicio: '08:00', fin: '10:00' },
+        { dia: 'jueves',    materia: 'Arquitectura de Computadoras', inicio: '11:00', fin: '13:00' },
+        { dia: 'viernes',   materia: 'Redes de Computadoras',  inicio: '15:00', fin: '17:00' },
+      ],
+      horas_tutorias: 3, horas_otras_docencia: 3,
+      horas_proyecto_investigacion: 6,
+      horas_proyectos_vinculacion: 3, horas_practicas_preprofesionales: 2,
+      gestion_poa: 2, gestion_coordinacion_academica: 2, gestion_acreditaciones: 2, gestion_clubes_proyectos_eventos: 3,
+    },
+    {
+      id: 'uid_mipalaciosmo_2026-A', docente_uid: 'uid_mipalaciosmo', periodo_id: '2026-A',
+      tipo_contrato: 'tiempo_completo', estado: ESTADOS_DISTRIBUTIVO.BORRADOR,
+      aprobado_por: null, fecha_aprobacion: null,
+      fecha_ultima_modificacion: new Date().toISOString(),
+    },
+  ),
+  // Conde (directora + docente TC) — aprobado (doble firma)
+  construirDistributivoDoc(
+    {
+      asignaturas: [
+        { dia: 'martes', materia: 'Inteligencia Artificial', inicio: '08:00', fin: '10:00' },
+        { dia: 'jueves', materia: 'Trabajo de Titulación',   inicio: '15:00', fin: '18:00' },
+      ],
+      horas_tutorias: 1, horas_otras_docencia: 1,
+      horas_proyecto_investigacion: 6,
+      horas_proyectos_vinculacion: 2,
+      gestion_direccion_escuela: 12, gestion_acreditaciones: 5, gestion_poa: 4,
+      gestion_internacionalizacion: 2, gestion_clubes_proyectos_eventos: 2,
+    },
+    {
+      id: 'uid_locondezh_2026-A', docente_uid: 'uid_locondezh', periodo_id: '2026-A',
+      tipo_contrato: 'tiempo_completo', estado: ESTADOS_DISTRIBUTIVO.APROBADO,
+      aprobado_por: 'uid_locondezh', confirmado_por_docente: 'uid_locondezh',
+      fecha_aprobacion: new Date(2026, 4, 18).toISOString(),
+      fecha_ultima_modificacion: new Date(2026, 4, 18).toISOString(),
+    },
+  ),
+  // Valarezo (coordinador + docente TC) — en revisión (espera su confirmación)
+  construirDistributivoDoc(
+    {
+      asignaturas: [
+        { dia: 'lunes',     materia: 'Calidad de Software',        inicio: '08:00', fin: '11:00' },
+        { dia: 'miercoles', materia: 'Ingeniería de Software',     inicio: '15:00', fin: '18:00' },
+      ],
+      horas_tutorias: 2, horas_otras_docencia: 1,
+      horas_proyecto_investigacion: 4,
+      horas_proyectos_vinculacion: 2, horas_seguimiento_graduados: 1,
+      gestion_coordinacion_academica: 14, gestion_poa: 4, gestion_representantes_saic: 2, gestion_clubes_proyectos_eventos: 4,
+    },
+    {
+      id: 'uid_davalarezole_2026-A', docente_uid: 'uid_davalarezole', periodo_id: '2026-A',
+      tipo_contrato: 'tiempo_completo', estado: ESTADOS_DISTRIBUTIVO.EN_REVISION,
+      aprobado_por: 'uid_locondezh', fecha_aprobacion: new Date(2026, 4, 19).toISOString(),
+      fecha_ultima_modificacion: new Date(2026, 4, 19).toISOString(),
+    },
+  ),
+  // Torres (docente MT) — borrador (20h)
+  construirDistributivoDoc(
+    {
+      asignaturas: [
+        { dia: 'martes',  materia: 'Programación Web',      inicio: '15:00', fin: '18:00' },
+        { dia: 'jueves',  materia: 'Sistemas Operativos',   inicio: '08:00', fin: '10:00' },
+        { dia: 'jueves',  materia: 'Sistemas Operativos',   inicio: '11:00', fin: '13:00' },
+        { dia: 'viernes', materia: 'Bases de Datos II',     inicio: '15:00', fin: '18:00' },
+      ],
+      horas_tutorias: 1, horas_otras_docencia: 1,
+      horas_proyectos_vinculacion: 2,
+      gestion_poa: 3, gestion_clubes_proyectos_eventos: 3,
+    },
+    {
+      id: 'uid_yetorresbe_2026-A', docente_uid: 'uid_yetorresbe', periodo_id: '2026-A',
+      tipo_contrato: 'medio_tiempo', estado: ESTADOS_DISTRIBUTIVO.BORRADOR,
+      aprobado_por: null, fecha_aprobacion: null,
+      fecha_ultima_modificacion: new Date().toISOString(),
+    },
+  ),
 ]
 
 // ── Helpers localStorage ──────────────────────────────────────────────────────
 
 function localCargar() {
   try {
+    const ver = localStorage.getItem(LOCAL_KEY + '_ver')
     const raw = localStorage.getItem(LOCAL_KEY)
-    if (raw) return JSON.parse(raw)
+    if (raw && ver === SEED_VERSION) return JSON.parse(raw)
+    // Sin datos o seed desactualizado → (re)cargar el seed actual.
     localStorage.setItem(LOCAL_KEY, JSON.stringify(SEED_LOCAL))
+    localStorage.setItem(LOCAL_KEY + '_ver', SEED_VERSION)
     return SEED_LOCAL
   } catch { return SEED_LOCAL }
 }
@@ -60,14 +130,15 @@ function localGuardar(lista) {
 // ── Normalización Firestore → JS ──────────────────────────────────────────────
 
 function normalizar(data, id) {
-  return {
+  // normalizarDistributivo migra registros del esquema anterior a los 4 bloques.
+  return normalizarDistributivo({
     ...data,
     id: id ?? data.id,
     fecha_ultima_modificacion:
       data.fecha_ultima_modificacion?.toDate?.()?.toISOString() ?? data.fecha_ultima_modificacion,
     fecha_aprobacion:
       data.fecha_aprobacion?.toDate?.()?.toISOString() ?? data.fecha_aprobacion ?? null,
-  }
+  })
 }
 
 // ── API pública ───────────────────────────────────────────────────────────────
@@ -84,7 +155,8 @@ export async function getDistributivo(docenteUid, periodoId) {
     }
   }
   await new Promise(r => setTimeout(r, 100))
-  return localCargar().find(d => d.docente_uid === docenteUid && d.periodo_id === periodoId) ?? null
+  const local = localCargar().find(d => d.docente_uid === docenteUid && d.periodo_id === periodoId)
+  return local ? normalizarDistributivo(local) : null
 }
 
 /** Devuelve todos los distributivos del período (director/coordinador). */
@@ -100,7 +172,7 @@ export async function getDistributivosPorPeriodo(periodoId) {
     }
   }
   await new Promise(r => setTimeout(r, 100))
-  return localCargar().filter(d => d.periodo_id === periodoId)
+  return localCargar().filter(d => d.periodo_id === periodoId).map(normalizarDistributivo)
 }
 
 /**
@@ -190,23 +262,23 @@ export async function actualizarDistributivo(distributivoId, cambios) {
 }
 
 /**
- * Aprobación del director: valida la suma de horas (RN-014) y deja el
- * distributivo EN REVISIÓN, a la espera de la confirmación del docente.
- * La aprobación NO es definitiva hasta que el docente confirma (doble
- * aprobación director + docente). Si el docente observa, vuelve a borrador.
+ * Aprobación del director: deja el distributivo EN REVISIÓN, a la espera de la
+ * confirmación del docente. La validación de 40h es informativa y NO bloquea la
+ * aprobación (estructura oficial UIDE). La aprobación NO es definitiva hasta que
+ * el docente confirma (doble firma). Si el docente observa, vuelve a borrador.
  * @param {string} distributivoId
  * @param {string} aprobadoPorUid — UID del director
- * @param {number} horasContrato — 40 (TC) | 20 (MT)
+ * @param {number} [_horasContrato] — referencia de contrato (informativo, sin uso)
  */
-export async function aprobarDistributivo(distributivoId, aprobadoPorUid, horasContrato) {
+export async function aprobarDistributivo(distributivoId, aprobadoPorUid, _horasContrato) {
   if (db) {
     try {
       const ref = doc(db, COL, distributivoId)
       const snap = await getDoc(ref)
       if (!snap.exists()) throw new Error('Distributivo no encontrado.')
       const dist = snap.data()
-      const validacion = validarCierreDistributivo(dist, horasContrato)
-      if (!validacion.valido) throw new Error(validacion.mensaje)
+      // La validación de 40h es informativa (estructura oficial UIDE): NO bloquea
+      // la aprobación. El total se muestra en el formulario y el PDF.
       const cambios = {
         estado: ESTADOS_DISTRIBUTIVO.EN_REVISION,
         aprobado_por: aprobadoPorUid,
@@ -227,8 +299,7 @@ export async function aprobarDistributivo(distributivoId, aprobadoPorUid, horasC
   const idx = lista.findIndex(d => d.id === distributivoId)
   if (idx === -1) throw new Error('Distributivo no encontrado.')
   const dist = lista[idx]
-  const validacion = validarCierreDistributivo(dist, horasContrato)
-  if (!validacion.valido) throw new Error(validacion.mensaje)
+  // Validación 40h informativa: NO bloquea la aprobación.
   const enRevision = {
     ...dist,
     estado: ESTADOS_DISTRIBUTIVO.EN_REVISION,
@@ -380,6 +451,12 @@ function esDocente(u) {
   return (u.roles ?? (u.rol ? [u.rol] : [])).includes('docente')
 }
 
+/** Overlay de cambios de usuarios (mismo que sistemaService/authService) para
+ *  que los cambios de rol/carrera se reflejen en los listados de docentes. */
+function overlayUsuariosLocal() {
+  try { return JSON.parse(localStorage.getItem('uide_sistema_usuarios')) ?? {} } catch { return {} }
+}
+
 /**
  * Devuelve docentes de una carrera (o todos) desde Firestore /usuarios.
  * Incluye a quienes son docente + cargo (director/coordinador) porque todo
@@ -396,13 +473,19 @@ export async function getDocentes(carreraId = null) {
       console.warn('[distributivoService] Firestore error en getDocentes:', err.code)
     }
   }
-  const docentes = USUARIOS_SEED.filter(u => esDocente(u) && u.activo)
+  const overlay = overlayUsuariosLocal()
+  const docentes = USUARIOS_SEED
+    .map(u => ({ ...u, ...(overlay[u.uid] ?? {}) }))   // aplicar cambios persistidos
+    .filter(u => esDocente(u) && u.activo)
   return carreraId ? docentes.filter(u => u.carrera_id === carreraId) : docentes
 }
 
 /** @deprecated Usar getDocentes(). Mantenido por compatibilidad. */
 export function getDocentesMock() {
-  return USUARIOS_SEED.filter(u => esDocente(u) && u.activo)
+  const overlay = overlayUsuariosLocal()
+  return USUARIOS_SEED
+    .map(u => ({ ...u, ...(overlay[u.uid] ?? {}) }))
+    .filter(u => esDocente(u) && u.activo)
 }
 
 /** Reinicia datos mock (solo desarrollo/tests). */

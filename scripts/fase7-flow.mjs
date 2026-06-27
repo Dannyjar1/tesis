@@ -27,16 +27,17 @@ async function login(etiqueta, limpiar = true) {
   await page.waitForURL(u => !u.href.includes('/login'), { timeout: 10000 })
 }
 
-// ── 1. Bloqueo exacto: el botón Crear está deshabilitado con total ≠ contrato ──
-await check('1. Bloqueo 40h/20h: botón Crear deshabilitado si total ≠ contrato', async () => {
+// ── 1. Bloqueo exacto: guardar deshabilitado si el total ≠ contrato ──
+await check('1. Bloqueo 40h/20h: guardar deshabilitado si total ≠ contrato', async () => {
   await login('Director — Sistemas')
   await page.goto(`${BASE}/distributivo/gestion`, { waitUntil: 'domcontentloaded' })
-  // Torres (MT) no tiene distributivo → botón "Crear"
-  const filaTorres = page.getByRole('row', { name: /Torres/ })
-  await filaTorres.getByRole('button', { name: 'Crear' }).click()
-  await page.getByText(/Crear distributivo —/).waitFor()
-  const btn = page.getByRole('button', { name: 'Crear distributivo' })
-  if (!(await btn.isDisabled())) throw new Error('el botón Crear debería estar deshabilitado con 0h')
+  // Editar el distributivo de Palacios y romper el cierre exacto
+  const fila = page.getByRole('row', { name: /Palacios/ })
+  await fila.getByRole('button', { name: 'Editar' }).click()
+  await page.getByText(/distributivo —/i).waitFor()
+  await page.locator('input[type=number]').first().fill('3')   // docencia 3 → total ≠ 40
+  const btn = page.getByRole('button', { name: /Actualizar borrador|Crear distributivo/ })
+  if (!(await btn.isDisabled())) throw new Error('el botón debería estar deshabilitado con total ≠ 40h')
   await page.keyboard.press('Escape')
 })
 

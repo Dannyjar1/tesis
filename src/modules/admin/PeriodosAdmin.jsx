@@ -1,5 +1,7 @@
-import { useContext, useState } from 'react'
+import { useContext, useState, useEffect } from 'react'
 import { PeriodoContext } from '../../context/PeriodoContext'
+import { useAuth } from '../auth/useAuth'
+import { getDocentes } from '../../services/distributivoService'
 import Modal from '../../components/Modal'
 import LoadingSpinner from '../../components/LoadingSpinner'
 import EstructuraPeriodo from './EstructuraPeriodo'
@@ -196,6 +198,7 @@ export default function PeriodosAdmin() {
 }
 
 function PeriodoForm({ onGuardar, onCancelar, cargando }) {
+  const { user } = useAuth()
   const [form, setForm] = useState({
     nombre: '',
     fecha_inicio: '',
@@ -203,6 +206,18 @@ function PeriodoForm({ onGuardar, onCancelar, cargando }) {
     estado: 'planificacion',
   })
   const [error, setError] = useState('')
+
+  // E.1: sugerir docentes del período anterior (de la carrera del director) para
+  // importarlos al nuevo período. Por defecto todos marcados; el director decide.
+  const [docentes, setDocentes] = useState([])
+  const [importar, setImportar] = useState({})   // uid → bool
+
+  useEffect(() => {
+    getDocentes(user?.carrera_id ?? null).then(lista => {
+      setDocentes(lista)
+      setImportar(Object.fromEntries(lista.map(d => [d.uid, true])))
+    })
+  }, [user?.carrera_id])
 
   function set(campo, valor) {
     setForm(f => ({ ...f, [campo]: valor }))
@@ -215,7 +230,10 @@ function PeriodoForm({ onGuardar, onCancelar, cargando }) {
     if (!form.fecha_inicio)  { setError('La fecha de inicio es obligatoria.'); return }
     if (!form.fecha_fin)     { setError('La fecha de fin es obligatoria.'); return }
     if (form.fecha_fin <= form.fecha_inicio) { setError('La fecha de fin debe ser posterior al inicio.'); return }
-    onGuardar({ ...form, nombre: form.nombre.trim() })
+    // E.2: solo se importan los DOCENTES seleccionados; los distributivos NO se
+    // copian — el director debe crearlos nuevos en el período.
+    const docentes_uid = docentes.filter(d => importar[d.uid]).map(d => d.uid)
+    onGuardar({ ...form, nombre: form.nombre.trim(), docentes_uid })
   }
 
   return (
@@ -264,6 +282,30 @@ function PeriodoForm({ onGuardar, onCancelar, cargando }) {
           <option value="proximo">Próximo</option>
         </select>
       </div>
+
+      {/* E.1: importar docentes del período anterior (NO sus distributivos) */}
+      {docentes.length > 0 && (
+        <div className="border border-gray-200 rounded-lg p-3">
+          <p className="text-xs font-semibold text-gray-600 mb-1">¿Importar estos docentes al nuevo período?</p>
+          <p className="text-[11px] text-gray-400 mb-2">
+            Se copian solo los docentes; sus distributivos NO se copian (se crean nuevos).
+          </p>
+          <div className="space-y-1 max-h-40 overflow-y-auto">
+            {docentes.map(d => (
+              <label key={d.uid} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={!!importar[d.uid]}
+                  onChange={() => setImportar(m => ({ ...m, [d.uid]: !m[d.uid] }))}
+                  className="h-4 w-4 rounded border-gray-300 text-uide-primary focus:ring-uide-secondary"
+                />
+                {d.nombre_completo}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
       {error && <p className="text-xs text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-lg">{error}</p>}
       <div className="flex gap-2 justify-end pt-1">
         <button type="button" onClick={onCancelar} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition">

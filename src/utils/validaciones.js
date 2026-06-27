@@ -46,7 +46,7 @@ export function validarHorasInvestigacion(horas, tipoContrato) {
  */
 export function validarHorasGestion(horas, tipoContrato) {
   if (tipoContrato === 'TC' && horas > HORAS_MAXIMAS_TC.gestion.max) {
-    return { valido: false, mensaje: `Gestión institucional TC: máximo ${HORAS_MAXIMAS_TC.gestion.max}h semanales.` }
+    return { valido: false, mensaje: `Gestión Académica TC: máximo ${HORAS_MAXIMAS_TC.gestion.max}h semanales.` }
   }
   return { valido: true, mensaje: '' }
 }

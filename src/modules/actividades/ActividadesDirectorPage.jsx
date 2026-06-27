@@ -11,6 +11,7 @@ import {
 } from '../../utils/constants'
 import ActividadCard from './ActividadCard'
 import NuevaActividadModal from './NuevaActividadModal'
+import ToggleActividades from './ToggleActividades'
 import Modal from '../../components/Modal'
 import AlertBanner from '../../components/AlertBanner'
 import LoadingSpinner from '../../components/LoadingSpinner'
@@ -84,6 +85,8 @@ export default function ActividadesDirectorPage() {
           </button>
         )}
       </div>
+
+      <ToggleActividades />
 
       {/* Resumen global */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

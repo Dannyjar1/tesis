@@ -3,7 +3,8 @@ import {
   getDistributivosPorPeriodo,
   getDocentes,
 } from '../services/distributivoService'
-import { TIPOS_CONTRATO, UMBRAL_ALERTA_DEFAULT } from '../utils/constants'
+import { TIPOS_CONTRATO, UMBRAL_ALERTA_DEFAULT, CATEGORIA_LABELS } from '../utils/constants'
+import { calcularTotales, normalizarDistributivo } from '../modules/distributivo/modeloDistributivo'
 
 export function useDashboard(periodoId, carreraId = null) {
   const [distributivos, setDistributivos] = useState([])
@@ -83,13 +84,16 @@ export function useDashboard(periodoId, carreraId = null) {
 
   // Datos para el gráfico de distribución por categoría (PieChart)
   // Suma de horas de todos los distributivos aprobados
+  // Distribución por las 4 categorías oficiales (la tutoría se incluye en
+  // DOCENCIA como subcategoría 1.2). Se calcula con calcularTotales para que sea
+  // robusto tanto con registros nuevos (4 bloques) como migrados (legacy).
   const aprobadosLista = distributivos.filter(d => d.estado === 'aprobado')
+  const sumarBloque = (sel) => aprobadosLista.reduce((s, d) => s + sel(calcularTotales(normalizarDistributivo(d))), 0)
   const categoriasTotales = aprobadosLista.length > 0 ? [
-    { name: 'Docencia',       value: aprobadosLista.reduce((s, d) => s + (d.horas_docencia_directa ?? 0), 0), color: '#3B82F6' },
-    { name: 'Investigación',  value: aprobadosLista.reduce((s, d) => s + (d.horas_investigacion ?? 0), 0),   color: '#8B5CF6' },
-    { name: 'Vinculación',    value: aprobadosLista.reduce((s, d) => s + (d.horas_vinculacion ?? 0), 0),     color: '#10B981' },
-    { name: 'Tutoría',        value: aprobadosLista.reduce((s, d) => s + (d.horas_tutoria ?? 0) + (d.horas_preparacion ?? 0), 0), color: '#F59E0B' },
-    { name: 'Gestión',        value: aprobadosLista.reduce((s, d) => s + (d.horas_gestion ?? 0), 0),         color: '#F97316' },
+    { name: CATEGORIA_LABELS.docencia,      value: sumarBloque(t => t.docencia),      color: '#3B82F6' },
+    { name: CATEGORIA_LABELS.investigacion, value: sumarBloque(t => t.investigacion), color: '#8B5CF6' },
+    { name: CATEGORIA_LABELS.vinculacion,   value: sumarBloque(t => t.vinculacion),   color: '#10B981' },
+    { name: CATEGORIA_LABELS.gestion,       value: sumarBloque(t => t.gestion),       color: '#F97316' },
   ].filter(c => c.value > 0) : []
 
   return {

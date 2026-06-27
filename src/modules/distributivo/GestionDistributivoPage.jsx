@@ -1,5 +1,6 @@
 import { useState, useContext } from 'react'
 import { PeriodoContext } from '../../context/PeriodoContext'
+import { useAuth } from '../auth/useAuth'
 import { useGestionDistributivos } from '../../hooks/useDistributivo'
 import { usePermisos } from '../../hooks/usePermisos'
 import { ESTADO_COLORES, ESTADO_LABELS, ROLES, TIPO_CONTRATO_HORAS, TIPO_CONTRATO_LABELS, CARRERA_LABELS } from '../../utils/constants'
@@ -12,11 +13,16 @@ import AlertBanner from '../../components/AlertBanner'
 
 export default function GestionDistributivoPage() {
   const { periodoActivo } = useContext(PeriodoContext)
+  const { user } = useAuth()
+  // El director/coordinador solo gestiona los docentes de SU carrera (B.1).
+  // El superadmin (carrera_id null) ve todas las carreras.
+  const carreraId = user?.carrera_id ?? null
   const { distributivos, docentes, cargando, error, crear, actualizar, aprobar } =
-    useGestionDistributivos(periodoActivo?.id)
+    useGestionDistributivos(periodoActivo?.id, carreraId)
 
   const [modalForm, setModalForm] = useState(null)   // { docente, distributivo|null }
   const [modalDetalle, setModalDetalle] = useState(null)
+  const [modalAgregar, setModalAgregar] = useState(false)
   const [alerta, setAlerta] = useState(null)
   const [procesando, setProcesando] = useState(false)
 
@@ -69,6 +75,14 @@ export default function GestionDistributivoPage() {
           <h1 className="text-2xl font-bold text-gray-900">Gestión del Distributivo</h1>
           <p className="text-gray-500 text-sm mt-0.5">{periodoActivo?.nombre}</p>
         </div>
+        {esDirector && (
+          <button
+            onClick={() => setModalAgregar(true)}
+            className="self-start sm:self-auto text-sm font-medium bg-uide-primary text-white px-4 py-2 rounded-lg hover:opacity-90 transition"
+          >
+            + Agregar docente
+          </button>
+        )}
       </div>
 
       {alerta && (
@@ -168,7 +182,7 @@ export default function GestionDistributivoPage() {
           abierto
           onCerrar={() => setModalForm(null)}
           titulo={modalForm.distributivo ? `Editar distributivo — ${modalForm.docente.nombre_completo}` : `Crear distributivo — ${modalForm.docente.nombre_completo}`}
-          ancho="max-w-2xl"
+          ancho="max-w-3xl"
         >
           <DistributivoForm
             docente={modalForm.docente}
@@ -191,6 +205,60 @@ export default function GestionDistributivoPage() {
           <DistributivoTable distributivo={modalDetalle} />
         </Modal>
       )}
+
+      {/* Modal agregar docente al distributivo (B.2) */}
+      {modalAgregar && (
+        <Modal
+          abierto
+          onCerrar={() => setModalAgregar(false)}
+          titulo="Agregar docente al distributivo"
+        >
+          <AgregarDocente
+            docentesSinAsignar={docentes.filter(d => !getDistributivoDeDocente(d.uid))}
+            onElegir={(docente) => { setModalAgregar(false); setModalForm({ docente, distributivo: null }) }}
+            onCancelar={() => setModalAgregar(false)}
+          />
+        </Modal>
+      )}
+    </div>
+  )
+}
+
+/** Selector de docente de la carrera (sin distributivo aún) para crear su borrador. */
+function AgregarDocente({ docentesSinAsignar, onElegir, onCancelar }) {
+  const [uid, setUid] = useState('')
+  const docente = docentesSinAsignar.find(d => d.uid === uid)
+  return (
+    <div className="space-y-4">
+      {docentesSinAsignar.length === 0 ? (
+        <p className="text-sm text-gray-500">Todos los docentes de la carrera ya tienen un distributivo en este período.</p>
+      ) : (
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">Docente de la carrera</label>
+          <select
+            value={uid}
+            onChange={e => setUid(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-uide-secondary"
+          >
+            <option value="">— Selecciona un docente —</option>
+            {docentesSinAsignar.map(d => (
+              <option key={d.uid} value={d.uid}>
+                {d.nombre_completo} ({TIPO_CONTRATO_LABELS[d.tipo_contrato]?.split(' — ')[0] ?? d.tipo_contrato})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      <div className="flex justify-end gap-2 pt-1">
+        <button onClick={onCancelar} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancelar</button>
+        <button
+          onClick={() => docente && onElegir(docente)}
+          disabled={!docente}
+          className="px-4 py-2 text-sm font-semibold text-white bg-uide-primary rounded-lg hover:opacity-90 disabled:opacity-50"
+        >
+          Crear distributivo
+        </button>
+      </div>
     </div>
   )
 }

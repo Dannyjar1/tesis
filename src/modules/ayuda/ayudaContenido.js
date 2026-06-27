@@ -43,7 +43,7 @@ const DOCENTE = [
       {
         pregunta: '¿Dónde veo mi distributivo del período activo?',
         respuesta:
-          'En el menú lateral, entra a "Mi Distributivo". Verás el desglose de tus horas por categoría CES (Docencia, Investigación, Vinculación, Tutoría y Gestión) y el estado de aprobación del período vigente.',
+          'En el menú lateral, entra a "Mi Distributivo". Verás el desglose de tus horas por las 4 categorías oficiales (DOCENCIA, INVESTIGACIÓN, VINCULACIÓN CON LA SOCIEDAD y GESTIÓN ACADÉMICA) y el estado de aprobación del período vigente.',
       },
       {
         pregunta: '¿Qué es la validación cruzada y por qué mi distributivo no está aprobado?',
@@ -113,7 +113,7 @@ const DIRECTOR = [
       {
         pregunta: '¿Cómo creo un distributivo para un docente?',
         respuesta:
-          'En "Distributivos" usa el botón de nuevo distributivo; se abre un formulario en ventana modal. Asignas las actividades por categoría y el sistema calcula automáticamente las horas (tutoría, preparación de clases, vinculación y titulación) según el Reglamento CES.',
+          'En "Distributivos" usa el botón de nuevo distributivo; se abre un formulario en ventana modal. Registras las actividades por categoría y subcategoría oficial, y el sistema sugiere automáticamente las horas de tutorías y otras actividades de docencia (20% de las horas de clase).',
       },
       {
         pregunta: '¿Por qué no me deja cerrar/aprobar un distributivo?',
@@ -199,7 +199,7 @@ export const AYUDA_TUTORIALES = {
     {
       pregunta: 'Tutorial: completar el flujo del distributivo',
       respuesta:
-        '1) El Director crea el distributivo del docente desde "Distributivos" (modal). 2) El sistema calcula automáticamente tutoría, preparación, vinculación y titulación a partir de los datos base. 3) Director y docente confirman (validación cruzada) y el distributivo queda aprobado.',
+        '1) El Director crea el distributivo del docente desde "Distributivos" (modal). 2) El sistema sugiere automáticamente las horas de tutorías y otras actividades de docencia a partir de las horas de clase. 3) Director y docente confirman (validación cruzada) y el distributivo queda aprobado.',
     },
   ],
 }

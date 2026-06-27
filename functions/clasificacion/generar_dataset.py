@@ -26,9 +26,14 @@ EJEMPLOS_SEMILLA = {
     "docencia": [
         "Clase Programación Web Grupo A módulo React",
         "Examen parcial Bases de Datos segundo bimestre",
-        "Defensa de trabajo de titulación tribunal",
         "Preparación de material para la asignatura de redes",
         "Taller práctico de laboratorio de software",
+        # Subcategoría 1.2 Tutorías (parte de DOCENCIA, no categoría aparte):
+        "Tutoría académica consulta de estudiantes en oficina",
+        "Atención a estudiantes previo al primer parcial",
+        "Asesoría de proyecto integrador quinto ciclo",
+        "Tutoría de recuperación asignatura de cálculo",
+        "Consulta académica sobre el proyecto final",
     ],
     "investigacion": [
         "Revisión de artículo científico para revista indexada",
@@ -44,19 +49,15 @@ EJEMPLOS_SEMILLA = {
         "Coordinación de prácticas pre-profesionales grupo 2",
         "Capacitación ciudadana en aplicaciones móviles",
     ],
-    "tutoria": [
-        "Tutoría académica consulta de estudiantes en oficina",
-        "Atención a estudiantes previo al primer parcial",
-        "Asesoría de proyecto integrador quinto ciclo",
-        "Tutoría de recuperación asignatura de cálculo",
-        "Consulta académica sobre el proyecto final",
-    ],
     "gestion": [
         "Reunión del consejo académico de carrera",
         "Comité de planificación del período 2026-B",
         "Elaboración de informe mensual de coordinación",
         "Reunión directiva de acreditación CACES",
         "Planificación del distributivo del próximo período",
+        # Subcategoría 4.9 Tutores, Lectores y Grados (titulación es GESTIÓN
+        # ACADÉMICA, no Docencia — Excel oficial):
+        "Defensa de trabajo de titulación tribunal",
     ],
 }
 

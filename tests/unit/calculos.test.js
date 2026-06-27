@@ -4,7 +4,6 @@ import {
   calcularHorasTutoria,
   calcularHorasPC,
   calcularHorasPPP,
-  calcularHorasTitulacion,
   calcularHorasGraduados,
   calcularHorasCoordinacion,
   validarCierreDistributivo,
@@ -46,18 +45,6 @@ describe('calcularHorasPPP — 1h cada 15 estudiantes en PPP', () => {
   it('14 estudiantes → 0h', () => expect(calcularHorasPPP(14)).toBe(0))
 })
 
-describe('calcularHorasTitulacion — director + tribunal', () => {
-  it('3 director + 2 tribunal → 7h', () => {
-    expect(calcularHorasTitulacion(3, 2)).toBe(7)
-  })
-  it('0 director + 0 tribunal → 0h', () => {
-    expect(calcularHorasTitulacion(0, 0)).toBe(0)
-  })
-  it('1 director + 1 tribunal → 3h', () => {
-    expect(calcularHorasTitulacion(1, 1)).toBe(3)
-  })
-})
-
 describe('calcularHorasGraduados — 1h cada 80 graduados', () => {
   it('160 graduados → 2h', () => expect(calcularHorasGraduados(160)).toBe(2))
   it('80 graduados → 1h', () => expect(calcularHorasGraduados(80)).toBe(1))
@@ -79,8 +66,7 @@ describe('validarCierreDistributivo — suma exacta de horas del contrato', () =
       horas_tutoria: 2,
       horas_investigacion: 4,
       horas_vinculacion: 2,
-      horas_titulacion: 3,
-      horas_gestion: 0.2,
+      horas_gestion: 3.2,
       horas_reduccion_cargo: 0,
     }
     const resultado = validarCierreDistributivo(dist, 40)
@@ -94,7 +80,6 @@ describe('validarCierreDistributivo — suma exacta de horas del contrato', () =
       horas_tutoria: 2,
       horas_investigacion: 4,
       horas_vinculacion: 2,
-      horas_titulacion: 3,
       horas_gestion: 0,
       horas_reduccion_cargo: 0,
     }

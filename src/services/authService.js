@@ -23,6 +23,22 @@ import { USUARIOS_SEED } from './seedData'
 import { authLog } from './authDebug'
 
 const SESSION_KEY = 'uide_session'
+// Overlay donde sistemaService persiste cambios de usuarios (roles, carrera,
+// activo, etc.). El login en modo mock DEBE fusionarlo sobre el seed para que
+// un cambio de rol (ej. solicitud aceptada por el director) se refleje cuando
+// la persona inicia sesión. Misma clave que KEY_USUARIOS_LOCAL en sistemaService.
+const OVERLAY_USUARIOS_KEY = 'uide_sistema_usuarios'
+
+function overlayUsuarios() {
+  try { return JSON.parse(localStorage.getItem(OVERLAY_USUARIOS_KEY)) ?? {} } catch { return {} }
+}
+
+/** Mezcla el overlay (cambios persistidos) sobre el perfil del seed. */
+function fusionarOverlay(perfil) {
+  if (!perfil?.uid) return perfil
+  const cambios = overlayUsuarios()[perfil.uid]
+  return cambios ? { ...perfil, ...cambios } : perfil
+}
 
 // Proveedor Microsoft — scopes mínimos de login (User.Read).
 // Los scopes de Graph (Calendars.Read, Mail.Read) se piden aparte vía MSAL
@@ -74,7 +90,7 @@ async function resolverPerfil(email) {
     )
   }
   authLog('resolverPerfil:OK-seed', `${perfil.rol}`)
-  const datos = { ...perfil }; delete datos.password
+  const datos = fusionarOverlay({ ...perfil }); delete datos.password
   return datos
 }
 
@@ -131,7 +147,9 @@ export async function loginMock(email, password) {
   await new Promise(r => setTimeout(r, 200))
   const user = USUARIOS_SEED.find(u => u.email === email && u.password === password)
   if (!user) throw new Error('Credenciales incorrectas.')
-  const session = { ...user }; delete session.password
+  // Fusiona los cambios persistidos (roles, etc.) para reflejar p.ej. un rol
+  // recién aceptado por el director.
+  const session = fusionarOverlay({ ...user }); delete session.password
   const normalizada = normalizarRolesPerfil(session)
   localStorage.setItem(SESSION_KEY, JSON.stringify(normalizada))
   return normalizada

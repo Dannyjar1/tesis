@@ -1,151 +1,72 @@
 import { useState } from 'react'
-import {
-  calcularHorasPreparacion,
-  calcularHorasTutoria,
-  calcularHorasPC,
-  calcularHorasPPP,
-  calcularHorasTitulacion,
-  calcularHorasGraduados,
-  calcularHorasCoordinacion,
-  validarCierreDistributivo,
-} from '../../utils/calculos'
-import { validarDistributivo } from '../../utils/validaciones'
-import { formatearHoras } from '../../utils/formatters'
 import { TIPOS_CONTRATO } from '../../utils/constants'
+import { formatearHoras } from '../../utils/formatters'
+import {
+  DIAS_SEMANA,
+  INVESTIGACION_SUBCATS,
+  VINCULACION_SUBCATS,
+  GESTION_SUBCATS,
+  CAMPOS_VACIOS,
+  calcularTotales,
+  sugerencia20,
+  duracionBloque,
+  construirDistributivoDoc,
+  camposDesdeDistributivo,
+} from './modeloDistributivo'
 
-const CAMPO_DEFAULT = {
-  horas_docencia_directa: '',
-  materias_asignadas: '',
-  horas_investigacion: '',
-  estudiantes_pc: '',
-  estudiantes_ppp: '',
-  nro_graduados: '',
-  proyectos_director: '',
-  proyectos_tribunal: '',
-  horas_gestion: '',
-  coordinacion_ppp: false,
-  coordinacion_pc: false,
-  horas_reduccion_cargo: '',
-}
+// Opciones de hora 07:00–22:00 en pasos de 30 min para el editor de horario.
+const HORAS_OPTS = Array.from({ length: 31 }, (_, i) => {
+  const min = 7 * 60 + i * 30
+  return `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`
+})
 
-function num(v) { return parseFloat(v) || 0 }
-
-function calcularTodo(campos, horasContrato) {
-  const docencia = num(campos.horas_docencia_directa)
-  const preparacion = calcularHorasPreparacion(docencia)
-  const tutoria = calcularHorasTutoria(num(campos.materias_asignadas))
-  // Vinculación = Prácticas Comunitarias + Pre-Profesionales + seguimiento a graduados.
-  const graduados = calcularHorasGraduados(num(campos.nro_graduados))
-  const vinculacion = calcularHorasPC(num(campos.estudiantes_pc)) + calcularHorasPPP(num(campos.estudiantes_ppp)) + graduados
-  const titulacion = calcularHorasTitulacion(num(campos.proyectos_director), num(campos.proyectos_tribunal))
-  const investigacion = num(campos.horas_investigacion)
-  // Gestión = horas declaradas + coordinación PPP/PC (3h fijas c/u).
-  const coordinacion = calcularHorasCoordinacion(campos.coordinacion_ppp, campos.coordinacion_pc)
-  const gestion = num(campos.horas_gestion) + coordinacion
-  const reduccion = num(campos.horas_reduccion_cargo)
-
-  const dist = {
-    horas_docencia_directa: docencia,
-    horas_preparacion: preparacion,
-    horas_tutoria: tutoria,
-    horas_vinculacion: vinculacion,
-    horas_titulacion: titulacion,
-    horas_investigacion: investigacion,
-    horas_gestion: gestion,
-    horas_reduccion_cargo: reduccion,
-  }
-
-  const validacion = validarCierreDistributivo(dist, horasContrato)
-  return { ...dist, graduados, coordinacion, validacion }
-}
-
+/**
+ * Formulario de ingreso del distributivo según la plantilla oficial UIDE
+ * (estructura de 4 bloques). Solo el director/coordinador lo edita.
+ * La validación de 40h es informativa: NUNCA bloquea el guardado.
+ */
 export default function DistributivoForm({ docente, periodoId, distributivoExistente, onGuardar, onCancelar }) {
-  // horasRequeridas: null para TP/Honorario (sin tope fijo) → no se bloquea el
-  // cierre exacto. horasContrato: valor para la barra de progreso.
   const horasRequeridas = TIPOS_CONTRATO[docente?.tipo_contrato]?.horas ?? null
   const horasContrato = horasRequeridas ?? 40
 
-  const [campos, setCampos] = useState(() => {
-    if (distributivoExistente) {
-      return {
-        horas_docencia_directa: String(distributivoExistente.horas_docencia_directa ?? ''),
-        materias_asignadas: String(distributivoExistente.materias_asignadas ?? ''),
-        horas_investigacion: String(distributivoExistente.horas_investigacion ?? ''),
-        estudiantes_pc: String(distributivoExistente.estudiantes_pc ?? ''),
-        estudiantes_ppp: String(distributivoExistente.estudiantes_ppp ?? ''),
-        nro_graduados: String(distributivoExistente.nro_graduados ?? ''),
-        proyectos_director: String(distributivoExistente.proyectos_director ?? ''),
-        proyectos_tribunal: String(distributivoExistente.proyectos_tribunal ?? ''),
-        // horas_gestion_base = valor tecleado sin la coordinación (que se
-        // suma al bucket al guardar). Fallback al bucket para registros viejos.
-        horas_gestion: String(distributivoExistente.horas_gestion_base ?? distributivoExistente.horas_gestion ?? ''),
-        coordinacion_ppp: Boolean(distributivoExistente.coordinacion_ppp),
-        coordinacion_pc: Boolean(distributivoExistente.coordinacion_pc),
-        horas_reduccion_cargo: String(distributivoExistente.horas_reduccion_cargo ?? ''),
-      }
-    }
-    return CAMPO_DEFAULT
-  })
-
+  const [campos, setCampos] = useState(() =>
+    distributivoExistente ? camposDesdeDistributivo(distributivoExistente) : { ...CAMPOS_VACIOS, asignaturas: [] },
+  )
   const [guardando, setGuardando] = useState(false)
   const [errorForm, setErrorForm] = useState('')
 
-  const calculado = calcularTodo(campos, horasContrato)
-  const { validacion } = calculado
-  const porcentaje = Math.min((calculado.horas_docencia_directa +
-    calculado.horas_preparacion + calculado.horas_tutoria +
-    calculado.horas_investigacion + calculado.horas_vinculacion +
-    calculado.horas_titulacion + calculado.horas_gestion +
-    calculado.horas_reduccion_cargo) / horasContrato * 100, 100)
+  const t = calcularTotales(campos)
+  const sugerido = sugerencia20(t.horasClase)
+  const diferencia = Math.round((horasContrato - t.total) * 100) / 100
+  const porcentaje = horasContrato > 0 ? Math.min((t.total / horasContrato) * 100, 100) : 0
 
   function set(campo, valor) {
     setCampos(prev => ({ ...prev, [campo]: valor }))
     setErrorForm('')
   }
 
+  // ── Edición del horario (1.1 Asignatura) ────────────────────────────────────
+  function agregarBloque() {
+    set('asignaturas', [...campos.asignaturas, { dia: 'lunes', materia: '', inicio: '08:00', fin: '10:00' }])
+  }
+  function actualizarBloque(idx, campo, valor) {
+    const copia = campos.asignaturas.map((b, i) => (i === idx ? { ...b, [campo]: valor } : b))
+    set('asignaturas', copia)
+  }
+  function eliminarBloque(idx) {
+    set('asignaturas', campos.asignaturas.filter((_, i) => i !== idx))
+  }
+
   async function handleGuardar() {
-    const erroresLogicos = validarDistributivo({
-      horas_docencia_directa: num(campos.horas_docencia_directa),
-      horas_investigacion: num(campos.horas_investigacion),
-      horas_gestion: num(campos.horas_gestion),
-    }, docente?.tipo_contrato)
-
-    if (!erroresLogicos.valido) {
-      setErrorForm(erroresLogicos.errores.join(' • '))
-      return
-    }
-
-    // Bloqueo de cierre exacto (RN-014 · requerimiento Lorena): para TC/MT el
-    // total debe ser EXACTAMENTE 40h/20h. TP/Honorario (horasRequeridas null)
-    // no tienen tope fijo, no se bloquean.
-    if (horasRequeridas != null && !validacion.valido) {
-      setErrorForm(validacion.mensaje)
-      return
-    }
-
     setGuardando(true)
     setErrorForm('')
     try {
-      const { graduados, coordinacion, validacion: _v, ...bucketHoras } = calculado
-      await onGuardar({
+      const doc = construirDistributivoDoc(campos, {
         docente_uid: docente.uid,
         periodo_id: periodoId,
         tipo_contrato: docente.tipo_contrato,
-        ...bucketHoras,
-        materias_asignadas: num(campos.materias_asignadas),
-        estudiantes_pc: num(campos.estudiantes_pc),
-        estudiantes_ppp: num(campos.estudiantes_ppp),
-        nro_graduados: num(campos.nro_graduados),
-        proyectos_director: num(campos.proyectos_director),
-        proyectos_tribunal: num(campos.proyectos_tribunal),
-        horas_gestion_base: num(campos.horas_gestion),
-        coordinacion_ppp: campos.coordinacion_ppp,
-        coordinacion_pc: campos.coordinacion_pc,
-        total_horas: bucketHoras.horas_docencia_directa + bucketHoras.horas_preparacion +
-          bucketHoras.horas_tutoria + bucketHoras.horas_investigacion +
-          bucketHoras.horas_vinculacion + bucketHoras.horas_titulacion +
-          bucketHoras.horas_gestion + bucketHoras.horas_reduccion_cargo,
       })
+      await onGuardar(doc)
     } catch (err) {
       setErrorForm(err.message)
     } finally {
@@ -154,96 +75,117 @@ export default function DistributivoForm({ docente, periodoId, distributivoExist
   }
 
   return (
-    <div className="space-y-5 max-h-[70vh] overflow-y-auto pr-1">
+    <div className="space-y-5 max-h-[72vh] overflow-y-auto pr-1">
       {/* Info docente */}
       <div className="bg-uide-light rounded-lg px-4 py-3 text-sm">
         <p className="font-semibold text-uide-primary">{docente?.nombre_completo}</p>
         <p className="text-uide-secondary text-xs">
-          {docente?.tipo_contrato} — {horasContrato}h semanales · Período {periodoId}
+          {TIPOS_CONTRATO[docente?.tipo_contrato]?.nombre ?? docente?.tipo_contrato} — {horasContrato}h semanales · Período {periodoId}
         </p>
       </div>
 
-      {/* Docencia y preparación */}
-      <Seccion titulo="Docencia y preparación">
-        <CampoInput label="Horas docencia directa" campo="horas_docencia_directa"
-          valor={campos.horas_docencia_directa} onChange={set}
-          hint={`Min 3h, máx ${docente?.tipo_contrato === 'TC' ? 22 : 10}h`} />
-        <CampoInput label="Materias asignadas" campo="materias_asignadas"
-          valor={campos.materias_asignadas} onChange={set} hint="Cuenta el número de asignaturas" />
-        <CampoCalculado label="Preparación de clases" valor={calculado.horas_preparacion}
-          formula="60% de docencia directa" />
-        <CampoCalculado label="Tutoría académica" valor={calculado.horas_tutoria}
-          formula={`${num(campos.materias_asignadas)} materias → ${calcularHorasTutoria(num(campos.materias_asignadas))}h`} />
-      </Seccion>
+      {/* ── 1. DOCENCIA ────────────────────────────────────────────────── */}
+      <Bloque numero="1" titulo="Docencia">
+        {/* 1.1 Asignatura — horario semanal */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-700">1.1 Asignatura — horario semanal</p>
+              <p className="text-xs text-gray-400">
+                Total de horas de clase (presencial + en línea): <span className="font-semibold text-uide-primary">{formatearHoras(t.horasClase)}</span>
+              </p>
+            </div>
+            <button type="button" onClick={agregarBloque}
+              className="text-xs font-semibold text-uide-secondary hover:text-uide-primary border border-uide-secondary/40 rounded-lg px-2.5 py-1.5 hover:bg-uide-light transition">
+              + Agregar bloque
+            </button>
+          </div>
 
-      {/* Investigación */}
-      <Seccion titulo="Investigación">
-        <CampoInput label="Horas investigación" campo="horas_investigacion"
-          valor={campos.horas_investigacion} onChange={set}
-          hint={`Máx ${docente?.tipo_contrato === 'TC' ? 16 : 8}h. Requiere proyecto aprobado`} />
-      </Seccion>
+          {campos.asignaturas.length === 0 ? (
+            <p className="text-xs text-gray-400 italic bg-gray-50 rounded-lg px-3 py-2">
+              Sin bloques de clase. Usa "Agregar bloque" para registrar la malla horaria.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {campos.asignaturas.map((b, idx) => (
+                <div key={idx} className="grid grid-cols-12 gap-1.5 items-center bg-gray-50 rounded-lg p-2">
+                  <select value={b.dia} onChange={e => actualizarBloque(idx, 'dia', e.target.value)}
+                    className="col-span-3 border border-gray-300 rounded-md px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-uide-secondary">
+                    {DIAS_SEMANA.map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
+                  </select>
+                  <input type="text" value={b.materia} placeholder="Materia"
+                    onChange={e => actualizarBloque(idx, 'materia', e.target.value)}
+                    className="col-span-4 border border-gray-300 rounded-md px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-uide-secondary" />
+                  <select value={b.inicio} onChange={e => actualizarBloque(idx, 'inicio', e.target.value)}
+                    className="col-span-2 border border-gray-300 rounded-md px-1 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-uide-secondary">
+                    {HORAS_OPTS.map(h => <option key={h} value={h}>{h}</option>)}
+                  </select>
+                  <select value={b.fin} onChange={e => actualizarBloque(idx, 'fin', e.target.value)}
+                    className="col-span-2 border border-gray-300 rounded-md px-1 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-uide-secondary">
+                    {HORAS_OPTS.map(h => <option key={h} value={h}>{h}</option>)}
+                  </select>
+                  <button type="button" onClick={() => eliminarBloque(idx)}
+                    title="Eliminar bloque"
+                    className="col-span-1 text-gray-400 hover:text-red-600 text-sm font-bold">×</button>
+                  {duracionBloque(b.inicio, b.fin) <= 0 && (
+                    <p className="col-span-12 text-[10px] text-red-500">La hora de fin debe ser posterior a la de inicio.</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
-      {/* Vinculación */}
-      <Seccion titulo="Vinculación con la Sociedad">
-        <CampoInput label="Estudiantes en Prácticas Comunitarias (PC)"
-          campo="estudiantes_pc" valor={campos.estudiantes_pc} onChange={set}
-          hint="1h por cada 10 estudiantes" />
-        <CampoInput label="Estudiantes en Prácticas Pre-Profesionales (PPP)"
-          campo="estudiantes_ppp" valor={campos.estudiantes_ppp} onChange={set}
-          hint="1h por cada 15 estudiantes" />
-        <CampoInput label="Graduados en seguimiento"
-          campo="nro_graduados" valor={campos.nro_graduados} onChange={set}
-          hint="1h por cada 80 graduados" />
-        <CampoCalculado label="Horas vinculación" valor={calculado.horas_vinculacion}
-          formula={`PC: ${calcularHorasPC(num(campos.estudiantes_pc))}h + PPP: ${calcularHorasPPP(num(campos.estudiantes_ppp))}h + Graduados: ${calculado.graduados}h`} />
-      </Seccion>
+        {/* 1.2 / 1.3 con sugerencia 20% */}
+        <CampoHoras label="1.2 Tutorías" campo="horas_tutorias" valor={campos.horas_tutorias} onChange={set}
+          hint={`Sugerido (20%): ${sugerido}h`} />
+        <CampoHoras label="1.3 Otras actividades de docencia" campo="horas_otras_docencia" valor={campos.horas_otras_docencia} onChange={set}
+          hint={`Sugerido (20%): ${sugerido}h`} />
+      </Bloque>
 
-      {/* Titulación */}
-      <Seccion titulo="Dirección y tribunales de titulación">
-        <CampoInput label="Proyectos como director de titulación"
-          campo="proyectos_director" valor={campos.proyectos_director} onChange={set}
-          hint="1h por proyecto" />
-        <CampoInput label="Proyectos como tribunal de titulación"
-          campo="proyectos_tribunal" valor={campos.proyectos_tribunal} onChange={set}
-          hint="2h por proyecto" />
-        <CampoCalculado label="Horas titulación" valor={calculado.horas_titulacion}
-          formula={`Dir: ${num(campos.proyectos_director)}×1h + Trib: ${num(campos.proyectos_tribunal)}×2h`} />
-      </Seccion>
+      {/* ── 2. INVESTIGACIÓN ───────────────────────────────────────────── */}
+      <Bloque numero="2" titulo="Investigación">
+        {INVESTIGACION_SUBCATS.map(s => (
+          <CampoHoras key={s.key} label={`${s.num} ${s.label}`} campo={s.key} valor={campos[s.key]} onChange={set} />
+        ))}
+      </Bloque>
 
-      {/* Gestión */}
-      <Seccion titulo="Gestión institucional">
-        <CampoInput label="Horas gestión institucional" campo="horas_gestion"
-          valor={campos.horas_gestion} onChange={set}
-          hint={`Máx ${docente?.tipo_contrato === 'TC' ? 12 : 6}h. Comités, coordinación, dirección`} />
-        <CampoCheck label="Coordinación de Prácticas Pre-Profesionales (PPP)"
-          campo="coordinacion_ppp" valor={campos.coordinacion_ppp} onChange={set} hint="+3h fijas" />
-        <CampoCheck label="Coordinación de Prácticas Comunitarias (PC)"
-          campo="coordinacion_pc" valor={campos.coordinacion_pc} onChange={set} hint="+3h fijas" />
-        {calculado.coordinacion > 0 && (
-          <CampoCalculado label="Horas coordinación (incluidas en gestión)" valor={calculado.coordinacion}
-            formula="3h por cada coordinación activa" />
-        )}
-        <CampoInput label="Reducción por cargo directivo" campo="horas_reduccion_cargo"
-          valor={campos.horas_reduccion_cargo} onChange={set}
-          hint="Solo si aplica cargo directivo (Decano, Coordinador DGI, etc.)" />
-      </Seccion>
+      {/* ── 3. VINCULACIÓN CON LA SOCIEDAD ─────────────────────────────── */}
+      <Bloque numero="3" titulo="Vinculación con la Sociedad">
+        {VINCULACION_SUBCATS.map(s => (
+          <CampoHoras key={s.key} label={`${s.num} ${s.label}`} campo={s.key} valor={campos[s.key]} onChange={set}
+            hint={`Rango habitual: ${s.min}-${s.max}h`} />
+        ))}
+      </Bloque>
 
-      {/* Resumen total */}
-      <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 space-y-3">
+      {/* ── 4. GESTIÓN ACADÉMICA ───────────────────────────────────────── */}
+      <Bloque numero="4" titulo="Gestión Académica">
+        {GESTION_SUBCATS.map(s => (
+          <CampoHoras key={s.key} label={`${s.num} ${s.label}`} campo={s.key} valor={campos[s.key]} onChange={set} />
+        ))}
+      </Bloque>
+
+      {/* Resumen total en vivo */}
+      <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 space-y-3 sticky bottom-0">
         <div className="flex justify-between text-sm font-semibold">
-          <span>Total calculado</span>
-          <span className={validacion.valido ? 'text-green-600' : 'text-red-600'}>
-            {formatearHoras(validacion.totalCalculado)} / {horasContrato}h
+          <span>Total general</span>
+          <span className={Math.abs(diferencia) < 0.01 ? 'text-green-600' : 'text-amber-600'}>
+            {formatearHoras(t.total)} / {horasContrato}h
           </span>
         </div>
         <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
           <div
-            className={`h-full rounded-full transition-all ${validacion.valido ? 'bg-green-500' : porcentaje > 100 ? 'bg-red-500' : 'bg-amber-400'}`}
+            className={`h-full rounded-full transition-all ${Math.abs(diferencia) < 0.01 ? 'bg-green-500' : porcentaje >= 100 ? 'bg-red-500' : 'bg-amber-400'}`}
             style={{ width: `${Math.min(porcentaje, 100)}%` }}
           />
         </div>
-        <p className={`text-xs font-medium ${validacion.valido ? 'text-green-700' : 'text-red-700'}`}>
-          {validacion.valido ? 'Distribución válida — lista para aprobar' : validacion.mensaje}
+        <p className="text-xs font-medium text-gray-600">
+          {Math.abs(diferencia) < 0.01
+            ? `Total: ${formatearHoras(t.total)} — cuadra con el contrato`
+            : diferencia > 0
+              ? `Total: ${formatearHoras(t.total)} — faltan ${formatearHoras(diferencia)}`
+              : `Total: ${formatearHoras(t.total)} — sobran ${formatearHoras(Math.abs(diferencia))}`}
+          {' · '}<span className="text-gray-400">Informativo, no bloquea el guardado.</span>
         </p>
       </div>
 
@@ -260,70 +202,44 @@ export default function DistributivoForm({ docente, periodoId, distributivoExist
         </button>
         <button
           onClick={handleGuardar}
-          disabled={guardando || (horasRequeridas != null && !validacion.valido)}
-          title={horasRequeridas != null && !validacion.valido ? validacion.mensaje : undefined}
+          disabled={guardando}
           className="px-4 py-2 text-sm font-semibold text-white bg-uide-primary hover:bg-uide-dark rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {guardando ? 'Guardando...' : distributivoExistente ? 'Actualizar borrador' : 'Crear distributivo'}
+          {guardando ? 'Guardando...' : distributivoExistente ? 'Actualizar distributivo' : 'Crear distributivo'}
         </button>
       </div>
     </div>
   )
 }
 
-function Seccion({ titulo, children }) {
+function Bloque({ numero, titulo, children }) {
   return (
-    <div>
-      <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">{titulo}</h4>
-      <div className="space-y-2">{children}</div>
+    <div className="border border-gray-200 rounded-xl p-4">
+      <h4 className="text-sm font-bold text-uide-primary mb-3">{numero}. {titulo.toUpperCase()}</h4>
+      <div className="space-y-2.5">{children}</div>
     </div>
   )
 }
 
-function CampoInput({ label, campo, valor, onChange, hint }) {
+function CampoHoras({ label, campo, valor, onChange, hint }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <div className="flex-1 min-w-0">
         <label className="block text-sm text-gray-700">{label}</label>
         {hint && <p className="text-xs text-gray-400">{hint}</p>}
       </div>
-      <input
-        type="number"
-        value={valor}
-        onChange={e => onChange(campo, e.target.value)}
-        min={0}
-        step="0.5"
-        className="w-20 px-2 py-1.5 border border-gray-300 rounded-lg text-sm text-right focus:outline-none focus:ring-2 focus:ring-uide-secondary"
-      />
-    </div>
-  )
-}
-
-function CampoCheck({ label, campo, valor, onChange, hint }) {
-  return (
-    <label className="flex items-center justify-between gap-3 cursor-pointer">
-      <div className="flex-1 min-w-0">
-        <span className="block text-sm text-gray-700">{label}</span>
-        {hint && <p className="text-xs text-gray-400">{hint}</p>}
+      <div className="flex items-center gap-1 flex-shrink-0">
+        <input
+          type="number"
+          value={valor}
+          onChange={e => onChange(campo, e.target.value)}
+          min={0}
+          step="0.5"
+          placeholder="0"
+          className="w-20 px-2 py-1.5 border border-gray-300 rounded-lg text-sm text-right focus:outline-none focus:ring-2 focus:ring-uide-secondary"
+        />
+        <span className="text-xs text-gray-400">h</span>
       </div>
-      <input
-        type="checkbox"
-        checked={valor}
-        onChange={e => onChange(campo, e.target.checked)}
-        className="w-4 h-4 rounded border-gray-300 text-uide-primary focus:ring-uide-secondary"
-      />
-    </label>
-  )
-}
-
-function CampoCalculado({ label, valor, formula }) {
-  return (
-    <div className="flex items-center justify-between gap-3 bg-blue-50 rounded-lg px-3 py-2">
-      <div>
-        <p className="text-sm text-gray-700 font-medium">{label}</p>
-        <p className="text-xs text-gray-400">{formula}</p>
-      </div>
-      <span className="text-sm font-bold text-uide-primary w-20 text-right">{formatearHoras(valor)}</span>
     </div>
   )
 }

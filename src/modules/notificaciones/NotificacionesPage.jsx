@@ -4,7 +4,7 @@ import NotificacionItem from './NotificacionItem'
 import { IconCampana } from '../../components/icons'
 
 export default function NotificacionesPage() {
-  const { notificaciones, noLeidas, marcarLeida, marcarTodasLeidas } = useContext(NotificacionContext)
+  const { notificaciones, noLeidas, marcarLeida, marcarTodasLeidas, resolverSolicitud } = useContext(NotificacionContext)
 
   const sinLeer = notificaciones.filter(n => !n.leida)
   const leidas  = notificaciones.filter(n => n.leida)
@@ -47,7 +47,7 @@ export default function NotificacionesPage() {
         <div className="space-y-2">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Nuevas</p>
           {sinLeer.map(n => (
-            <NotificacionItem key={n.id} notificacion={n} onMarcarLeida={marcarLeida} />
+            <NotificacionItem key={n.id} notificacion={n} onMarcarLeida={marcarLeida} onResolver={resolverSolicitud} />
           ))}
         </div>
       )}
@@ -57,7 +57,7 @@ export default function NotificacionesPage() {
         <div className="space-y-2">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Anteriores</p>
           {leidas.map(n => (
-            <NotificacionItem key={n.id} notificacion={n} onMarcarLeida={marcarLeida} />
+            <NotificacionItem key={n.id} notificacion={n} onMarcarLeida={marcarLeida} onResolver={resolverSolicitud} />
           ))}
         </div>
       )}

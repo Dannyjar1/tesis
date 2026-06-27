@@ -83,6 +83,9 @@ export default function DistributivoPage() {
         distributivo={distributivo}
         docente={{
           nombre_completo:     user?.nombre_completo,
+          apellido:            user?.apellido,
+          titulo_academico:    user?.titulo_academico,
+          carrera_id:          user?.carrera_id,
           tipo_contrato:       distributivo?.tipo_contrato,
           carrera:             user?.carrera,
           categoria_escalafon: distributivo?.categoria_escalafon,

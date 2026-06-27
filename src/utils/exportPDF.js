@@ -11,6 +11,11 @@ import pdfMakeLib    from 'pdfmake/build/pdfmake'
 import vfs           from 'pdfmake/build/vfs_fonts'
 import templateUrl    from '../assets/NUEVO FORMATO INSTITUCIONAL_page-0001.jpg'
 import { TIPOS_CONTRATO } from './constants'
+import { CARRERAS_SEED, USUARIOS_SEED } from '../services/seedData'
+import {
+  DIAS_SEMANA, asignaturasDeDia, horasClaseDia, calcularTotales,
+  normalizarDistributivo, GESTION_SUBCATS, VINCULACION_SUBCATS, INVESTIGACION_SUBCATS,
+} from '../modules/distributivo/modeloDistributivo'
 
 pdfMakeLib.addVirtualFileSystem(vfs)
 
@@ -36,13 +41,6 @@ const C = {
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
-
-function formatH(h) {
-  if (h === null || h === undefined) return '—'
-  const ent = Math.floor(h)
-  const min = Math.round((h - ent) * 60)
-  return min === 0 ? `${ent}h` : `${ent}h ${min}min`
-}
 
 function codigoVerificacion(periodoId, docenteNombre) {
   const ini = (docenteNombre ?? '')
@@ -111,160 +109,6 @@ function separador(color = C.grisBorde, grosor = 0.5, margin = [0, 0, 0, 12]) {
   }
 }
 
-// ── Ficha de datos del docente ────────────────────────────────────────────────
-function fichaDocente(docente, distributivo, periodo) {
-  const hc          = TIPOS_CONTRATO[docente?.tipo_contrato]?.horas ?? 40
-  const contratoNom = TIPOS_CONTRATO[docente?.tipo_contrato]?.nombre ?? '—'
-
-  const filas = [
-    ['Docente:',             docente?.nombre_completo ?? '—'],
-    ['Tipo de contrato:',    `${contratoNom} (${hc}h/semana)`],
-    ['Carrera / Unidad:',    docente?.carrera ?? '—'],
-    ['Período académico:',   periodo?.nombre ?? '—'],
-    ['Categoría escalafón:', docente?.categoria_escalafon ?? '—'],
-    ['Estado:',              (distributivo?.estado ?? '—').toUpperCase()],
-  ]
-
-  return {
-    table: {
-      widths: [145, '*'],
-      body: [
-        [
-          {
-            text: 'DATOS DEL DOCENTE', colSpan: 2,
-            fontSize: 9, bold: true, color: C.blanco, fillColor: C.vino,
-            margin: [8, 7, 8, 7], border: [true, true, true, true],
-          },
-          {},
-        ],
-        ...filas.map(([label, valor], i) => [
-          {
-            text: label, fontSize: 8, bold: true, color: C.grisSubtxt,
-            fillColor: i % 2 === 0 ? C.grisClaro : C.blanco,
-            margin: [8, 5, 8, 5], border: [true, false, true, false],
-          },
-          {
-            text: valor, fontSize: 9, color: C.grisTexto,
-            fillColor: i % 2 === 0 ? C.grisClaro : C.blanco,
-            margin: [8, 5, 8, 5], border: [true, false, true, false],
-          },
-        ]),
-      ],
-    },
-    layout: {
-      hLineColor: () => C.grisBorde,
-      vLineColor: () => C.grisBorde,
-      hLineWidth: (i, node) => (i === 0 || i === node.table.body.length) ? 1 : 0.5,
-      vLineWidth: () => 0.5,
-    },
-    margin: [0, 0, 0, 14],
-  }
-}
-
-// ── Tabla: Categoría CES | Actividad | Horas ──────────────────────────────────
-function tablaActividades(distributivo) {
-  const FILAS = [
-    { cat: 'Docencia',              actividad: 'Docencia directa',               key: 'horas_docencia_directa' },
-    { cat: 'Docencia',              actividad: 'Dirección / Tribunal titulación', key: 'horas_titulacion' },
-    { cat: 'Tutoría y preparación', actividad: 'Preparación de clases',           key: 'horas_preparacion' },
-    { cat: 'Tutoría y preparación', actividad: 'Tutoría académica',               key: 'horas_tutoria' },
-    { cat: 'Investigación',         actividad: 'Investigación',                   key: 'horas_investigacion' },
-    { cat: 'Vinculación',           actividad: 'Vinculación con la Sociedad',     key: 'horas_vinculacion' },
-    { cat: 'Gestión Institucional', actividad: 'Gestión institucional',           key: 'horas_gestion' },
-    { cat: 'Gestión Institucional', actividad: 'Reducción cargo directivo',       key: 'horas_reduccion_cargo' },
-  ].filter(f => (distributivo[f.key] ?? 0) > 0)
-
-  const total         = distributivo.total_horas ?? 0
-  const horasContrato = TIPOS_CONTRATO[distributivo.tipo_contrato]?.horas ?? 40
-  const esValido      = Math.abs(total - horasContrato) < 0.01
-
-  const headerRow = [
-    { text: 'CATEGORÍA CES', style: 'thTabla' },
-    { text: 'ACTIVIDAD',     style: 'thTabla' },
-    { text: 'HORAS/SEM.',    style: 'thTabla', alignment: 'center' },
-  ]
-
-  const bodyRows = FILAS.map(({ cat, actividad, key }, i) => {
-    const h  = distributivo[key] ?? 0
-    const bg = i % 2 === 0 ? C.blanco : C.grisClaro
-    return [
-      { text: cat,        fontSize: 9, color: C.grisTexto, fillColor: bg, margin: [8, 6, 8, 6] },
-      { text: actividad,  fontSize: 9, color: C.grisTexto, fillColor: bg, margin: [8, 6, 8, 6] },
-      { text: formatH(h), fontSize: 10, bold: true, alignment: 'center', color: C.vino, fillColor: bg, margin: [8, 6, 8, 6] },
-    ]
-  })
-
-  const totalRow = [
-    { text: 'TOTAL', colSpan: 2, fontSize: 10, bold: true, color: C.blanco, fillColor: C.vinoOscuro, margin: [8, 8, 8, 8] },
-    {},
-    { text: `${total}h`, fontSize: 12, bold: true, alignment: 'center', color: esValido ? C.verde : C.rojo, fillColor: '#F9EEF2', margin: [8, 8, 8, 8] },
-  ]
-
-  return {
-    table: {
-      headerRows: 1,
-      widths: [155, '*', 85],
-      body: [headerRow, ...bodyRows, totalRow],
-    },
-    layout: {
-      hLineColor: () => C.grisBorde,
-      vLineColor: () => C.grisBorde,
-      hLineWidth: (i, node) => (i === 0 || i === node.table.body.length) ? 0 : 0.5,
-      vLineWidth: () => 0.5,
-    },
-    margin: [0, 0, 0, 5],
-  }
-}
-
-function notaValidacion(distributivo) {
-  const horasContrato = TIPOS_CONTRATO[distributivo.tipo_contrato]?.horas ?? 40
-  const total         = distributivo.total_horas ?? 0
-  const esValido      = Math.abs(total - horasContrato) < 0.01
-  return {
-    text: esValido
-      ? `Válido — suma exactamente ${horasContrato}h semanales (Reglamento CES 2021, Art. 6)`
-      : `Inválido — suma ${total}h; diferencia de ${Math.abs(horasContrato - total).toFixed(1)}h respecto al contrato`,
-    fontSize: 8,
-    color: esValido ? C.verde : C.rojo,
-    margin: [0, 0, 0, 16],
-  }
-}
-
-// ── Validación cruzada con líneas de firma ────────────────────────────────────
-function bloqueValidacionCruzada() {
-  const firmaFila = (label) => ({
-    stack: [
-      { text: label, fontSize: 8.5, bold: true, color: C.grisSubtxt, margin: [0, 0, 0, 18] },
-      {
-        columns: [
-          {
-            stack: [
-              { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 248, y2: 0, lineWidth: 0.8, lineColor: C.grisTexto }] },
-              { text: 'Firma y nombre', fontSize: 7, color: C.grisSubtxt, margin: [0, 3, 0, 0] },
-            ],
-          },
-          {
-            stack: [
-              { text: 'Fecha:', fontSize: 8, bold: true, color: C.grisSubtxt, margin: [0, 0, 0, 3] },
-              { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 110, y2: 0, lineWidth: 0.8, lineColor: C.grisTexto }] },
-            ],
-            width: 145,
-          },
-        ],
-        columnGap: 14,
-      },
-    ],
-    margin: [0, 0, 0, 24],
-  })
-
-  return {
-    stack: [
-      { text: 'VALIDACIÓN CRUZADA', fontSize: 10, bold: true, color: C.vino, margin: [0, 0, 0, 14] },
-      firmaFila('Directora de Carrera:'),
-      firmaFila('Docente Propietario:'),
-    ],
-  }
-}
 
 // ── Código CACES + QR ─────────────────────────────────────────────────────────
 function bloqueAuditoriaCACES(codigo, generadoPorNombre, periodoNombre, qrBase64) {
@@ -308,64 +152,243 @@ const DEFAULT_STYLE = { font: 'Roboto', fontSize: 9 }
 // EXPORTACIONES PRINCIPALES
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Genera el PDF del distributivo individual usando la plantilla institucional UIDE como fondo.
- * @param {Object} distributivo
- * @param {Object} docente  — { nombre_completo, tipo_contrato, carrera, categoria_escalafon }
- * @param {Object} periodo  — { id, nombre, fecha_inicio, fecha_fin }
- * @param {string} generadoPorNombre
- * @returns {Promise<string>} código de verificación
- */
-export async function exportarDistributivoPDF(distributivo, docente, periodo, generadoPorNombre) {
-  const codigo = codigoVerificacion(periodo?.id, docente?.nombre_completo ?? '')
+// ─────────────────────────────────────────────────────────────────────────────
+// DISTRIBUTIVO INDIVIDUAL — réplica del formato oficial UIDE
+// ("2026-Distributivo-Docente-base.xlsx"): blanco y negro, 4 bloques, horario
+// semanal por día y bloque de 3 firmas.
+// ─────────────────────────────────────────────────────────────────────────────
 
-  // Cargamos la plantilla institucional y el QR en paralelo
-  const [templateBase64, qrBase64] = await Promise.all([
-    urlABase64(templateUrl),
-    generarQR(`https://uide.edu.ec/verificar?codigo=${codigo}`),
+const NEGRO = '#000000'
+
+/** Formatea horas como valor plano para las celdas de la tabla ('' si es 0). */
+function fmtCelda(h) {
+  const n = Number(h) || 0
+  if (n === 0) return ''
+  return Number.isInteger(n) ? String(n) : n.toFixed(1)
+}
+
+/** Fecha larga en español con día con cero a la izquierda: "04 de mayo de 2026". */
+function fechaLarga(date = new Date()) {
+  const dd = String(date.getDate()).padStart(2, '0')
+  const mes = date.toLocaleDateString('es-EC', { month: 'long' })
+  return `${dd} de ${mes} de ${date.getFullYear()}`
+}
+
+/** Código del documento: GA-U-DDMMAAAA Distributivo <Apellido>. */
+function codigoDocumento(docente, date = new Date()) {
+  const dd = String(date.getDate()).padStart(2, '0')
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  const ddmmaaaa = `${dd}${mm}${date.getFullYear()}`
+  const apellido = (docente?.apellido?.trim().split(/\s+/)[0]) ||
+    (docente?.nombre_completo?.trim().split(/\s+/).slice(-2, -1)[0]) ||
+    (docente?.nombre_completo?.trim().split(/\s+/).pop()) || 'Docente'
+  return `GA-U-${ddmmaaaa} Distributivo ${apellido}`
+}
+
+/** Resuelve carrera + firmantes (coordinador/director) desde los datos semilla,
+ *  aplicando el overlay local de usuarios para reflejar ediciones (p. ej. el
+ *  título académico) hechas en gestión de personal (modo mock). */
+function resolverContexto(docente) {
+  const carrera = CARRERAS_SEED.find(c => c.id === docente?.carrera_id) ?? null
+  let overlay = {}
+  try { overlay = JSON.parse(localStorage.getItem('uide_sistema_usuarios')) ?? {} } catch { overlay = {} }
+  const buscar = (uid) => {
+    const base = USUARIOS_SEED.find(u => u.uid === uid)
+    if (!base) return null
+    return { ...base, ...(overlay[uid] ?? {}) }
+  }
+  return {
+    carrera,
+    coordinador: carrera ? buscar(carrera.coordinador_uid) : null,
+    director:    carrera ? buscar(carrera.director_uid) : null,
+  }
+}
+
+/** Celda del horario para un día: líneas "Materia / HH:MM - HH:MM" por bloque. */
+function celdaDiaAsignatura(asignaturas, diaId) {
+  const bloques = asignaturasDeDia(asignaturas, diaId)
+  if (bloques.length === 0) return { text: '', style: 'celdaDia' }
+  const texto = []
+  bloques.forEach((b, i) => {
+    if (i > 0) texto.push({ text: '\n', fontSize: 4 })
+    texto.push({ text: (b.materia || '—'), bold: true })
+    texto.push({ text: `\n${b.inicio} - ${b.fin}` })
+  })
+  return { text: texto, style: 'celdaDia' }
+}
+
+/**
+ * Genera el PDF del distributivo individual replicando el formato oficial UIDE.
+ * @param {Object} distributivo
+ * @param {Object} docente — { nombre_completo, apellido, tipo_contrato, carrera_id }
+ * @param {Object} periodo — { id, nombre }
+ * @param {string} generadoPorNombre  (no se imprime; el formato oficial usa firmas)
+ * @returns {Promise<string>} código del documento generado
+ */
+export async function exportarDistributivoPDF(distributivo, docente, periodo, generadoPorNombre, opciones = {}) {
+  const dist = normalizarDistributivo(distributivo) ?? {}
+  const asignaturas = dist.asignaturas ?? []
+  const t = calcularTotales(dist)
+  const { carrera, coordinador, director } = resolverContexto(docente)
+  const codigo = codigoDocumento(docente)
+
+  const carreraNom = (carrera?.nombre ?? docente?.carrera ?? '—').toUpperCase()
+  const facultadNom = carrera?.facultad ?? '—'
+  // Texto literal de la plantilla oficial; fallback al nombre largo institucional.
+  const facultadEscuelaPdf = carrera?.facultad_escuela_pdf ?? `${facultadNom} / ${carreraNom}`
+
+  // Estructura por defecto de columnas: Nº | ACTIVIDAD | LUN..VIE | TOTAL
+  const diasCols = DIAS_SEMANA.map(d => d.id)
+
+  // Fila de subcategoría con valor único en la columna TOTAL.
+  const filaValor = (num, label, valor) => ([
+    { text: num, style: 'cNum' },
+    { text: label, style: 'cAct' },
+    ...diasCols.map(() => ({ text: '', style: 'cDia' })),
+    { text: fmtCelda(valor), style: 'cTot' },
   ])
 
-  const docDef = {
-    pageSize:    'A4',
-    // Márgenes ajustados al área blanca de la plantilla:
-    //   top    → deja libre el logo UIDE centrado
-    //   bottom → deja libre "REINVENTEMOS EL FUTURO" + barra vino
-    pageMargins: [55, 145, 55, 118],
+  // Fila de cabecera de bloque (en negrita) con el total del bloque.
+  const filaBloque = (num, label, totalBloque) => ([
+    { text: num, style: 'cNumB' },
+    { text: label, style: 'cActB' },
+    ...diasCols.map(() => ({ text: '', style: 'cDia' })),
+    { text: fmtCelda(totalBloque), style: 'cTotB' },
+  ])
 
-    // La plantilla UIDE cubre toda la página (logo + fondo + footer)
-    background: templateBase64
-      ? (currentPage, pageSize) => ({
-          image: templateBase64,
-          width:  pageSize.width,
-          height: pageSize.height,
-          absolutePosition: { x: 0, y: 0 },
-        })
-      : undefined,
+  const headerRow = [
+    { text: 'Nº', style: 'th' },
+    { text: 'ACTIVIDAD', style: 'th', alignment: 'left' },
+    ...DIAS_SEMANA.map(d => ({ text: d.label, style: 'th' })),
+    { text: 'TOTAL', style: 'th' },
+  ]
 
-    content: [
-      // Título del documento
-      { text: 'DISTRIBUTIVO ACADÉMICO', fontSize: 14, bold: true, color: C.vino, alignment: 'center', margin: [0, 0, 0, 3] },
-      { text: 'Reglamento CES 2021 (RPC-SE-19-No.055-2021) — Arts. 6, 7 y 8', fontSize: 7, color: C.grisSubtxt, alignment: 'center', margin: [0, 0, 0, 16] },
+  // Fila 1.1 Asignatura con el horario por día.
+  const filaAsignatura = [
+    { text: '', style: 'cNum' },
+    { text: '1.1 Asignatura', style: 'cAct' },
+    ...diasCols.map(d => celdaDiaAsignatura(asignaturas, d)),
+    { text: fmtCelda(t.horasClase), style: 'cTot' },
+  ]
 
-      // Datos del docente
-      fichaDocente(docente, distributivo, periodo),
+  // Fila TOTAL final: totales por día (solo horas de clase) + total general.
+  const filaTotal = [
+    { text: '', style: 'cNumB' },
+    { text: 'TOTAL', style: 'cActB' },
+    ...diasCols.map(d => ({ text: fmtCelda(horasClaseDia(asignaturas, d)), style: 'cTotB' })),
+    { text: fmtCelda(t.total), style: 'cTotB' },
+  ]
 
-      // Tabla de actividades
-      { text: 'DISTRIBUCIÓN DE ACTIVIDADES SEMANALES', fontSize: 9, bold: true, color: C.vinoOscuro, margin: [0, 0, 0, 7] },
-      tablaActividades({ ...distributivo, tipo_contrato: docente?.tipo_contrato }),
-      notaValidacion({ ...distributivo, tipo_contrato: docente?.tipo_contrato }),
+  const body = [
+    headerRow,
+    // 1. DOCENCIA
+    filaBloque('1', 'DOCENCIA', t.docencia),
+    filaAsignatura,
+    filaValor('', '1.2 Tutorías (20% horas clase)', dist.horas_tutorias),
+    filaValor('', '1.3 Otras actividades de docencia (20% horas clase)', dist.horas_otras_docencia),
+    // 2. INVESTIGACIÓN
+    filaBloque('2', 'INVESTIGACIÓN', t.investigacion),
+    ...INVESTIGACION_SUBCATS.map(s => filaValor('', `${s.num} ${s.label}`, dist[s.key])),
+    // 3. VINCULACIÓN CON LA SOCIEDAD
+    filaBloque('3', 'VINCULACIÓN CON LA SOCIEDAD', t.vinculacion),
+    ...VINCULACION_SUBCATS.map(s => filaValor('', `${s.num} ${s.label} (${s.min}-${s.max}h)`, dist[s.key])),
+    // 4. GESTIÓN ACADÉMICA
+    filaBloque('4', 'GESTIÓN ACADÉMICA', t.gestion),
+    ...GESTION_SUBCATS.map(s => filaValor('', `${s.num} ${s.label}`, dist[s.key])),
+    // TOTAL
+    filaTotal,
+  ]
 
-      // Firmas de validación cruzada
-      separador(C.grisBorde, 0.5, [0, 0, 0, 14]),
-      bloqueValidacionCruzada(),
+  // Encabezado (datos del documento)
+  const filaDato = (label, valor) => ([
+    { text: label, bold: true, fontSize: 8, margin: [0, 1, 6, 1] },
+    { text: valor, fontSize: 8, margin: [0, 1, 0, 1] },
+  ])
 
-      // Código CACES
-      separador(C.grisBorde, 0.5, [0, 0, 0, 10]),
-      bloqueAuditoriaCACES(codigo, generadoPorNombre, periodo?.nombre ?? '—', qrBase64),
+  // Nombre con título académico opcional: "Mgs. Lorena Conde" o solo el nombre.
+  const conTitulo = (persona) => {
+    const nombre = persona?.nombre_completo
+    if (!nombre) return '—'
+    const titulo = persona?.titulo_academico?.trim()
+    return titulo ? `${titulo} ${nombre}` : nombre
+  }
+
+  // Bloque de firmas (3 columnas)
+  const firma = (rotulo, persona, cargo) => ({
+    stack: [
+      { text: rotulo, bold: true, fontSize: 8, margin: [0, 0, 0, 26] },
+      { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.7, lineColor: NEGRO }] },
+      { text: conTitulo(persona), fontSize: 8, bold: true, margin: [0, 3, 0, 0] },
+      { text: cargo, fontSize: 7, margin: [0, 1, 0, 0] },
+      { text: carreraNom, fontSize: 7, margin: [0, 1, 0, 0] },
     ],
+    width: '*',
+  })
 
-    styles: STYLES,
-    defaultStyle: DEFAULT_STYLE,
+  const docDef = {
+    pageSize: 'A4',
+    pageOrientation: 'landscape',
+    pageMargins: [28, 28, 28, 28],
+    content: [
+      {
+        columns: [
+          { text: 'DISTRIBUTIVO INDIVIDUAL DE CARGA HORARIO', bold: true, fontSize: 13, alignment: 'left' },
+          { text: codigo, fontSize: 8, alignment: 'right', margin: [0, 3, 0, 0] },
+        ],
+        margin: [0, 0, 0, 8],
+      },
+      {
+        table: {
+          widths: ['auto', '*'],
+          body: [
+            filaDato('FECHA:', fechaLarga()),
+            filaDato('LUGAR:', 'UIDE - LOJA'),
+            filaDato('FACULTAD / ESCUELA:', facultadEscuelaPdf),
+            filaDato('PERÍODO:', periodo?.nombre ?? '—'),
+            filaDato('NOMBRE DEL DOCENTE:', (docente?.nombre_completo ?? '—').toUpperCase()),
+          ],
+        },
+        layout: 'noBorders',
+        margin: [0, 0, 0, 10],
+      },
+      {
+        table: {
+          headerRows: 1,
+          widths: [20, 175, '*', '*', '*', '*', '*', 38],
+          body,
+        },
+        layout: {
+          hLineColor: () => NEGRO,
+          vLineColor: () => NEGRO,
+          hLineWidth: () => 0.6,
+          vLineWidth: () => 0.6,
+        },
+      },
+      opciones.observaciones?.trim()
+        ? { text: `Observaciones: ${opciones.observaciones.trim()}`, fontSize: 8, margin: [0, 10, 0, 0] }
+        : { text: '' },
+      {
+        columns: [
+          firma('Elaborado por:', docente, 'DOCENTE DE LA CARRERA'),
+          firma('Revisado por:', coordinador, 'COORDINADOR ACADÉMICO DE LA CARRERA'),
+          firma('Aprobado por:', director, 'DIRECTORA/DIRECTOR DE LA CARRERA DE'),
+        ],
+        columnGap: 24,
+        margin: [0, 28, 0, 0],
+      },
+    ],
+    styles: {
+      th: { bold: true, fontSize: 8, alignment: 'center', margin: [2, 4, 2, 4] },
+      cNum:  { fontSize: 8, alignment: 'center', margin: [2, 3, 2, 3] },
+      cAct:  { fontSize: 8, margin: [3, 3, 3, 3] },
+      cDia:  { fontSize: 7, alignment: 'center', margin: [2, 3, 2, 3] },
+      cTot:  { fontSize: 8, alignment: 'center', margin: [2, 3, 2, 3] },
+      cNumB: { fontSize: 8, bold: true, alignment: 'center', margin: [2, 3, 2, 3] },
+      cActB: { fontSize: 8, bold: true, margin: [3, 3, 3, 3] },
+      cTotB: { fontSize: 8, bold: true, alignment: 'center', margin: [2, 3, 2, 3] },
+      celdaDia: { fontSize: 7, alignment: 'center', margin: [2, 3, 2, 3] },
+    },
+    defaultStyle: { font: 'Roboto', fontSize: 8, color: NEGRO },
   }
 
   const filename = `distributivo_${(docente?.nombre_completo ?? 'docente').replace(/\s+/g, '_')}_${periodo?.id ?? ''}.pdf`
@@ -486,8 +509,9 @@ export async function exportarReporteCarreraPDF(docentesData, periodo, generadoP
  * @param {string} generadoPorNombre
  * @returns {Promise<string>} código de verificación
  */
-export async function exportarReporteActividadesPDF(docentesData, periodo, generadoPorNombre) {
+export async function exportarReporteActividadesPDF(docentesData, periodo, generadoPorNombre, opciones = {}) {
   const codigo = codigoVerificacion(periodo?.id, 'ACTIVIDADES')
+  const tituloDoc = opciones.encabezado?.trim() || 'REPORTE SEMESTRAL DE CUMPLIMIENTO DE ACTIVIDADES'
 
   const [templateBase64, qrBase64] = await Promise.all([
     urlABase64(templateUrl),
@@ -552,6 +576,9 @@ export async function exportarReporteActividadesPDF(docentesData, periodo, gener
       },
       { text: 'Evidencias:', fontSize: 8, bold: true, color: C.grisSubtxt, margin: [0, 2, 0, 0] },
       evidencias,
+      d.nota?.trim()
+        ? { text: `Nota del director: ${d.nota.trim()}`, fontSize: 8, italics: true, color: C.grisTexto, margin: [0, 3, 0, 0] }
+        : { text: '' },
     ]
   })
 
@@ -562,7 +589,7 @@ export async function exportarReporteActividadesPDF(docentesData, periodo, gener
       ? (currentPage, pageSize) => ({ image: templateBase64, width: pageSize.width, height: pageSize.height, absolutePosition: { x: 0, y: 0 } })
       : undefined,
     content: [
-      { text: 'REPORTE SEMESTRAL DE CUMPLIMIENTO DE ACTIVIDADES', fontSize: 12, bold: true, color: C.vino, alignment: 'center', margin: [0, 0, 0, 3] },
+      { text: tituloDoc, fontSize: 12, bold: true, color: C.vino, alignment: 'center', margin: [0, 0, 0, 3] },
       { text: `Período: ${periodo?.nombre ?? '—'}   ·   ${ahora}`, fontSize: 7, color: C.grisSubtxt, alignment: 'center', margin: [0, 0, 0, 14] },
       {
         columns: [
@@ -574,6 +601,15 @@ export async function exportarReporteActividadesPDF(docentesData, periodo, gener
         columnGap: 10,
         margin: [0, 0, 0, 16],
       },
+      opciones.observaciones?.trim()
+        ? {
+            stack: [
+              { text: 'OBSERVACIONES DEL DIRECTOR', fontSize: 9, bold: true, color: C.vinoOscuro, margin: [0, 0, 0, 4] },
+              { text: opciones.observaciones.trim(), fontSize: 9, color: C.grisTexto },
+            ],
+            margin: [0, 0, 0, 14],
+          }
+        : { text: '' },
       ...bloquesDocente,
       separador(C.grisBorde, 0.5, [0, 6, 0, 10]),
       bloqueAuditoriaCACES(codigo, generadoPorNombre, periodo?.nombre ?? '—', qrBase64),

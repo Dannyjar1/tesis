@@ -19,6 +19,7 @@ export default function PrevisualizacionPDF({
 }) {
   const [descargando, setDescargando] = useState(false)
   const [codigoGenerado, setCodigoGenerado] = useState(null)
+  const [observaciones, setObservaciones] = useState('')
 
   const horasContrato = TIPOS_CONTRATO[distributivo?.tipo_contrato]?.horas ?? 40
   const cumplimiento  = distributivo
@@ -28,7 +29,7 @@ export default function PrevisualizacionPDF({
   async function handleDescargar() {
     setDescargando(true)
     try {
-      const codigo = await exportarDistributivoPDF(distributivo, docente, periodo, generadoPorNombre)
+      const codigo = await exportarDistributivoPDF(distributivo, docente, periodo, generadoPorNombre, { observaciones })
       setCodigoGenerado(codigo)
     } catch (err) {
       console.error('Error generando PDF:', err)
@@ -89,6 +90,18 @@ export default function PrevisualizacionPDF({
           <div className="max-h-[360px] overflow-y-auto rounded-xl border border-gray-200">
             <DistributivoTable distributivo={distributivo} />
           </div>
+        </div>
+
+        {/* Campo editable antes de descargar (RN-025) */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Observaciones (se incluyen en el PDF)</label>
+          <textarea
+            rows={2}
+            value={observaciones}
+            onChange={e => setObservaciones(e.target.value)}
+            placeholder="Observaciones o correcciones para este distributivo…"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-uide-secondary"
+          />
         </div>
 
         {codigoGenerado && (

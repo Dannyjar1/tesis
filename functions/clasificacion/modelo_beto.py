@@ -18,14 +18,14 @@ _tokenizer = None
 _modelo    = None
 _cargado   = False
 
-# Orden de índices debe coincidir con el fine-tuning del dataset UIDE
-INDICE_A_CATEGORIA = {
-    0: "docencia",
-    1: "investigacion",
-    2: "vinculacion",
-    3: "tutoria",
-    4: "gestion",
-}
+# Mapa índice → categoría derivado de la fuente única (categorias.CATEGORIAS),
+# sincronizado 1:1 con las 4 categorías oficiales. El orden coincide con el
+# dataset de fine-tuning evaluado en Colab:
+#   docencia(0), investigacion(1), vinculacion(2), gestion(3).
+# (Antes había 5 clases con "tutoria" en el índice 3; la tutoría es subcategoría
+#  1.2 de DOCENCIA y ya no es una clase del modelo.)
+from .categorias import CATEGORIAS
+INDICE_A_CATEGORIA = {i: cat for i, cat in enumerate(CATEGORIAS)}
 
 
 def cargar_modelo(ruta_modelo: str = None):

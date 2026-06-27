@@ -1,0 +1,139 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="1690" viewBox="0 0 1180 1690" font-family="'Segoe UI', Arial, Helvetica, sans-serif">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#334155"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1180" height="1690" fill="#FFFFFF"/>
+  <text x="590" y="38" text-anchor="middle" font-size="22" font-weight="700" fill="#001F5B">Pipeline de clasificación de actividades con NLP (BETO)</text>
+  <text x="590" y="60" text-anchor="middle" font-size="13" fill="#6B7280">Cloud Function 'clasificar' (Python) — preprocesamiento, clasificación, confirmación humana y reentrenamiento</text>
+  
+  <rect x="70" y="1500" width="1060" height="130" rx="12" fill="#F8FAF9" stroke="#13633A" stroke-width="1.2" stroke-dasharray="7 5"/>
+  <text x="90" y="1522" font-size="12" font-weight="700" fill="#13633A">Reentrenamiento offline (manual) — mejora continua del modelo</text>
+  <path d="M600,122 L600,150" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#ar)"/>
+<path d="M600,210 L600,244" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#ar)"/>
+<path d="M705,292 L905,293" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="794.2" y="283.5" width="21.6" height="16" rx="3" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="0.8"/>
+      <text x="805.0" y="295.0" text-anchor="middle" font-size="9.5" font-weight="600" fill="#334155">No</text>
+<path d="M600,340 L600,376" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="589.2" y="349.0" width="21.6" height="16" rx="3" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="0.8"/>
+      <text x="600.0" y="360.5" text-anchor="middle" font-size="9.5" font-weight="600" fill="#334155">Sí</text>
+<path d="M600,442 L600,478" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#ar)"/>
+<path d="M485,528 L285,622" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="368.4" y="566.0" width="33.2" height="16" rx="3" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="0.8"/>
+      <text x="385.0" y="577.5" text-anchor="middle" font-size="9.5" font-weight="600" fill="#334155">beto</text>
+<path d="M715,528 L917.5,622" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="753.3" y="566.0" width="126.0" height="16" rx="3" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="0.8"/>
+      <text x="816.3" y="577.5" text-anchor="middle" font-size="9.5" font-weight="600" fill="#334155">heurística (default)</text>
+<path d="M285,762 L285,800" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#ar)"/>
+<path d="M395,848 L730,692" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#ar)"/>
+      <rect x="519.8" y="761.0" width="85.4" height="16" rx="3" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="0.8"/>
+      <text x="562.5" y="772.5" text-anchor="middle" font-size="9.5" font-weight="600" fill="#334155">No → fallback</text>
+<path d="M285,896 L370,962" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="316.7" y="920.0" width="21.6" height="16" rx="3" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="0.8"/>
+      <text x="327.5" y="931.5" text-anchor="middle" font-size="9.5" font-weight="600" fill="#334155">Sí</text>
+<path d="M917.5,762 L830,962" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#ar)"/>
+<path d="M600,994 L600,1030" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#ar)"/>
+<path d="M600,1126 L600,1158" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#ar)"/>
+<path d="M600,1216 L600,1252" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#ar)"/>
+<path d="M720,1306 L760,1307" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="697.3" y="1297.5" width="85.4" height="16" rx="3" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="0.8"/>
+      <text x="740.0" y="1309.0" text-anchor="middle" font-size="9.5" font-weight="600" fill="#334155">Sí: confirmar</text>
+<path d="M480,1306 L475,1310" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#ar)"/>
+      <rect x="437.7" y="1299.0" width="79.6" height="16" rx="3" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="0.8"/>
+      <text x="477.5" y="1310.5" text-anchor="middle" font-size="9.5" font-weight="600" fill="#334155">No: corregir</text>
+<path d="M932.5,1342 L730,1435" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#ar)"/>
+<path d="M285,1358 L470,1435" fill="none" stroke="#334155" stroke-width="1.5" marker-end="url(#ar)"/>
+<path d="M285,1358 L260,1540" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#ar)"/>
+      <rect x="212.4" y="1440.0" width="120.2" height="16" rx="3" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="0.8"/>
+      <text x="272.5" y="1451.5" text-anchor="middle" font-size="9.5" font-weight="600" fill="#334155">registros /feedback</text>
+<path d="M410,1576 L450,1576" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#ar)"/>
+<path d="M800,1576 L840,1576" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#ar)"/>
+<path d="M967.5,1612 L967,1635 L55,1635 L55,692 L95,692" fill="none" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#ar)"/>
+      <rect x="-16.7" y="1626.0" width="143.4" height="16" rx="3" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="0.8"/>
+      <text x="55.0" y="1637.5" text-anchor="middle" font-size="9.5" font-weight="600" fill="#334155">redespliegue del modelo</text>
+  <rect x="380" y="70" width="440" height="52" rx="26" fill="#E8F0FE" stroke="#003087" stroke-width="1.6"/>
+<text x="600" y="92.75" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">Usuario redacta el texto de la actividad/evento</text>
+<text x="600" y="107.25" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">(título + descripción)</text>
+<polygon points="378,150 840,150 822,210 360,210" fill="#EEF6FF" stroke="#0057B7" stroke-width="1.6"/>
+<text x="600" y="176.75" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">POST /clasificar</text>
+<text x="600" y="191.25" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">{ texto, evento_id, docente_uid, periodo_id } + Firebase ID token</text>
+<polygon points="600,244 705,292 600,340 495,292" fill="#FFF7E6" stroke="#E8500A" stroke-width="1.6"/>
+<text x="600" y="288.75" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">¿texto válido</text>
+<text x="600" y="303.25" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">(no vacío)?</text>
+<rect x="905" y="268" width="220" height="50" rx="25" fill="#FDECEC" stroke="#DC2626" stroke-width="1.6"/>
+<text x="1015" y="289.75" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">HTTP 400</text>
+<text x="1015" y="304.25" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">Campo 'texto' requerido</text>
+<rect x="360" y="376" width="480" height="66" rx="8" fill="#FFFFFF" stroke="#0057B7" stroke-width="1.6"/>
+<text x="600" y="405.75" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">Preprocesamiento</text>
+<text x="600" y="420.25" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">minúsculas · normalización Unicode (NFKD) · limpieza de caracteres</text>
+<polygon points="600,478 715,528 600,578 485,528" fill="#FFF7E6" stroke="#E8500A" stroke-width="1.6"/>
+<text x="600" y="532" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">CLASIFICADOR_MODO</text>
+<rect x="95" y="622" width="380" height="140" rx="8" fill="#DCE7FB" stroke="#003087" stroke-width="2.4"/>
+<text x="285" y="667" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1F2937">BETO fine-tuned (español)</text>
+<text x="285" y="681.5" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">dccuchile/bert-base-spanish-wwm-cased</text>
+<text x="285" y="696" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">AutoModelForSequenceClassification</text>
+<text x="285" y="710.5" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">(Transformer + capa softmax)</text>
+<text x="285" y="725" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">tokeniza (máx. 128) → logits → softmax → argmax</text>
+<polygon points="285,800 395,848 285,896 175,848" fill="#FFF7E6" stroke="#E8500A" stroke-width="1.6"/>
+<text x="285" y="844.75" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">¿BETO disponible?</text>
+<text x="285" y="859.25" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">(torch / modelo / memoria)</text>
+<rect x="730" y="622" width="375" height="140" rx="8" fill="#F3F4F6" stroke="#6B7280" stroke-width="1.6"/>
+<text x="917.5" y="667" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">Clasificador heurístico</text>
+<text x="917.5" y="681.5" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">(modo por defecto / fallback)</text>
+<text x="917.5" y="696" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">keywords × pesos → normaliza → argmax</text>
+<text x="917.5" y="710.5" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">sin señal → 'gestión' (conf. 0.58)</text>
+<text x="917.5" y="725" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">confianza ∈ [0.58, 0.97]</text>
+<rect x="370" y="930" width="460" height="64" rx="8" fill="#FFFFFF" stroke="#0057B7" stroke-width="1.6"/>
+<text x="600" y="958.75" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">Resultado provisional</text>
+<text x="600" y="973.25" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">{ categoria, confianza, probabilidades, motor }</text>
+
+      <path d="M360,1039 a240,9 0 0 1 480,0 v78 a240,9 0 0 1 -480,0 Z"
+        fill="#EAF6EF" stroke="#13633A" stroke-width="1.6"/>
+      <path d="M360,1039 a240,9 0 0 0 480,0" fill="none" stroke="#13633A" stroke-width="1.6"/>
+<text x="600" y="1067.5" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">Persistencia en Cloud Firestore</text>
+<text x="600" y="1082" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">/clasificaciones_ia  (estado = 'provisional')</text>
+<text x="600" y="1096.5" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">evento → estado_clasificacion = 'provisional'</text>
+<polygon points="378,1158 840,1158 822,1216 360,1216" fill="#EEF6FF" stroke="#0057B7" stroke-width="1.6"/>
+<text x="600" y="1191" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">HTTP 200 → el frontend muestra la sugerencia provisional</text>
+<polygon points="600,1252 720,1306 600,1360 480,1306" fill="#FFF7E6" stroke="#E8500A" stroke-width="1.6"/>
+<text x="600" y="1295.5" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">El usuario (director/</text>
+<text x="600" y="1310" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">coordinador) revisa:</text>
+<text x="600" y="1324.5" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">¿categoría correcta?</text>
+<rect x="760" y="1272" width="345" height="70" rx="8" fill="#EAF6EF" stroke="#13633A" stroke-width="1.6"/>
+<text x="932.5" y="1303.75" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">Confirmar</text>
+<text x="932.5" y="1318.25" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">evento.estado_clasificacion = 'confirmada'</text>
+<rect x="95" y="1262" width="380" height="96" rx="8" fill="#FDEFE8" stroke="#E8500A" stroke-width="1.6"/>
+<text x="285" y="1299.5" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">Corrección manual</text>
+<text x="285" y="1314" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">categoria_corregida · fue_corregida = true</text>
+<text x="285" y="1328.5" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">guarda registro en /feedback</text>
+<rect x="470" y="1410" width="260" height="50" rx="25" fill="#E8F0FE" stroke="#003087" stroke-width="1.6"/>
+<text x="600" y="1439" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">Fin: clasificación confirmada</text>
+<rect x="110" y="1540" width="300" height="72" rx="8" fill="#F5F7FA" stroke="#13633A" stroke-width="1.6"/>
+<text x="260" y="1572.75" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">generar_dataset.py</text>
+<text x="260" y="1587.25" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">/feedback → dataset_beto.csv (etiquetado)</text>
+<rect x="450" y="1540" width="350" height="72" rx="8" fill="#F5F7FA" stroke="#13633A" stroke-width="1.6"/>
+<text x="625" y="1572.75" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">entrenar.py · fine-tuning de BETO</text>
+<text x="625" y="1587.25" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">4 epochs · lr 2e-5 · meta F1 ≥ 0.80</text>
+
+      <path d="M840,1549 a127.5,9 0 0 1 255,0 v54 a127.5,9 0 0 1 -255,0 Z"
+        fill="#EAF6EF" stroke="#13633A" stroke-width="1.6"/>
+      <path d="M840,1549 a127.5,9 0 0 0 255,0" fill="none" stroke="#13633A" stroke-width="1.6"/>
+<text x="967.5" y="1580" text-anchor="middle" font-size="11.5" font-weight="400" fill="#1F2937">Modelo → Cloud Storage</text>
+
+  <!-- Leyenda de formas -->
+  <g font-size="11" fill="#374151">
+    <rect x="70" y="1650" width="26" height="15" rx="7.5" fill="#E8F0FE" stroke="#003087"/>
+    <text x="104" y="1661">inicio/fin</text>
+    <rect x="190" y="1650" width="26" height="15" rx="4" fill="#FFFFFF" stroke="#0057B7"/>
+    <text x="224" y="1661">proceso</text>
+    <polygon points="320,1650 344,1657.5 320,1665 296,1657.5" fill="#FFF7E6" stroke="#E8500A"/>
+    <text x="352" y="1661">decisión</text>
+    <polygon points="455,1650 478,1650 472,1665 449,1665" fill="#EEF6FF" stroke="#0057B7"/>
+    <text x="486" y="1661">entrada/salida</text>
+    <path d="M610,1652 a13,4 0 0 1 26,0 v9 a13,4 0 0 1 -26,0 Z" fill="#EAF6EF" stroke="#13633A"/>
+    <text x="644" y="1661">almacenamiento</text>
+    <line x1="760" y1="1658" x2="800" y2="1658" stroke="#334155" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#ar)"/>
+    <text x="808" y="1661">flujo de mejora / fallback</text>
+  </g>
+</svg>

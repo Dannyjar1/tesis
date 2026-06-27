@@ -1,20 +1,20 @@
-# Definición de categorías del distributivo académico reconocidas por el CES.
-# Referencia: Reglamento CES 2021, Arts. 6, 7 y 8.
+# Categorías oficiales del distributivo (Excel UIDE "2026-Distributivo-Docente-base").
+# Son 4 categorías. NO existe "tutoria" ni "titulacion" como categoría: la tutoría
+# es la subcategoría 1.2 dentro de DOCENCIA. El clasificador predice estas 4
+# clases (mismo conjunto evaluado en Colab).
 
 CATEGORIAS = [
     "docencia",
     "investigacion",
     "vinculacion",
-    "tutoria",
     "gestion",
 ]
 
 CATEGORIA_LABELS = {
-    "docencia": "Docencia directa",
-    "investigacion": "Investigación",
-    "vinculacion": "Vinculación con la Sociedad",
-    "tutoria": "Tutoría y preparación",
-    "gestion": "Gestión institucional",
+    "docencia": "DOCENCIA",
+    "investigacion": "INVESTIGACIÓN",
+    "vinculacion": "VINCULACIÓN CON LA SOCIEDAD",
+    "gestion": "GESTIÓN ACADÉMICA",
 }
 
 # Palabras clave por categoría para reglas heurísticas y fine-tuning del dataset.
@@ -25,7 +25,10 @@ KEYWORDS_POR_CATEGORIA = {
     "docencia": [
         "clase", "clases", "cátedra", "laboratorio", "taller", "seminario",
         "aula", "materia", "asignatura", "enseñanza", "examen", "parcial",
-        "módulo", "titulación", "tribunal", "defensa", "grupo a", "grupo b",
+        "módulo", "grupo a", "grupo b",
+        # Subcategoría 1.2 Tutorías: la tutoría es parte de DOCENCIA, no categoría.
+        "tutoría", "tutorias", "asesoría", "atención a estudiantes",
+        "consulta", "consultas", "apoyo académico", "oficina",
     ],
     "investigacion": [
         "investigación", "artículo", "paper", "publicación", "revista",
@@ -37,12 +40,11 @@ KEYWORDS_POR_CATEGORIA = {
         "pre-profesional", "pre-profesionales", "comunidad", "barrio",
         "parroquia", "graduados", "ciudadana", "emprendedor", "adultos mayores",
     ],
-    "tutoria": [
-        "tutoría", "tutorias", "asesoría", "atención a estudiantes",
-        "consulta", "consultas", "apoyo académico", "oficina",
-    ],
     "gestion": [
         "reunión", "comité", "consejo", "directivo", "coordinación",
         "gestión", "administrativo", "planificación", "informe", "acreditación",
+        # Subcategoría 4.9 Tutores, Lectores y Grados: la titulación (tribunal /
+        # defensa de grado) es GESTIÓN ACADÉMICA, no Docencia (Excel oficial).
+        "titulación", "tribunal", "defensa",
     ],
 }

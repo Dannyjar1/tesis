@@ -25,8 +25,7 @@ const HORAS_40 = {
   horas_tutoria: 2,
   horas_investigacion: 4,
   horas_vinculacion: 3,
-  horas_titulacion: 1,
-  horas_gestion: 1.2,
+  horas_gestion: 2.2,
   horas_reduccion_cargo: 0,
 }
 
@@ -44,9 +43,12 @@ describe('Aprobación del director (primera firma)', () => {
     expect(res.aprobado_por).toBe(DIRECTOR)
   })
 
-  it('rechaza la aprobación si el total no cierra exacto (RN-014)', async () => {
-    const dist = await crearEnBorrador({ horas_gestion: 5 })   // suma 43.8 ≠ 40
-    await expect(aprobarDistributivo(dist.id, DIRECTOR, 40)).rejects.toThrow()
+  it('permite aprobar aunque el total no cierre exacto (validación 40h informativa)', async () => {
+    // Estructura oficial UIDE: la suma de 40h es informativa, NO bloquea la
+    // aprobación. El director puede aprobar con cualquier total.
+    const dist = await crearEnBorrador({ horas_gestion: 5 })   // suma 42.8 ≠ 40
+    const res = await aprobarDistributivo(dist.id, DIRECTOR, 40)
+    expect(res.estado).toBe(ESTADOS_DISTRIBUTIVO.EN_REVISION)
   })
 })
 

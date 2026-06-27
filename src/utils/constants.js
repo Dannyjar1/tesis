@@ -62,29 +62,62 @@ export const CARRERAS = [
 
 export const CARRERA_LABELS = Object.fromEntries(CARRERAS.map(c => [c.id, c.nombre]))
 
-// ── Categorías CES ────────────────────────────────────────────────────────────
+// ── Categorías oficiales del distributivo (Excel UIDE 2026) ───────────────────
+// Estructura oficial de 4 categorías. NO existe una 5.ª categoría "tutoria" ni
+// "titulacion": la tutoría es la subcategoría 1.2 dentro de DOCENCIA. Los
+// nombres de CATEGORIA_LABELS se preservan EXACTAMENTE (mayúsculas) como en el
+// Excel oficial. Fuente de verdad: src/modules/distributivo/modeloDistributivo.js
 export const CATEGORIAS = {
   DOCENCIA:      'docencia',
   INVESTIGACION: 'investigacion',
   VINCULACION:   'vinculacion',
-  TUTORIA:       'tutoria',
   GESTION:       'gestion',
 }
 
 export const CATEGORIA_LABELS = {
-  docencia:      'Docencia directa',
-  investigacion: 'Investigación',
-  vinculacion:   'Vinculación con la Sociedad',
-  tutoria:       'Tutoría y preparación',
-  gestion:       'Gestión institucional',
+  docencia:      'DOCENCIA',
+  investigacion: 'INVESTIGACIÓN',
+  vinculacion:   'VINCULACIÓN CON LA SOCIEDAD',
+  gestion:       'GESTIÓN ACADÉMICA',
 }
 
 export const CATEGORIA_COLORES = {
   docencia:      'bg-blue-100 text-blue-800',
   investigacion: 'bg-purple-100 text-purple-800',
   vinculacion:   'bg-green-100 text-green-800',
-  tutoria:       'bg-yellow-100 text-yellow-800',
   gestion:       'bg-orange-100 text-orange-800',
+}
+
+// Subcategorías oficiales por categoría (Excel UIDE). Se usan SOLO para el
+// registro manual de actividades (campo `subcategoria`); el clasificador de IA
+// NO predice subcategoría todavía (ver D2 / iaService).
+export const SUBCATEGORIAS_POR_CATEGORIA = {
+  docencia: [
+    { codigo: '1.1', nombre: 'ASIGNATURA' },
+    { codigo: '1.2', nombre: 'TUTORÍAS' },
+    { codigo: '1.3', nombre: 'OTRAS ACTIVIDADES DE DOCENCIA' },
+  ],
+  investigacion: [
+    { codigo: '2.1', nombre: 'Proyecto de Investigación' },
+    { codigo: '2.2', nombre: 'Artículo Científico' },
+  ],
+  vinculacion: [
+    { codigo: '3.1', nombre: 'Proyectos de Vinculación' },
+    { codigo: '3.2', nombre: 'Prácticas Pre-Profesionales' },
+    { codigo: '3.3', nombre: 'Seguimiento a Graduados' },
+  ],
+  gestion: [
+    { codigo: '4.1',  nombre: 'Dirección de Escuela' },
+    { codigo: '4.2',  nombre: 'Coordinación Académica' },
+    { codigo: '4.3',  nombre: 'Coordinación de Investigación' },
+    { codigo: '4.4',  nombre: 'Coordinación de Vinculación' },
+    { codigo: '4.5',  nombre: 'Internacionalización' },
+    { codigo: '4.6',  nombre: 'POA' },
+    { codigo: '4.7',  nombre: 'Representantes de SAIC' },
+    { codigo: '4.8',  nombre: 'Acreditaciones Institucionales' },
+    { codigo: '4.9',  nombre: 'Tutores, Lectores y Grados' },
+    { codigo: '4.10', nombre: 'Clubes, Proyectos, Eventos, Otras Actividades' },
+  ],
 }
 
 // ── Estados del distributivo ──────────────────────────────────────────────────
@@ -184,9 +217,10 @@ export const ESTADO_ACTIVIDAD_COLORES = {
 // de coherencia (PROJECT_BRIEF §5.4 / RESTRUCTURE §3.3): si la categoría de la
 // actividad no tiene horas en el distributivo del docente, se avisa al asignar.
 export const CATEGORIA_A_HORAS_DISTRIBUTIVO = {
-  docencia:      ['horas_docencia_directa', 'horas_preparacion'],
+  // DOCENCIA agrupa 1.1 (asignatura), 1.2 (tutorías) y 1.3 (otras) — la tutoría
+  // ya no es una categoría propia, es subcategoría de Docencia.
+  docencia:      ['horas_docencia_directa', 'horas_tutoria', 'horas_preparacion'],
   investigacion: ['horas_investigacion'],
   vinculacion:   ['horas_vinculacion'],
-  tutoria:       ['horas_tutoria'],
   gestion:       ['horas_gestion'],
 }

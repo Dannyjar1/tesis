@@ -4,6 +4,7 @@ import {
   getNotificaciones,
   marcarLeida as svcMarcarLeida,
   marcarTodasLeidas as svcMarcarTodas,
+  resolverSolicitudRol as svcResolverSolicitud,
 } from '../services/notificacionesService'
 
 export const NotificacionContext = createContext(null)
@@ -47,9 +48,15 @@ export function NotificacionProvider({ children }) {
     setNotificaciones(prev => prev.map(n => ({ ...n, leida: true })))
   }
 
+  // Director acepta/rechaza una solicitud de rol (F.2)
+  async function resolverSolicitud(notif, aceptada) {
+    await svcResolverSolicitud(notif, aceptada)
+    await cargar(uid)
+  }
+
   return (
     <NotificacionContext.Provider value={{
-      notificaciones, noLeidas, marcarLeida, marcarTodasLeidas,
+      notificaciones, noLeidas, marcarLeida, marcarTodasLeidas, resolverSolicitud,
       recargar: () => cargar(uid),
     }}>
       {children}
